@@ -1,0 +1,128 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use camelCase" #-}
+module Event where
+import Other
+import Type
+import qualified Data.Int as DI
+import qualified Data.IntMap.Strict as DIS
+import qualified Data.Word as DW
+import qualified Foreign.C.Types as FCT
+import qualified Foreign.Marshal.Alloc as FMA
+import qualified Foreign.Marshal.Utils as FMU
+import qualified Foreign.Ptr as FP
+import qualified Foreign.Storable as FS
+import qualified SDL.Raw.Enum as SRE
+import qualified SDL.Raw.Event as SRE
+import qualified SDL.Raw.Types as SRT
+
+push_event::DW.Word32->DW.Word32->DW.Word32->DI.Int32->FP.Ptr ()->FP.Ptr ()->IO ()
+push_event event_type time window_id event_code data_one data_two=FMU.with (SRT.UserEvent event_type time window_id event_code data_one data_two) (catch_error "SDL.Raw.Event.pushEvent returns error" 1 . SRE.pushEvent)
+
+get_event::DIS.IntMap Int->Maybe DW.Word32->IO Event
+get_event window_map maybe_event_type=FMA.alloca $ \pointer->do
+    catch_error "SDL.Raw.Event.waitEvent returns error" 1 (SRE.waitEvent pointer)
+    event<-FS.peek pointer
+    case event of
+        SRT.UserEvent event_type _ _ _ _ _->case maybe_event_type of
+            Nothing->return Unknown
+            Just time_event_type->if event_type==time_event_type then return Time else return Unknown
+        SRT.QuitEvent {}->return Quit
+        SRT.WindowEvent _ _ window_id window_event data_one data_two->case window_event of
+            SRE.SDL_WINDOWEVENT_CLOSE->do
+                case DIS.lookup (fromIntegral window_id) window_map of
+                    Nothing->return Unknown
+                    Just window->return (At window Close)
+            SRE.SDL_WINDOWEVENT_RESIZED->do
+                case DIS.lookup (fromIntegral window_id) window_map of
+                    Nothing->return Unknown
+                    Just window->return (Resize window (fromIntegral data_one) (fromIntegral data_two))
+            _->return Unknown
+        SRT.MouseButtonEvent event_type _ window_id _ _ _ _ x y->case event_type of
+            SRE.SDL_MOUSEBUTTONDOWN->do
+                case DIS.lookup (fromIntegral window_id) window_map of
+                    Nothing->return Unknown
+                    Just window->return (At window (Click_down (FCT.CInt x) (FCT.CInt y)))
+            SRE.SDL_MOUSEBUTTONUP->do
+                case DIS.lookup (fromIntegral window_id) window_map of
+                    Nothing->return Unknown
+                    Just window->return (At window (Click_up (FCT.CInt x) (FCT.CInt y)))
+            _->return Unknown
+        SRT.TextInputEvent event_type _ window_id text->case event_type of
+            SRE.SDL_TEXTINPUT->do
+                case DIS.lookup (fromIntegral window_id) window_map of
+                    Nothing->return Unknown
+                    Just window->return (At window (Input text))
+            _->return Unknown
+        SRT.KeyboardEvent event_type _ window_id _ _ (SRT.Keysym _ key_code _)->case event_type of
+            SRE.SDL_KEYDOWN->do
+                case DIS.lookup (fromIntegral window_id) window_map of
+                    Nothing->return Unknown
+                    Just window->case key_code of
+                        SRE.SDLK_a->return (At window (Press_down Key_a))
+                        SRE.SDLK_b->return (At window (Press_down Key_b))
+                        SRE.SDLK_c->return (At window (Press_down Key_c))
+                        SRE.SDLK_d->return (At window (Press_down Key_d))
+                        SRE.SDLK_e->return (At window (Press_down Key_e))
+                        SRE.SDLK_f->return (At window (Press_down Key_f))
+                        SRE.SDLK_g->return (At window (Press_down Key_g))
+                        SRE.SDLK_h->return (At window (Press_down Key_h))
+                        SRE.SDLK_i->return (At window (Press_down Key_i))
+                        SRE.SDLK_j->return (At window (Press_down Key_j))
+                        SRE.SDLK_k->return (At window (Press_down Key_k))
+                        SRE.SDLK_l->return (At window (Press_down Key_l))
+                        SRE.SDLK_m->return (At window (Press_down Key_m))
+                        SRE.SDLK_n->return (At window (Press_down Key_n))
+                        SRE.SDLK_o->return (At window (Press_down Key_o))
+                        SRE.SDLK_p->return (At window (Press_down Key_p))
+                        SRE.SDLK_q->return (At window (Press_down Key_q))
+                        SRE.SDLK_r->return (At window (Press_down Key_r))
+                        SRE.SDLK_s->return (At window (Press_down Key_s))
+                        SRE.SDLK_t->return (At window (Press_down Key_t))
+                        SRE.SDLK_u->return (At window (Press_down Key_u))
+                        SRE.SDLK_v->return (At window (Press_down Key_v))
+                        SRE.SDLK_w->return (At window (Press_down Key_w))
+                        SRE.SDLK_x->return (At window (Press_down Key_x))
+                        SRE.SDLK_y->return (At window (Press_down Key_y))
+                        SRE.SDLK_z->return (At window (Press_down Key_z))
+                        SRE.SDLK_LEFT->return (At window (Press_down Key_left))
+                        SRE.SDLK_RIGHT->return (At window (Press_down Key_right))
+                        SRE.SDLK_UP->return (At window (Press_down Key_up))
+                        SRE.SDLK_DOWN->return (At window (Press_down Key_down))
+                        _->return (At window (Press_down Key_unknown))
+            SRE.SDL_KEYUP->do
+                case DIS.lookup (fromIntegral window_id) window_map of
+                    Nothing->return Unknown
+                    Just window->case key_code of
+                        SRE.SDLK_a->return (At window (Press_up Key_a))
+                        SRE.SDLK_b->return (At window (Press_up Key_b))
+                        SRE.SDLK_c->return (At window (Press_up Key_c))
+                        SRE.SDLK_d->return (At window (Press_up Key_d))
+                        SRE.SDLK_e->return (At window (Press_up Key_e))
+                        SRE.SDLK_f->return (At window (Press_up Key_f))
+                        SRE.SDLK_g->return (At window (Press_up Key_g))
+                        SRE.SDLK_h->return (At window (Press_up Key_h))
+                        SRE.SDLK_i->return (At window (Press_up Key_i))
+                        SRE.SDLK_j->return (At window (Press_up Key_j))
+                        SRE.SDLK_k->return (At window (Press_up Key_k))
+                        SRE.SDLK_l->return (At window (Press_up Key_l))
+                        SRE.SDLK_m->return (At window (Press_up Key_m))
+                        SRE.SDLK_n->return (At window (Press_up Key_n))
+                        SRE.SDLK_o->return (At window (Press_up Key_o))
+                        SRE.SDLK_p->return (At window (Press_up Key_p))
+                        SRE.SDLK_q->return (At window (Press_up Key_q))
+                        SRE.SDLK_r->return (At window (Press_up Key_r))
+                        SRE.SDLK_s->return (At window (Press_up Key_s))
+                        SRE.SDLK_t->return (At window (Press_up Key_t))
+                        SRE.SDLK_u->return (At window (Press_up Key_u))
+                        SRE.SDLK_v->return (At window (Press_up Key_v))
+                        SRE.SDLK_w->return (At window (Press_up Key_w))
+                        SRE.SDLK_x->return (At window (Press_up Key_x))
+                        SRE.SDLK_y->return (At window (Press_up Key_y))
+                        SRE.SDLK_z->return (At window (Press_up Key_z))
+                        SRE.SDLK_LEFT->return (At window (Press_up Key_left))
+                        SRE.SDLK_RIGHT->return (At window (Press_up Key_right))
+                        SRE.SDLK_UP->return (At window (Press_up Key_up))
+                        SRE.SDLK_DOWN->return (At window (Press_up Key_down))
+                        _->return (At window (Press_up Key_unknown))
+            _->return Unknown
+        _->return Unknown
