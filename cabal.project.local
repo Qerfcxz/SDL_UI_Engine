@@ -1,0 +1,3 @@
+packages: sdl2-gfx-master
+program-options
+  ghc-options: -threaded -optl-mconsole
