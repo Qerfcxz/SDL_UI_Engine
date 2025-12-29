@@ -5,6 +5,7 @@ import Other
 import Type
 import qualified Control.Monad as CM
 import qualified Data.IntMap.Strict as DIS
+import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
 import qualified Data.Text as DT
 import qualified Data.Text.Foreign as DTF
@@ -22,10 +23,10 @@ get_width font text=FMA.alloca $ \width->FMA.alloca $ \height->DTF.withCString t
     catch_error "get_width: SDL.Raw.Font.sizeText returns error" 0 (SRF.sizeUTF8 font new_text width height)
     FS.peek width
 
-cut_text::FCT.CInt->FP.Ptr SRF.Font->DT.Text->IO (FCT.CInt,DT.Text,DT.Text)
-cut_text width font text=do
+cut_text::Bool->FCT.CInt->FP.Ptr SRF.Font->DT.Text->IO (Int,FCT.CInt,DT.Text,DT.Text)
+cut_text bool width font text=do
     (left,last_width,left_text,right_text)<-cut_text_a 0 (DT.length text) width width font text
-    if left==0 then error "cut_text: too large font or empty text" else return (last_width,left_text,right_text)
+    if bool&&left==0 then error "cut_text: too large font or empty text" else return (left,last_width,left_text,right_text)
 
 cut_text_a::Int->Int->FCT.CInt->FCT.CInt->FP.Ptr SRF.Font->DT.Text->IO (Int,FCT.CInt,DT.Text,DT.Text)
 cut_text_a left right last_width width font text=if left==right then let (left_text,right_text)=DT.splitAt left text in return (left,last_width,left_text,right_text) else let middle=div (left+right+1) 2 in let left_text=DT.take middle text in do
@@ -54,15 +55,15 @@ from_paragraph widget renderer find window_id start_id design_window_size window
         from_paragraph widget renderer find window_id start_id design_window_size window_size left new_up width delta_height other_seq_paragraph new_seq_texture
     _->error "unfinished"
 
-
+--return FP.nullPtr是权宜之计
 by_left::SRT.Renderer->(Int->DS.Seq Int->FP.Ptr SRF.Font)->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DT.Text,SRT.Color,DS.Seq Int,Int)->DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO (DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt),FCT.CInt)
 by_left _ _ _ up _ _ delta_height max_ascent min_descent DS.Empty this_seq_texture seq_texture=let base_up=up+max_ascent in return (seq_texture DS.>< fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,this_x,base_up-this_ascent,this_width,this_height)) this_seq_texture,base_up-min_descent+delta_height)
 by_left renderer find left up width last_width delta_height max_ascent min_descent ((text,color,seq_id,size) DS.:<| seq_text) this_seq_texture seq_texture=let font=find size seq_id in FMA.alloca $ \this_color->do
     ascent<-SRF.fontAscent font
     descent<-SRF.fontDescent font
-    (new_last_width,left_text,right_text)<-cut_text last_width font text
+    (left_length,new_last_width,left_text,right_text)<-cut_text False last_width font text
     FS.poke this_color color
-    texture<-DTF.withCString left_text (to_texture renderer this_color font)
+    texture<-if left_length==0 then return FP.nullPtr else DTF.withCString left_text (to_texture renderer this_color font)
     let new_ascent=max max_ascent ascent
     let new_descent=min min_descent descent
     let new_height=ascent-descent
@@ -70,24 +71,21 @@ by_left renderer find left up width last_width delta_height max_ascent min_desce
         (new_seq_texture,new_texture,new_new_last_width,new_up)<-let base_up=up+new_ascent in by_left_b renderer left (base_up-new_descent+delta_height) width new_height delta_height this_color font right_text (seq_texture DS.>< (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,this_x,base_up-this_ascent,this_width,this_height)) this_seq_texture DS.|> (texture,left+width-last_width,base_up-ascent,last_width-new_last_width,new_height)))
         by_left renderer find left new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,left,ascent,width-new_new_last_width,new_height)) new_seq_texture
 
-
-
 by_left_b::SRT.Renderer->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FP.Ptr SRT.Color->FP.Ptr SRF.Font->DT.Text->DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO (DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt),SRT.Texture,FCT.CInt,FCT.CInt)
 by_left_b renderer left up width this_height delta_height color font text seq_texture=do
-    (last_width,left_text,right_text)<-cut_text width font text
+    (_,last_width,left_text,right_text)<-cut_text True width font text
     texture<-DTF.withCString left_text (to_texture renderer color font)
     if DT.null right_text then return (seq_texture,texture,last_width,up) else by_left_b renderer left (up+this_height+delta_height) width this_height delta_height color font right_text (seq_texture DS.|> (texture,left,up,width-last_width,this_height))
 
-
 find_font_equal::DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->Int->Int->DS.Seq Int->FP.Ptr SRF.Font
-find_font_equal widget window_size design_window_size start_id size seq_id=case get_combined_widget start_id seq_id widget of
+find_font_equal widget design_window_size window_size start_id size seq_id=case get_combined_widget start_id seq_id widget of
     Leaf_widget _ (Font font)->case DIS.lookup (div (size*fromIntegral window_size) (fromIntegral design_window_size)) font of
         Nothing->error "find_font_equal: no such font size"
         Just new_font->new_font
     _->error "find_font_equal: it's not a font widget"
 
 find_font_near::DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->Int->Int->DS.Seq Int->FP.Ptr SRF.Font
-find_font_near widget window_size design_window_size start_id size seq_id=case get_combined_widget start_id seq_id widget of
+find_font_near widget design_window_size window_size start_id size seq_id=case get_combined_widget start_id seq_id widget of
     Leaf_widget _ (Font font)->let new_size=div (size*fromIntegral window_size) (fromIntegral design_window_size) in case DIS.lookupLE new_size font of
         Nothing->case DIS.lookupGE new_size font of
             Nothing->error "find_font_near: empty font widget"
@@ -96,3 +94,20 @@ find_font_near widget window_size design_window_size start_id size seq_id=case g
             Nothing->small_font
             Just (great_size,great_font)->if 2*new_size<great_size+small_size then small_font else great_font
     _->error "find_font_equal: it's not a font widget"
+
+update_text::DS.Seq Int->Engine a->IO (Engine a)
+update_text seq_id (Engine widget window window_map request count_id start_id main_id)=do
+    new_widget<-update_combined_widget start_id seq_id (update_text_a start_id window widget) widget
+    return (Engine new_widget window window_map request count_id start_id main_id)
+
+update_text_a::Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->IO (Combined_widget a)
+update_text_a start_id window widget (Leaf_widget next_id (Text window_id row find delta_height design_left design_right design_up design_down _ _ _ _ seq_paragraph seq_texture))=do
+    DF.mapM_ (\(texture,_,_,_,_)->SRV.destroyTexture texture) seq_texture
+    let (renderer,x,y,design_size,size)=get_renderer_with_transform window_id window
+    let new_left=x+div (design_left*size) design_size
+    let new_right=x+div (design_right*size) design_size
+    let new_up=y+div (design_up*size) design_size
+    let new_down=y+div (design_down*size) design_size
+    new_seq_texture<-from_paragraph widget renderer find window_id start_id design_size size 0 0 (new_right-new_left) delta_height seq_paragraph DS.Empty
+    return (Leaf_widget next_id (Text window_id row find delta_height design_left design_right design_up design_down new_left new_right new_up new_down seq_paragraph new_seq_texture))
+update_text_a _ _ _ _=error "updata_text_a: not a text widget"

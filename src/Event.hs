@@ -20,7 +20,7 @@ push_event event_type time window_id event_code data_one data_two=FMU.with (SRT.
 
 get_event::DIS.IntMap Int->Maybe DW.Word32->IO Event
 get_event window_map maybe_event_type=FMA.alloca $ \pointer->do
-    catch_error "SDL.Raw.Event.waitEvent returns error" 1 (SRE.waitEvent pointer)
+    catch_error "get_event: SDL.Raw.Event.waitEvent returns error" 1 (SRE.waitEvent pointer)
     event<-FS.peek pointer
     case event of
         SRT.UserEvent event_type _ _ _ _ _->case maybe_event_type of

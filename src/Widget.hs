@@ -10,6 +10,7 @@ import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Foreign as DTF
 import qualified Foreign.C.String as FCS
+import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Video as SRV
@@ -17,14 +18,15 @@ import qualified SDL.Raw.Video as SRV
 create_single_widget::Int->DIS.IntMap Window->Single_widget_request a->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (Single_widget a)
 create_single_widget _ _ (Data_request content) _=return (Data content)
 create_single_widget _ _(Trigger_request handle) _=return (Trigger handle)
+create_single_widget _ _(Io_trigger_request handle) _=return (Io_trigger handle)
 create_single_widget _ _ (Font_request path size) _=do
     font<-DTF.withCString path (`create_font` size)
     return (Font font)
-create_single_widget start_id window (Text_request window_id find delta_height left right up down seq_paragraph) widget=case DIS.lookup window_id window of
+create_single_widget start_id window (Text_request window_id row find delta_height left right up down seq_paragraph) widget=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: no such window"
     Just (Window _ _ renderer _ _ x y design_window_size window_size)->do
-        seq_texture<-from_paragraph widget renderer find window_id start_id design_window_size window_size left up (right-left) delta_height seq_paragraph DS.Empty
-        return (Text window_id 0 find delta_height left right up down (x+div (left*window_size) design_window_size) (x+div (right*window_size) design_window_size) (y+div (up*window_size) design_window_size) (y+div (down*window_size) design_window_size) seq_paragraph seq_texture)
+        seq_texture<-from_paragraph widget renderer find window_id start_id design_window_size window_size 0 0 (right-left) delta_height seq_paragraph DS.Empty
+        return (Text window_id row find delta_height left right up down (x+div (left*window_size) design_window_size) (x+div (right*window_size) design_window_size) (y+div (up*window_size) design_window_size) (y+div (down*window_size) design_window_size) seq_paragraph seq_texture)
 
 
 create_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font))
@@ -66,6 +68,7 @@ create_widget_top_a combined_id single_id start_id window io combined_widget_req
 remove_single_widget::Data a=>Single_widget a->IO ()
 remove_single_widget (Data content)=remove_data content
 remove_single_widget (Trigger _)=return ()
+remove_single_widget (Io_trigger _)=return ()
 remove_single_widget (Font intmap_font)=do
     _<-DIS.traverseWithKey (\_ font->SRF.closeFont font) intmap_font
     return ()
@@ -129,3 +132,26 @@ replace_widget_a seq_single_id count_id combined_id single_id start_id window co
             Nothing->error "replace_widget_a: no such single_id"
             Just (Leaf_widget _ _)->error "replace_widget_a: wrong seq_single_id"
             Just (Node_widget _ _ new_combined_id)->replace_widget_a other_seq_single_id count_id new_combined_id new_single_id start_id window combined_widget_request widget
+
+create_text_trigger::(Engine a->Id)->DS.Seq Int->DIS.IntMap (DS.Seq (DS.Seq Int))->Engine a->IO (Engine a)
+create_text_trigger next_id seq_id id_map=create_widget seq_id (Leaf_widget_request next_id (Io_trigger_request (create_text_trigger_a id_map)))
+
+create_text_trigger_a::DIS.IntMap (DS.Seq (DS.Seq Int))->Event->Engine a->IO (Engine a)
+create_text_trigger_a id_map event engine=case event of
+    Resize window_id _ _->case DIS.lookup window_id id_map of
+        Nothing->return engine
+        Just seq_seq_id->CM.foldM (flip update_text) engine seq_seq_id
+    _->return engine
+
+create_window_trigger::(Engine a->Id)->DS.Seq Int->DS.Seq Int->Engine a->IO (Engine a)
+create_window_trigger next_id seq_id seq_window_id=create_widget seq_id (Leaf_widget_request next_id (Io_trigger_request (create_window_trigger_a seq_window_id)))
+
+create_window_trigger_a::DS.Seq Int->Event->Engine a->IO (Engine a)
+create_window_trigger_a seq_window_id event engine@(Engine widget window window_map request count_id start_id main_id)=case event of
+    Resize window_id width height->case DS.elemIndexL window_id seq_window_id of
+        Nothing->return engine
+        Just _->return (Engine widget (error_update "create_window_trigger_a: no such window_id" window_id (\(Window this_window_id this_window renderer design_width design_height _ _ _ _)->let (x,y,design_size,size)=adaptive_window design_width design_height width height in Window this_window_id this_window renderer design_width design_height x y design_size size) window) window_map request count_id start_id main_id)
+    _->return engine
+
+adaptive_window::FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+adaptive_window design_x design_y x y=let new_x=design_y*x in let new_y=design_x*y in if new_x<new_y then let common=gcd design_x x in (0,div (new_y-new_x) (2*design_x),div design_x common,div x common) else let common=gcd design_y y in (div (new_x-new_y) (2*design_y),0,div design_y common,div y common)
