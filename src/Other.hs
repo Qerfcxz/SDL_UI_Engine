@@ -3,12 +3,15 @@
 module Other where
 import Type
 import qualified Control.Monad as CM
+import qualified Data.Foldable as DF
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
+import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Font as SRF
+import qualified SDL.Raw.Video as SRV
 
 catch_error::Eq a=>[Char]->a->IO a->IO ()
 catch_error error_message success result=do
@@ -64,15 +67,16 @@ error_update_update_b _ update (Just value)=do
     new_value<-update value
     return (Just new_value)
 
-get_renderer_engine::Int->Engine a->SRT.Renderer
-get_renderer_engine window_id (Engine _ window _ _ _ _ _)=case DIS.lookup window_id window of
-    Nothing->error "get_renderer_engine: No such window"
-    Just (Window _ _ renderer _ _ _ _ _ _)->renderer
-
-get_renderer::Int->DIS.IntMap Window->SRT.Renderer
-get_renderer window_id window=case DIS.lookup window_id window of
+get_renderer::Int->Engine a->SRT.Renderer
+get_renderer window_id (Engine _ window _ _ _ _ _)=case DIS.lookup window_id window of
     Nothing->error "get_renderer: No such window"
     Just (Window _ _ renderer _ _ _ _ _ _)->renderer
+
+get_renderer_window::Int->DIS.IntMap Window->SRT.Renderer
+get_renderer_window window_id window=case DIS.lookup window_id window of
+    Nothing->error "get_renderer: No such window"
+    Just (Window _ _ renderer _ _ _ _ _ _)->renderer
+
 
 get_renderer_with_transform::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
 get_renderer_with_transform window_id window=case DIS.lookup window_id window of
@@ -84,18 +88,18 @@ get_next_id (Leaf_widget next_single_id _)=next_single_id
 get_next_id (Node_widget next_single_id _ _)=next_single_id
 
 get_font::DS.Seq Int->Engine a->DIS.IntMap (FP.Ptr SRF.Font)
-get_font seq_single_id engine=case get_combined_widget_engine seq_single_id engine of
+get_font seq_single_id engine=case get_combined_widget seq_single_id engine of
     Leaf_widget _ (Font font)->font
     _->error "get_font: not a font widget"
 
-get_combined_widget::Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
-get_combined_widget start_id seq_single_id widget=case DS.viewl seq_single_id of
-    DS.EmptyL->error "get_combined_widget: empty seq_single_id"
+get_combined_widget_widget::Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
+get_combined_widget_widget start_id seq_single_id widget=case DS.viewl seq_single_id of
+    DS.EmptyL->error "get_combined_widget_widget: empty seq_single_id"
     single_id DS.:< other_seq_single_id->get_combined_widget_a start_id single_id other_seq_single_id widget
 
-get_combined_widget_engine::DS.Seq Int->Engine a->Combined_widget a
-get_combined_widget_engine seq_single_id (Engine widget _ _ _ _ start_id _)=case DS.viewl seq_single_id of
-    DS.EmptyL->error "get_combined_widget_engine: empty seq_single_id"
+get_combined_widget::DS.Seq Int->Engine a->Combined_widget a
+get_combined_widget seq_single_id (Engine widget _ _ _ _ start_id _)=case DS.viewl seq_single_id of
+    DS.EmptyL->error "get_combined_widget: empty seq_single_id"
     (single_id DS.:< other_seq_single_id)->get_combined_widget_a start_id single_id other_seq_single_id widget
 
 get_combined_widget_a::Int->Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
@@ -125,3 +129,12 @@ update_combined_widget_a combined_id single_id seq_single_id update widget=case 
                 Leaf_widget _ _->error "get_combined_widget_with_id_a: wrong seq_single_id"
                 Node_widget _ _ new_combined_id->update_combined_widget_a new_combined_id new_single_id other_seq_single_id update widget
 
+clean_row::Row->IO ()
+clean_row (Blank _ _)=return ()
+clean_row (Row seq_texture _ _)=DF.mapM_ (\(texture,_,_,_,_)->SRV.destroyTexture texture) seq_texture
+
+adaptive_window::FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+adaptive_window design_x design_y x y=let new_x=design_y*x in let new_y=design_x*y in if new_x<new_y then let common=gcd design_x x in (0,div (new_y-new_x) (2*design_x),div design_x common,div x common) else let common=gcd design_y y in (div (new_x-new_y) (2*design_y),0,div design_y common,div y common)
+
+color::DW.Word8->DW.Word8->DW.Word8->DW.Word8->Color
+color=SRT.Color
