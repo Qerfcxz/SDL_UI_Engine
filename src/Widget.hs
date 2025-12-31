@@ -25,22 +25,22 @@ create_single_widget _ _ (Font_request path size) _=do
     return (Font font)
 create_single_widget _ window (Rectangle_request window_id red green blue alpha left right up down) _=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: no such window"
-    Just (Window _ _ _ _ _ x y design_window_size window_size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*window_size) design_window_size) (y+div (up*window_size) design_window_size) (div ((right-left)*window_size) design_window_size) (div ((down-up)*window_size) design_window_size))
+    Just (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
 create_single_widget _ window (Picture_request window_id path x y width_multiply width_divide height_multiply height_divide) _=case DIS.lookup window_id window of
     Nothing->error "alter_single_widget: no such window_id"
-    Just (Window _ _ renderer _ _ window_x window_y design_window_size window_size)->do
+    Just (Window _ _ renderer _ _ window_x window_y design_size size)->do
         surface<-DTF.withCString path SRV.loadBMP
         CM.when (surface==FP.nullPtr) $ error "alter_single_widget: SDL.Raw.Font.renderUTF8_Blended returns error"
         (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
         texture<-SRV.createTextureFromSurface renderer surface
         SRV.freeSurface surface
         CM.when (texture==FP.nullPtr) $ error "to_texture: SDL.Raw.Video.createTextureFromSurface returns error"
-        let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id texture x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*window_size) design_window_size) (window_y+div ((y-div new_height 2)*window_size) design_window_size) (div (new_width*window_size) design_window_size) (div (new_height*window_size) design_window_size))
+        let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id texture x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
 create_single_widget start_id window (Text_request window_id row find delta_height left right up down seq_paragraph) widget=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: no such window"
-    Just (Window _ _ renderer _ _ x y design_window_size window_size)->do
-        seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_window_size window_size 0 0 (right-left) delta_height seq_paragraph DS.Empty
-        return (Text window_id row find delta_height left right up down (x+div (left*window_size) design_window_size) (y+div (up*window_size) design_window_size) (y+div (down*window_size) design_window_size) seq_paragraph seq_row)
+    Just (Window _ _ renderer _ _ x y design_size size)->let new_delta_height=div (delta_height*size) design_size in do
+        seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.Empty
+        return (Text window_id row find delta_height left right up down new_delta_height (x+div (left*size) design_size) (y+div (up*size) design_size) (y+div (down*size) design_size) seq_paragraph seq_row)
 
 create_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font))
 create_font _ DS.Empty=return DIS.empty
@@ -87,7 +87,7 @@ remove_single_widget (Font intmap_font)=do
     return ()
 remove_single_widget (Rectangle {})=return ()
 remove_single_widget (Picture _ texture _ _ _ _ _ _ _ _ _ _ _ _)=SRV.destroyTexture texture
-remove_single_widget (Text _ _ _ _ _ _ _ _ _ _ _ _ seq_row)=DF.mapM_ clean_row seq_row
+remove_single_widget (Text _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row)=DF.mapM_ clean_row seq_row
 
 remove_widget::Data a=>DS.Seq Int->Engine a->IO (Engine a)
 remove_widget seq_single_id (Engine widget window window_map request count_id start_id main_id)=case seq_single_id of
@@ -166,11 +166,12 @@ update_widget seq_id (Engine widget window window_map request count_id start_id 
 update_widget_a::Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->IO (Combined_widget a)
 update_widget_a _ window _ (Leaf_widget next_id (Rectangle window_id red green blue alpha left right up down _ _ _ _))=let (x,y,design_size,size)=get_transform window_id window in return (Leaf_widget next_id (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size)))
 update_widget_a _ window _ (Leaf_widget next_id (Picture window_id texture x y width_multiply width_divide height_multiply height_divide width height _ _ _ _))=let (window_x,window_y,design_size,size)=get_transform window_id window in let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Leaf_widget next_id (Picture window_id texture x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size)))
-update_widget_a start_id window widget (Leaf_widget next_id (Text window_id row find delta_height left right up down _ _ _ seq_paragraph seq_row))=do
+update_widget_a start_id window widget (Leaf_widget next_id (Text window_id row find delta_height left right up down _ _ _ _ seq_paragraph seq_row))=do
     DF.mapM_ clean_row seq_row
     let (renderer,x,y,design_size,size)=get_renderer_with_transform window_id window
-    new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (div ((right-left)*size) design_size) delta_height seq_paragraph DS.Empty
-    return (Leaf_widget next_id (Text window_id row find delta_height left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (y+div (down*size) design_size) seq_paragraph new_seq_row))
+    let new_delta_height=div (delta_height*size) design_size
+    new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.Empty
+    return (Leaf_widget next_id (Text window_id row find delta_height left right up down new_delta_height (x+div (left*size) design_size) (y+div (up*size) design_size) (y+div (down*size) design_size) seq_paragraph new_seq_row))
 update_widget_a _ _ _ _=error "updata_text_a: wrong widget"
 
 create_window_trigger::(Event->Engine a->Id)->DS.Seq Int->DS.Seq Int->Engine a->IO (Engine a)
@@ -235,12 +236,12 @@ alter_single_widget _ _ _ (Font_request path size) this_widget=case this_widget 
 alter_single_widget _ window _ (Rectangle_request window_id red green blue alpha left right up down) this_widget=case this_widget of
     Rectangle {}->case DIS.lookup window_id window of
         Nothing->error "alter_single_widget: no such window_id"
-        Just (Window _ _ _ _ _ x y design_window_size window_size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*window_size) design_window_size) (y+div (up*window_size) design_window_size) (div ((right-left)*window_size) design_window_size) (div ((down-up)*window_size) design_window_size))
+        Just (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
     _->error "alter_single_widget: not a rectangle widget"
 alter_single_widget _ window _ (Picture_request window_id path x y width_multiply width_divide height_multiply height_divide) this_widget=case this_widget of
     Picture _ texture _ _ _ _ _ _ _ _ _ _ _ _->case DIS.lookup window_id window of
         Nothing->error "alter_single_widget: no such window_id"
-        Just (Window _ _ renderer _ _ window_x window_y design_window_size window_size)->do
+        Just (Window _ _ renderer _ _ window_x window_y design_size size)->do
             SRV.destroyTexture texture
             surface<-DTF.withCString path SRV.loadBMP
             CM.when (surface==FP.nullPtr) $ error "alter_single_widget: SDL.Raw.Font.renderUTF8_Blended returns error"
@@ -248,13 +249,14 @@ alter_single_widget _ window _ (Picture_request window_id path x y width_multipl
             new_texture<-SRV.createTextureFromSurface renderer surface
             SRV.freeSurface surface
             CM.when (new_texture==FP.nullPtr) $ error "to_texture: SDL.Raw.Video.createTextureFromSurface returns error"
-            let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id new_texture x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*window_size) design_window_size) (window_y+div ((y-div new_height 2)*window_size) design_window_size) (div (new_width*window_size) design_window_size) (div (new_height*window_size) design_window_size))
+            let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id new_texture x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
     _->error "alter_single_widget: not a picture widget"
 alter_single_widget start_id window widget (Text_request window_id row find delta_height left right up down seq_paragraph) this_widget=case this_widget of
-    Text _ _ _ _ _ _ _ _ _ _ _ _ seq_row->case DIS.lookup window_id window of
+    Text _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row->case DIS.lookup window_id window of
         Nothing->error "alter_single_widget: no such window_id"
-        Just (Window _ _ renderer _ _ x y design_window_size window_size)->do
+        Just (Window _ _ renderer _ _ x y design_size size)->do
             DF.mapM_ clean_row seq_row
-            new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_window_size window_size 0 0 (div ((right-left)*window_size) design_window_size) delta_height seq_paragraph DS.Empty
-            return (Text window_id row find delta_height left right up down (x+div (left*window_size) design_window_size) (y+div (up*window_size) design_window_size) (y+div (down*window_size) design_window_size) seq_paragraph new_seq_row)
+            let new_delta_height=div (delta_height*size) design_size
+            new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.Empty
+            return (Text window_id row find delta_height left right up down new_delta_height (x+div (left*size) design_size) (y+div (up*size) design_size) (y+div (down*size) design_size) seq_paragraph new_seq_row)
     _->error "alter_single_widget: not a text widget"

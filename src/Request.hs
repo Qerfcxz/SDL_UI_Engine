@@ -85,7 +85,7 @@ do_request (Render_picture_widget seq_id) engine=case get_combined_widget seq_id
         return engine
     _->error "do_request: not a picture widget"
 do_request (Render_text_widget seq_id) engine=case get_combined_widget seq_id engine of
-    Leaf_widget _ (Text window_id row _ _ _ _ _ _ left up down _ seq_row)->case DS.drop row seq_row of
+    Leaf_widget _ (Text window_id row _ _ _ _ _ _ _ left up down _ seq_row)->case DS.drop row seq_row of
         DS.Empty->return engine
         (new_row DS.:<| other_seq_row)->let renderer=get_renderer window_id engine in case new_row of
             Blank y row_height->if down<up+row_height then return engine else let new_up=up-y in do
