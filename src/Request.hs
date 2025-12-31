@@ -53,14 +53,39 @@ do_request (Resize_window window_id left right up down) (Engine widget window wi
         SRV.setWindowSize sdl_window width height
         return (Engine widget new_window window_map request count_id start_id main_id)
 do_request (Io_request handle) engine=handle engine
-do_request (Render_rectangle window_id up down left right red green blue alpha) engine=let renderer=get_renderer window_id engine in do
+do_request (Render_rectangle window_id red green blue alpha up down left right) engine=let renderer=get_renderer window_id engine in do
     catch_error "do_request: SDL.Raw.setRenderDrawColor returns error" 0 (SRV.setRenderDrawColor renderer red green blue alpha)
     FMA.alloca $ \rect->do
         FS.poke rect (SRT.Rect left up (right-left) (down-up))
         catch_error "do_request: SDL.Raw.renderFillRect returns error" 0 (SRV.renderFillRect renderer rect)
     return engine
-do_request (Render_text seq_int) engine=case get_combined_widget seq_int engine of
-    Leaf_widget _ (Text window_id row _ _ _ _ _ _ left _ up down _ seq_row)->case DS.drop row seq_row of
+do_request (Render_picture window_id path x y width_multiply width_divide height_multiply height_divide) engine=let renderer=get_renderer window_id engine in do
+    surface<-DTF.withCString path SRV.loadBMP
+    CM.when (surface==FP.nullPtr) $ error "do_request: SDL.Raw.Video.loadBMP returns error"
+    SRT.Surface _ width height _ _ _ _<-FS.peek surface
+    texture<-SRV.createTextureFromSurface renderer surface
+    SRV.freeSurface surface
+    CM.when (texture==FP.nullPtr) $ error "do_request: SDL.Raw.Video.createTextureFromSurface returns error"
+    let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in catch_error "do_request: SDL.Raw.Video.renderCopy returns error" 0 (FMU.with (SRT.Rect (x-div new_width 2) (y-div new_height 2) new_width new_height) (SRV.renderCopy renderer texture FP.nullPtr))
+    SRV.destroyTexture texture
+    return engine
+do_request (Render_rectangle_widget seq_id) engine=case get_combined_widget seq_id engine of
+    Leaf_widget _ (Rectangle window_id red green blue alpha _ _ _ _ x y width height)->do
+        let renderer=get_renderer window_id engine
+        catch_error "do_request: SDL.Raw.setRenderDrawColor returns error" 0 (SRV.setRenderDrawColor renderer red green blue alpha)
+        FMA.alloca $ \rect->do
+            FS.poke rect (SRT.Rect x y width height)
+            catch_error "do_request: SDL.Raw.renderFillRect returns error" 0 (SRV.renderFillRect renderer rect)
+        return engine
+    _->error "do_request: not a rectangle widget"
+do_request (Render_picture_widget seq_id) engine=case get_combined_widget seq_id engine of
+    Leaf_widget _ (Picture window_id texture _ _ _ _ _ _ _ _ x y width height)->do
+        let renderer=get_renderer window_id engine
+        catch_error "do_request: SDL.Raw.Video.renderCopy returns error" 0 (FMU.with (SRT.Rect x y width height) (SRV.renderCopy renderer texture FP.nullPtr))
+        return engine
+    _->error "do_request: not a picture widget"
+do_request (Render_text_widget seq_id) engine=case get_combined_widget seq_id engine of
+    Leaf_widget _ (Text window_id row _ _ _ _ _ _ left up down _ seq_row)->case DS.drop row seq_row of
         DS.Empty->return engine
         (new_row DS.:<| other_seq_row)->let renderer=get_renderer window_id engine in case new_row of
             Blank y row_height->if down<up+row_height then return engine else let new_up=up-y in do

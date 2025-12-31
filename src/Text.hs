@@ -5,7 +5,6 @@ import Other
 import Type
 import qualified Control.Monad as CM
 import qualified Data.IntMap.Strict as DIS
-import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
 import qualified Data.Text as DT
 import qualified Data.Text.Foreign as DTF
@@ -45,8 +44,8 @@ to_texture renderer this_color font text=do
 from_paragraph::DIS.IntMap (DIS.IntMap (Combined_widget a))->SRT.Renderer->(DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->Int->Int->DS.Seq Int->FP.Ptr SRF.Font)->Int->Int->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq Paragraph->DS.Seq Row->IO (DS.Seq Row)
 from_paragraph _ _ _ _ _ _ _ _ _ _ _ DS.Empty seq_texture=return seq_texture
 from_paragraph widget renderer find window_id start_id design_window_size window_size left up width delta_height (seq_paragraph DS.:<| other_seq_paragraph) seq_texture=let new_find=find widget design_window_size window_size start_id in case seq_paragraph of
-    Paragraph_blank seq_int size->do
-        let font=new_find size seq_int
+    Paragraph_blank seq_id size->do
+        let font=new_find size seq_id
         ascent<-SRF.fontAscent font
         descent<-SRF.fontDescent font
         let new_height=ascent-descent
@@ -108,23 +107,6 @@ find_font_near widget design_window_size window_size start_id size seq_id=case g
             Nothing->small_font
             Just (great_size,great_font)->if 2*new_size<great_size+small_size then small_font else great_font
     _->error "find_font_equal: it's not a font widget"
-
-update_text::DS.Seq Int->Engine a->IO (Engine a)
-update_text seq_id (Engine widget window window_map request count_id start_id main_id)=do
-    new_widget<-update_combined_widget start_id seq_id (update_text_a start_id window widget) widget
-    return (Engine new_widget window window_map request count_id start_id main_id)
-
-update_text_a::Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->IO (Combined_widget a)
-update_text_a start_id window widget (Leaf_widget next_id (Text window_id row find delta_height design_left design_right design_up design_down _ _ _ _ seq_paragraph seq_row))=do
-    DF.mapM_ clean_row seq_row
-    let (renderer,x,y,design_size,size)=get_renderer_with_transform window_id window
-    let new_left=x+div (design_left*size) design_size
-    let new_right=x+div (design_right*size) design_size
-    let new_up=y+div (design_up*size) design_size
-    let new_down=y+div (design_down*size) design_size
-    new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (new_right-new_left) delta_height seq_paragraph DS.Empty
-    return (Leaf_widget next_id (Text window_id row find delta_height design_left design_right design_up design_down new_left new_right new_up new_down seq_paragraph new_seq_row))
-update_text_a _ _ _ _=error "updata_text_a: not a text widget"
 
 find_font::Find->(DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->Int->Int->DS.Seq Int->FP.Ptr SRF.Font)
 find_font Equal=find_font_equal

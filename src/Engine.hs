@@ -87,6 +87,8 @@ run_widget event (Trigger handle) engine=handle event engine
 run_widget event (Io_trigger hendle) engine=create_request (Io_request (hendle event)) engine
 run_widget _ (Data _) engine=engine
 run_widget _ (Font _) engine=engine
+run_widget _ (Rectangle {}) engine=engine
+run_widget _ (Picture {}) engine=engine
 run_widget _ (Text {}) engine=engine
 
 clean_engine::Engine a->IO ()

@@ -77,6 +77,10 @@ get_renderer_window window_id window=case DIS.lookup window_id window of
     Nothing->error "get_renderer: No such window"
     Just (Window _ _ renderer _ _ _ _ _ _)->renderer
 
+get_transform::Int->DIS.IntMap Window->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+get_transform window_id window=case DIS.lookup window_id window of
+    Nothing->error "get_transform: No such window"
+    Just (Window _ _ _ _ _ x y design_size size)->(x,y,design_size,size)
 
 get_renderer_with_transform::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
 get_renderer_with_transform window_id window=case DIS.lookup window_id window of
