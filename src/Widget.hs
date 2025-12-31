@@ -148,7 +148,7 @@ replace_widget_a seq_single_id count_id combined_id single_id start_id window co
             Just (Leaf_widget _ _)->error "replace_widget_a: wrong seq_single_id"
             Just (Node_widget _ _ new_combined_id)->replace_widget_a other_seq_single_id count_id new_combined_id new_single_id start_id window combined_widget_request widget
 
-create_widget_trigger::(Engine a->Id)->DS.Seq Int->DIS.IntMap (DS.Seq (DS.Seq Int))->Engine a->IO (Engine a)
+create_widget_trigger::(Event->Engine a->Id)->DS.Seq Int->DIS.IntMap (DS.Seq (DS.Seq Int))->Engine a->IO (Engine a)
 create_widget_trigger next_id seq_id id_map=create_widget seq_id (Leaf_widget_request next_id (Io_trigger_request (create_widget_trigger_a id_map)))
 
 create_widget_trigger_a::DIS.IntMap (DS.Seq (DS.Seq Int))->Event->Engine a->IO (Engine a)
@@ -173,7 +173,7 @@ update_widget_a start_id window widget (Leaf_widget next_id (Text window_id row 
     return (Leaf_widget next_id (Text window_id row find delta_height left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (y+div (down*size) design_size) seq_paragraph new_seq_row))
 update_widget_a _ _ _ _=error "updata_text_a: wrong widget"
 
-create_window_trigger::(Engine a->Id)->DS.Seq Int->DS.Seq Int->Engine a->IO (Engine a)
+create_window_trigger::(Event->Engine a->Id)->DS.Seq Int->DS.Seq Int->Engine a->IO (Engine a)
 create_window_trigger next_id seq_id seq_window_id=create_widget seq_id (Leaf_widget_request next_id (Io_trigger_request (create_window_trigger_a seq_window_id)))
 
 create_window_trigger_a::DS.Seq Int->Event->Engine a->IO (Engine a)
@@ -255,6 +255,6 @@ alter_single_widget start_id window widget (Text_request window_id row find delt
         Nothing->error "alter_single_widget: no such window_id"
         Just (Window _ _ renderer _ _ x y design_window_size window_size)->do
             DF.mapM_ clean_row seq_row
-            new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_window_size window_size 0 0 (right-left) delta_height seq_paragraph DS.Empty
+            new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_window_size window_size 0 0 (div ((right-left)*window_size) design_window_size) delta_height seq_paragraph DS.Empty
             return (Text window_id row find delta_height left right up down (x+div (left*window_size) design_window_size) (y+div (up*window_size) design_window_size) (y+div (down*window_size) design_window_size) seq_paragraph new_seq_row)
     _->error "alter_single_widget: not a text widget"

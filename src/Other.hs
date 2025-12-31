@@ -87,7 +87,7 @@ get_renderer_with_transform window_id window=case DIS.lookup window_id window of
     Nothing->error "get_renderer_with_transform: No such window"
     Just (Window _ _ renderer _ _ x y design_size size)->(renderer,x,y,design_size,size)
 
-get_next_id::Combined_widget a->(Engine a->Id)
+get_next_id::Combined_widget a->(Event->Engine a->Id)
 get_next_id (Leaf_widget next_single_id _)=next_single_id
 get_next_id (Node_widget next_single_id _ _)=next_single_id
 

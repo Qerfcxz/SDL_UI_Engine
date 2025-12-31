@@ -69,7 +69,7 @@ run_event start_id main_id single_id_history event engine@(Engine widget _ _ _ _
 run_event_a::Data a=>Int->Int->DS.Seq Int->DIS.IntMap (Combined_widget a)->Event->Engine a->Engine a
 run_event_a combined_id single_id single_id_history intmap_combined_widget event engine=case DIS.lookup single_id intmap_combined_widget of
     Nothing->error "run_event_a: No such single_id"
-    Just combined_widget->let new_engine@(Engine new_widget _ _ _ _ _ _)=run_event_b combined_widget event engine in case get_next_id combined_widget new_engine of
+    Just combined_widget->let new_engine@(Engine new_widget _ _ _ _ _ _)=run_event_b combined_widget event engine in case get_next_id combined_widget event new_engine of
         End->new_engine
         Goto new_single_id->case DIS.lookup combined_id new_widget of
             Nothing->error "run_event_a: you changed combined_id without proper design"
