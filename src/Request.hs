@@ -88,13 +88,13 @@ do_request (Render_text_widget seq_id) engine=case get_combined_widget seq_id en
     Leaf_widget _ (Text window_id row _ _ _ _ _ _ _ left up down _ seq_row)->case DS.drop row seq_row of
         DS.Empty->return engine
         (new_row DS.:<| other_seq_row)->let renderer=get_renderer window_id engine in case new_row of
-            Blank y row_height->if down<up+row_height then return engine else let new_up=up-y in do
-                render_seq_row left new_up down renderer other_seq_row
-                return engine
             Row seq_texture y row_height->if down<up+row_height then return engine else let new_up=up-y in do
                     render_seq_texture left new_up down renderer seq_texture
                     render_seq_row left new_up down renderer other_seq_row
                     return engine
+            Row_blank y row_height->if down<up+row_height then return engine else let new_up=up-y in do
+                render_seq_row left new_up down renderer other_seq_row
+                return engine
     _->error "do_request: not a text widget"
 
 render_seq_texture::FCT.CInt->FCT.CInt->FCT.CInt->SRT.Renderer->DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO ()
@@ -106,7 +106,7 @@ render_seq_texture left up down renderer ((texture,x,y,width,height) DS.:<| seq_
 render_seq_row::FCT.CInt->FCT.CInt->FCT.CInt->SRT.Renderer->DS.Seq Row->IO ()
 render_seq_row _ _ _ _ DS.Empty=return ()
 render_seq_row left up down renderer (row DS.:<| seq_row)=case row of
-    Blank y row_height->if down<up+y+row_height then return () else render_seq_row left up down renderer seq_row
     Row seq_texture y row_height->if down<up+y+row_height then return () else do
         render_seq_texture left up down renderer seq_texture
         render_seq_row left up down renderer seq_row
+    Row_blank y row_height->if down<up+y+row_height then return () else render_seq_row left up down renderer seq_row

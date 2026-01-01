@@ -59,7 +59,6 @@ run_request (request DS.:<| other_request) engine=do
     new_engine<-do_request request engine
     run_request other_request new_engine
 
-
 run_event::Data a=>Int->Int->DS.Seq Int->Event->Engine a->Engine a
 run_event start_id main_id single_id_history event engine@(Engine widget _ _ _ _ _ _)=case DIS.lookup start_id widget of
     Nothing->error "run_event: you changed start_id without proper design"

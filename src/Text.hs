@@ -44,16 +44,22 @@ to_texture renderer this_color font text=do
 from_paragraph::DIS.IntMap (DIS.IntMap (Combined_widget a))->SRT.Renderer->(DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->Int->Int->DS.Seq Int->FP.Ptr SRF.Font)->Int->Int->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq Paragraph->DS.Seq Row->IO (DS.Seq Row)
 from_paragraph _ _ _ _ _ _ _ _ _ _ _ DS.Empty seq_texture=return seq_texture
 from_paragraph widget renderer find window_id start_id design_window_size window_size left up width delta_height (seq_paragraph DS.:<| other_seq_paragraph) seq_texture=let new_find=find widget design_window_size window_size start_id in case seq_paragraph of
+    Paragraph seq_text typesetting->case typesetting of
+        Typesetting_left->do
+            (new_seq_texture,new_up)<-by_left renderer new_find left up width width delta_height 0 0 seq_text DS.Empty seq_texture
+            from_paragraph widget renderer find window_id start_id design_window_size window_size left new_up width delta_height other_seq_paragraph new_seq_texture
+        Typesetting_right->do
+            (new_seq_texture,new_up)<-by_right renderer new_find left up width width delta_height 0 0 seq_text DS.Empty seq_texture
+            from_paragraph widget renderer find window_id start_id design_window_size window_size left new_up width delta_height other_seq_paragraph new_seq_texture
+        Typesetting_center->do
+            (new_seq_texture,new_up)<-by_center renderer new_find left up width width delta_height 0 0 seq_text DS.Empty seq_texture
+            from_paragraph widget renderer find window_id start_id design_window_size window_size left new_up width delta_height other_seq_paragraph new_seq_texture
     Paragraph_blank seq_id size->do
         let font=new_find size seq_id
         ascent<-SRF.fontAscent font
         descent<-SRF.fontDescent font
         let new_height=ascent-descent
-        from_paragraph widget renderer find window_id start_id design_window_size window_size left (up+new_height+delta_height) width delta_height other_seq_paragraph (seq_texture DS.|> Blank up new_height)
-    Paragraph_left seq_text->do
-        (new_seq_texture,new_up)<-by_left renderer new_find left up width width delta_height 0 0 seq_text DS.Empty seq_texture
-        from_paragraph widget renderer find window_id start_id design_window_size window_size left new_up width delta_height other_seq_paragraph new_seq_texture
-    _->error "unfinished"
+        from_paragraph widget renderer find window_id start_id design_window_size window_size left (up+new_height+delta_height) width delta_height other_seq_paragraph (seq_texture DS.|> Row_blank up new_height)
 
 by_left::SRT.Renderer->(Int->DS.Seq Int->FP.Ptr SRF.Font)->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DT.Text,Color,DS.Seq Int,Int)->DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->DS.Seq Row->IO (DS.Seq Row,FCT.CInt)
 by_left _ _ _ up _ _ delta_height max_ascent min_descent DS.Empty seq_texture seq_row=return (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,this_x,up+max_ascent-this_ascent,this_width,this_height)) seq_texture) up (max_ascent-min_descent),up+max_ascent-min_descent+delta_height)
@@ -89,6 +95,76 @@ by_left_b renderer left up width this_height delta_height this_color font text s
     if left_length==0 then error "by_left_b: too large font" else do
         texture<-DTF.withCString left_text (to_texture renderer this_color font)
         if right_length==0 then return (seq_row,texture,last_width,up) else by_left_b renderer left (up+this_height+delta_height) width this_height delta_height this_color font right_text (seq_row DS.|> Row (DS.singleton (texture,left,up,width-last_width,this_height)) up this_height)
+
+by_right::SRT.Renderer->(Int->DS.Seq Int->FP.Ptr SRF.Font)->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DT.Text,Color,DS.Seq Int,Int)->DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->DS.Seq Row->IO (DS.Seq Row,FCT.CInt)
+by_right _ _ _ up _ last_width delta_height max_ascent min_descent DS.Empty seq_texture seq_row=return (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,last_width+this_x,up+max_ascent-this_ascent,this_width,this_height)) seq_texture) up (max_ascent-min_descent),up+max_ascent-min_descent+delta_height)
+by_right renderer find left up width last_width delta_height max_ascent min_descent ((text,this_color,seq_id,size) DS.:<| seq_text) seq_texture seq_row=if DT.null text then by_right renderer find left up width last_width delta_height max_ascent min_descent seq_text seq_texture seq_row else let font=find size seq_id in FMA.alloca $ \new_color->do
+    (left_length,right_length,new_last_width,left_text,right_text)<-cut_text last_width font text
+    if DS.null seq_texture
+        then if left_length==0 then error "by_right: too large font" else do
+            ascent<-SRF.fontAscent font
+            descent<-SRF.fontDescent font
+            FS.poke new_color this_color
+            texture<-DTF.withCString left_text (to_texture renderer new_color font)
+            let new_height=ascent-descent
+            if right_length==0 then let new_ascent=max ascent max_ascent in let new_descent=min descent min_descent in by_right renderer find left up width new_last_width delta_height new_ascent new_descent seq_text (DS.singleton (texture,left+width-last_width,ascent,last_width-new_last_width,new_height)) seq_row else do
+                (new_seq_row,new_texture,new_new_last_width,new_up)<-by_right_b renderer left (up+new_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (DS.singleton (texture,new_last_width+left,up,last_width-new_last_width,new_height)) up new_height)
+                by_right renderer find left new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,left,ascent,width-new_new_last_width,new_height)) new_seq_row
+        else do
+            ascent<-SRF.fontAscent font
+            descent<-SRF.fontDescent font
+            FS.poke new_color this_color
+            let new_height=ascent-descent in if left_length==0
+                then let row_height=max_ascent-min_descent in do
+                    (new_seq_row,new_texture,new_new_last_width,new_up)<-by_right_b renderer left (up+row_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,new_last_width+this_x,up+max_ascent-this_ascent,this_width,this_height)) seq_texture) up row_height)
+                    by_right renderer find left new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,left,ascent,width-new_new_last_width,new_height)) new_seq_row
+                else let new_ascent=max ascent max_ascent in let new_descent=min descent min_descent in let row_height=new_ascent-new_descent in do
+                    texture<-DTF.withCString left_text (to_texture renderer new_color font)
+                    if right_length==0 then by_right renderer find left up width new_last_width delta_height new_ascent new_descent seq_text (seq_texture DS.|> (texture,left+width-last_width,ascent,last_width-new_last_width,new_height)) seq_row else do
+                        (new_seq_row,new_texture,new_new_last_width,new_up)<-let base_height=up+new_ascent in by_right_b renderer left (up+row_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,new_last_width+this_x,base_height-this_ascent,this_width,this_height)) seq_texture DS.|> (texture,new_last_width+left+width-last_width,base_height-ascent,last_width-new_last_width,new_height)) up row_height)
+                        by_right renderer find left new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,left,ascent,width-new_new_last_width,new_height)) new_seq_row
+
+by_right_b::SRT.Renderer->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FP.Ptr Color->FP.Ptr SRF.Font->DT.Text->DS.Seq Row->IO (DS.Seq Row,SRT.Texture,FCT.CInt,FCT.CInt)
+by_right_b renderer left up width this_height delta_height this_color font text seq_row=do
+    (left_length,right_length,last_width,left_text,right_text)<-cut_text width font text
+    if left_length==0 then error "by_right_b: too large font" else do
+        texture<-DTF.withCString left_text (to_texture renderer this_color font)
+        if right_length==0 then return (seq_row,texture,last_width,up) else by_right_b renderer left (up+this_height+delta_height) width this_height delta_height this_color font right_text (seq_row DS.|> Row (DS.singleton (texture,last_width+left,up,width-last_width,this_height)) up this_height)
+
+by_center::SRT.Renderer->(Int->DS.Seq Int->FP.Ptr SRF.Font)->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DT.Text,Color,DS.Seq Int,Int)->DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->DS.Seq Row->IO (DS.Seq Row,FCT.CInt)
+by_center _ _ _ up _ last_width delta_height max_ascent min_descent DS.Empty seq_texture seq_row=return (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,div last_width 2+this_x,up+max_ascent-this_ascent,this_width,this_height)) seq_texture) up (max_ascent-min_descent),up+max_ascent-min_descent+delta_height)
+by_center renderer find left up width last_width delta_height max_ascent min_descent ((text,this_color,seq_id,size) DS.:<| seq_text) seq_texture seq_row=if DT.null text then by_center renderer find left up width last_width delta_height max_ascent min_descent seq_text seq_texture seq_row else let font=find size seq_id in FMA.alloca $ \new_color->do
+    (left_length,right_length,new_last_width,left_text,right_text)<-cut_text last_width font text
+    if DS.null seq_texture
+        then if left_length==0 then error "by_center: too large font" else do
+            ascent<-SRF.fontAscent font
+            descent<-SRF.fontDescent font
+            FS.poke new_color this_color
+            texture<-DTF.withCString left_text (to_texture renderer new_color font)
+            let new_height=ascent-descent
+            if right_length==0 then let new_ascent=max ascent max_ascent in let new_descent=min descent min_descent in by_center renderer find left up width new_last_width delta_height new_ascent new_descent seq_text (DS.singleton (texture,left+width-last_width,ascent,last_width-new_last_width,new_height)) seq_row else do
+                (new_seq_row,new_texture,new_new_last_width,new_up)<-by_center_b renderer left (up+new_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (DS.singleton (texture,div new_last_width 2+left,up,last_width-new_last_width,new_height)) up new_height)
+                by_center renderer find left new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,left,ascent,width-new_new_last_width,new_height)) new_seq_row
+        else do
+            ascent<-SRF.fontAscent font
+            descent<-SRF.fontDescent font
+            FS.poke new_color this_color
+            let new_height=ascent-descent in if left_length==0
+                then let row_height=max_ascent-min_descent in do
+                    (new_seq_row,new_texture,new_new_last_width,new_up)<-by_center_b renderer left (up+row_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,div new_last_width 2+this_x,up+max_ascent-this_ascent,this_width,this_height)) seq_texture) up row_height)
+                    by_center renderer find left new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,left,ascent,width-new_new_last_width,new_height)) new_seq_row
+                else let new_ascent=max ascent max_ascent in let new_descent=min descent min_descent in let row_height=new_ascent-new_descent in do
+                    texture<-DTF.withCString left_text (to_texture renderer new_color font)
+                    if right_length==0 then by_center renderer find left up width new_last_width delta_height new_ascent new_descent seq_text (seq_texture DS.|> (texture,left+width-last_width,ascent,last_width-new_last_width,new_height)) seq_row else do
+                        (new_seq_row,new_texture,new_new_last_width,new_up)<-let base_height=up+new_ascent in by_center_b renderer left (up+row_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,div new_last_width 2+this_x,base_height-this_ascent,this_width,this_height)) seq_texture DS.|> (texture,div new_last_width 2+left+width-last_width,base_height-ascent,last_width-new_last_width,new_height)) up row_height)
+                        by_center renderer find left new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,left,ascent,width-new_new_last_width,new_height)) new_seq_row
+
+by_center_b::SRT.Renderer->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FP.Ptr Color->FP.Ptr SRF.Font->DT.Text->DS.Seq Row->IO (DS.Seq Row,SRT.Texture,FCT.CInt,FCT.CInt)
+by_center_b renderer left up width this_height delta_height this_color font text seq_row=do
+    (left_length,right_length,last_width,left_text,right_text)<-cut_text width font text
+    if left_length==0 then error "by_center_b: too large font" else do
+        texture<-DTF.withCString left_text (to_texture renderer this_color font)
+        if right_length==0 then return (seq_row,texture,last_width,up) else by_center_b renderer left (up+this_height+delta_height) width this_height delta_height this_color font right_text (seq_row DS.|> Row (DS.singleton (texture,div last_width 2+left,up,width-last_width,this_height)) up this_height)
 
 find_font_equal::DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->Int->Int->DS.Seq Int->FP.Ptr SRF.Font
 find_font_equal widget design_window_size window_size start_id size seq_id=case get_combined_widget_widget start_id seq_id widget of

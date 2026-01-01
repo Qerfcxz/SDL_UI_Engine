@@ -31,9 +31,11 @@ data Combined_widget_request a=Leaf_widget_request (Event->Engine a->Id) (Single
 
 data Single_widget_request a=Data_request a|Trigger_request (Event->Engine a->Engine a)|Io_trigger_request (Event->Engine a->IO (Engine a))|Font_request DT.Text (DS.Seq Int)|Text_request Int Int Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq Paragraph)|Picture_request Int DT.Text FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Rectangle_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt
 
-data Paragraph=Paragraph_blank (DS.Seq Int) Int|Paragraph_left (DS.Seq (DT.Text,Color,DS.Seq Int,Int))|Paragraph_right (DS.Seq (DT.Text,Color,DS.Seq Int,Int))|Paragraph_center (DS.Seq (DT.Text,Color,DS.Seq Int,Int))
+data Paragraph=Paragraph (DS.Seq (DT.Text,Color,DS.Seq Int,Int)) Typesetting|Paragraph_blank (DS.Seq Int) Int
 
-data Row=Blank FCT.CInt FCT.CInt|Row (DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)) FCT.CInt FCT.CInt
+data Typesetting=Typesetting_left|Typesetting_right|Typesetting_center
+
+data Row=Row (DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)) FCT.CInt FCT.CInt|Row_blank FCT.CInt FCT.CInt
 
 data Find=Equal|Near
 

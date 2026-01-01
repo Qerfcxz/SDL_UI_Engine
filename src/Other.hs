@@ -134,8 +134,8 @@ update_combined_widget_a combined_id single_id seq_single_id update widget=case 
                 Node_widget _ _ new_combined_id->update_combined_widget_a new_combined_id new_single_id other_seq_single_id update widget
 
 clean_row::Row->IO ()
-clean_row (Blank _ _)=return ()
 clean_row (Row seq_texture _ _)=DF.mapM_ (\(texture,_,_,_,_)->SRV.destroyTexture texture) seq_texture
+clean_row (Row_blank _ _)=return ()
 
 adaptive_window::FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
 adaptive_window design_x design_y x y=let new_x=design_y*x in let new_y=design_x*y in if new_x<new_y then let common=gcd design_x x in (0,div (new_y-new_x) (2*design_x),div design_x common,div x common) else let common=gcd design_y y in (div (new_x-new_y) (2*design_y),0,div design_y common,div y common)
