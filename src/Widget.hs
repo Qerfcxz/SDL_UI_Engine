@@ -40,11 +40,8 @@ create_single_widget start_id window (Text_request window_id row find delta_heig
     Nothing->error "create_single_widget: no such window"
     Just (Window _ _ renderer _ _ x y design_size size)->let new_delta_height=div (delta_height*size) design_size in do
         seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
-        case seq_row of
-            DS.Empty->return (Text window_id row 0 False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) (y+div (up*size) design_size) (y+div (down*size) design_size) seq_paragraph seq_row)
-            _ DS.:|> this_row->case this_row of
-                Row _ this_y height->let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=DS.length seq_row-find_max seq_row new_up (this_y-new_down+height) 0 in return (Text window_id (max 0 (min row max_row)) max_row False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph seq_row)
-                Row_blank this_y height->let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=DS.length seq_row-find_max seq_row new_up (this_y-new_down+height) 0 in return (Text window_id (max 0 (min row max_row)) max_row  False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph seq_row)
+        let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max seq_row new_up new_down in return (Text window_id (max 0 (min row max_row)) max_row False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph seq_row)
+
 create_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font))
 create_font _ DS.Empty=return DIS.empty
 create_font path (size DS.:<| other_size)=do
@@ -174,11 +171,7 @@ update_widget_a start_id window widget (Leaf_widget next_id (Text window_id row 
     let (renderer,x,y,design_size,size)=get_renderer_with_transform window_id window
     let new_delta_height=div (delta_height*size) design_size
     new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
-    case new_seq_row of
-        DS.Empty->return (Leaf_widget next_id (Text window_id 0 0 bool find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) (y+div (up*size) design_size) (y+div (down*size) design_size) seq_paragraph new_seq_row))
-        (_ DS.:|> this_row)->case this_row of
-            Row _ this_y height->let new_up=(y+div (up*size) design_size) in let new_down=(y+div (down*size) design_size) in let max_row=DS.length seq_row-find_max seq_row new_up (this_y-new_down+height) 0 in return (Leaf_widget next_id (Text window_id (max 0 (min row max_row)) max_row bool find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) (y+div (up*size) design_size) (y+div (down*size) design_size) seq_paragraph new_seq_row))
-            Row_blank this_y height->let new_up=(y+div (up*size) design_size) in let new_down=(y+div (down*size) design_size) in let max_row=DS.length seq_row-find_max seq_row new_up (this_y-new_down+height) 0 in return (Leaf_widget next_id (Text window_id (max 0 (min row max_row)) max_row bool find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) (y+div (up*size) design_size) (y+div (down*size) design_size) seq_paragraph new_seq_row))
+    let new_up=(y+div (up*size) design_size) in let new_down=(y+div (down*size) design_size) in let max_row=find_max new_seq_row new_up new_down in return (Leaf_widget next_id (Text window_id (max 0 (min row max_row)) max_row bool find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row))
 update_widget_a _ _ _ _=error "updata_text_a: wrong widget"
 
 create_window_trigger::(Event->Engine a->Id)->DS.Seq Int->DS.Seq Int->Engine a->IO (Engine a)
@@ -287,9 +280,5 @@ alter_single_widget start_id window widget (Text_request window_id row find delt
             DF.mapM_ clean_row seq_row
             let new_delta_height=div (delta_height*size) design_size
             new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
-            case new_seq_row of
-                DS.Empty->return (Text window_id row 0 False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) (y+div (up*size) design_size) (y+div (down*size) design_size) seq_paragraph new_seq_row)
-                (_ DS.:|> this_row)->case this_row of
-                    Row _ this_y height->let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=DS.length new_seq_row-find_max new_seq_row new_up (this_y-new_down+height) 0 in return (Text window_id (max 0 (min max_row row)) max_row False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row)
-                    Row_blank this_y height->let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=DS.length new_seq_row-find_max new_seq_row new_up (this_y-new_down+height) 0 in return (Text window_id (max 0 (min max_row row)) max_row False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row)
+            let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max new_seq_row new_up new_down in return (Text window_id (max 0 (min max_row row)) max_row False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row)
     _->error "alter_single_widget: not a text widget"

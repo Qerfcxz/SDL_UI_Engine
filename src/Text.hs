@@ -188,8 +188,14 @@ find_font::Find->(DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CIn
 find_font Equal=find_font_equal
 find_font Near=find_font_near
 
-find_max::DS.Seq Row->FCT.CInt->FCT.CInt->Int->Int
-find_max DS.Empty _ _ number=number
-find_max (seq_row DS.:|> row) up delta_height number=case row of
-    Row_blank y _->if y<up+delta_height then number else find_max seq_row up delta_height (number+1)
-    Row _ y _->if y<up+delta_height then number else find_max seq_row up delta_height (number+1)
+find_max::DS.Seq Row->FCT.CInt->FCT.CInt->Int
+find_max DS.Empty _ _=0
+find_max (seq_row DS.:|> row) up down=case row of
+    Row _ y height->if down<up+height then error "find_max: too large font" else DS.length seq_row-find_max_a seq_row up (y+height-down) 0
+    Row_blank y height->if down<up+height then error "find_max: too large font" else DS.length seq_row-find_max_a seq_row up (y+height-down) 0
+
+find_max_a::DS.Seq Row->FCT.CInt->FCT.CInt->Int->Int
+find_max_a DS.Empty _ _ number=number
+find_max_a (seq_row DS.:|> row) up delta_height number=case row of
+    Row _ y _->if y<up+delta_height then number else find_max_a seq_row up delta_height (number+1)
+    Row_blank y _->if y<up+delta_height then number else find_max_a seq_row up delta_height (number+1)
