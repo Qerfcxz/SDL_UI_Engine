@@ -46,13 +46,13 @@ from_paragraph _ _ _ _ _ _ _ _ _ _ _ DS.Empty seq_texture=return seq_texture
 from_paragraph widget renderer find window_id start_id design_window_size window_size left up width delta_height (seq_paragraph DS.:<| other_seq_paragraph) seq_texture=let new_find=find widget design_window_size window_size start_id in case seq_paragraph of
     Paragraph seq_text typesetting->case typesetting of
         Typesetting_left->do
-            (new_seq_texture,new_up)<-by_left renderer new_find left up width width delta_height 0 0 seq_text DS.Empty seq_texture
+            (new_seq_texture,new_up)<-by_left renderer new_find left up width width delta_height 0 0 seq_text DS.empty seq_texture
             from_paragraph widget renderer find window_id start_id design_window_size window_size left new_up width delta_height other_seq_paragraph new_seq_texture
         Typesetting_right->do
-            (new_seq_texture,new_up)<-by_right renderer new_find left up width width delta_height 0 0 seq_text DS.Empty seq_texture
+            (new_seq_texture,new_up)<-by_right renderer new_find left up width width delta_height 0 0 seq_text DS.empty seq_texture
             from_paragraph widget renderer find window_id start_id design_window_size window_size left new_up width delta_height other_seq_paragraph new_seq_texture
         Typesetting_center->do
-            (new_seq_texture,new_up)<-by_center renderer new_find left up width width delta_height 0 0 seq_text DS.Empty seq_texture
+            (new_seq_texture,new_up)<-by_center renderer new_find left up width width delta_height 0 0 seq_text DS.empty seq_texture
             from_paragraph widget renderer find window_id start_id design_window_size window_size left new_up width delta_height other_seq_paragraph new_seq_texture
     Paragraph_blank seq_id size->do
         let font=new_find size seq_id
@@ -187,3 +187,9 @@ find_font_near widget design_window_size window_size start_id size seq_id=case g
 find_font::Find->(DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->Int->Int->DS.Seq Int->FP.Ptr SRF.Font)
 find_font Equal=find_font_equal
 find_font Near=find_font_near
+
+find_max::DS.Seq Row->FCT.CInt->FCT.CInt->Int->Int
+find_max DS.Empty _ _ number=number
+find_max (seq_row DS.:|> row) up delta_height number=case row of
+    Row_blank y _->if y<up+delta_height then number else find_max seq_row up delta_height (number+1)
+    Row _ y _->if y<up+delta_height then number else find_max seq_row up delta_height (number+1)

@@ -39,7 +39,7 @@ run_engine timer_setting engine=do
 
 loop_engine_time::Data a=>DW.Word32->Engine a->IO()
 loop_engine_time time_event_type (Engine widget window window_map request count_id start_id main_id)=do
-    new_engine@(Engine _ _ new_window_map _ _ new_start_id new_main_id)<-run_request request (Engine widget window window_map DS.Empty count_id start_id main_id)
+    new_engine@(Engine _ _ new_window_map _ _ new_start_id new_main_id)<-run_request request (Engine widget window window_map DS.empty count_id start_id main_id)
     event<-get_event new_window_map (Just time_event_type)
     case event of
         Quit->clean_engine new_engine
@@ -47,7 +47,7 @@ loop_engine_time time_event_type (Engine widget window window_map request count_
 
 loop_engine::Data a=>Engine a->IO()
 loop_engine (Engine widget window window_map request count_id start_id main_id)=do
-    new_engine@(Engine _ _ new_window_map _ _ new_start_id new_main_id)<-run_request request (Engine widget window window_map DS.Empty count_id start_id main_id)
+    new_engine@(Engine _ _ new_window_map _ _ new_start_id new_main_id)<-run_request request (Engine widget window window_map DS.empty count_id start_id main_id)
     event<-get_event new_window_map Nothing
     case event of
         Quit->clean_engine new_engine
@@ -83,7 +83,7 @@ run_event_b (Node_widget _ main_single_id combined_id) event engine=run_event co
 
 run_widget::Data a=>Event->Single_widget a->Engine a->Engine a
 run_widget event (Trigger handle) engine=handle event engine
-run_widget event (Io_trigger hendle) engine=create_request (Io_request (hendle event)) engine
+run_widget event (Io_trigger handle) engine=create_request (Io_request (handle event)) engine
 run_widget _ (Data _) engine=engine
 run_widget _ (Font _) engine=engine
 run_widget _ (Rectangle {}) engine=engine
