@@ -108,9 +108,9 @@ update_paragraph_d row paragraph_id intmap_texture seq_map=case DS.lookup row se
             update_paragraph_d row paragraph_id new_intmap_texture (DS.deleteAt row seq_map)
         else return (intmap_texture,seq_map)
 
-left_cursor::FP.Ptr SRF.Font->DIS.IntMap DT.Text->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->Cursor->IO (Cursor,Bool)
-left_cursor _ _ _ _ Cursor_none=return (Cursor_none,False)
-left_cursor font intmap_text intmap_intmap_texture seq_map cursor@(Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ _)=case DIS.lookup cursor_paragraph_id intmap_intmap_texture of
+left_cursor::Int->FP.Ptr SRF.Font->DIS.IntMap DT.Text->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->Cursor->IO (Maybe (Cursor,Int))
+left_cursor _ _ _ _ _ Cursor_none=return Nothing
+left_cursor row font intmap_text intmap_intmap_texture seq_map (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ _)=case DIS.lookup cursor_paragraph_id intmap_intmap_texture of
     Nothing->error "left_cursor: you changed something without proper design"
     Just intmap_texture->case DIS.lookup cursor_row_id intmap_texture of
         Nothing->error "left_cursor: you changed something without proper design"
@@ -119,19 +119,20 @@ left_cursor font intmap_text intmap_intmap_texture seq_map cursor@(Cursor_single
                 Nothing->error "left_cursor: you changed something without proper design"
                 Just text->do
                     width<-get_width font (DT.take (cursor_text_number-1-first_number) (DT.drop first_number text))
-                    return (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id (cursor_text_number-1) (x+width) (x+width),True)
+                    return (Just (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id (cursor_text_number-1) (x+width) (x+width),row))
             else let new_cursor_number_row=cursor_number_row-1 in case DS.lookup new_cursor_number_row seq_map of
-                Nothing->return (cursor,False)
+                Nothing->return Nothing
                 Just (paragraph_id,row_id)->case DIS.lookup paragraph_id intmap_intmap_texture of
                     Nothing->error "left_cursor: you changed something without proper design"
                     Just new_intmap_texture->case DIS.lookup row_id new_intmap_texture of
                         Nothing->error "left_cursor: you changed something without proper design"
-                        Just (_,new_x,width,new_text_number,new_first_number)->let new_new_x=new_x+width in return (Cursor_single new_cursor_number_row paragraph_id row_id (new_text_number+new_first_number) new_new_x new_new_x,True)
-left_cursor _ _ _ _ (Cursor_double _ cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ _ _ _ x_render x_click _ _)=return (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number x_render x_click,True)
+                        Just (_,new_x,width,new_text_number,new_first_number)->let new_new_x=new_x+width in return (Just (Cursor_single new_cursor_number_row paragraph_id row_id (new_text_number+new_first_number) new_new_x new_new_x,if cursor_number_row==row then row-1 else row))
+left_cursor row _ _ _ _ (Cursor_double _ cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ _ _ _ x_render x_click _ _)=return (Just (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number x_render x_click,row))
+--Cursor_double有问题
 
-right_cursor::FP.Ptr SRF.Font->DIS.IntMap DT.Text->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->Cursor->IO (Cursor,Bool)
-right_cursor _ _ _ _ Cursor_none=return (Cursor_none,False)
-right_cursor font intmap_text intmap_intmap_texture seq_map cursor@(Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ _)=case DIS.lookup cursor_paragraph_id intmap_intmap_texture of
+right_cursor::Int->Int->FP.Ptr SRF.Font->DIS.IntMap DT.Text->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->Cursor->IO (Maybe (Cursor,Int))
+right_cursor _ _ _ _ _ _ Cursor_none=return Nothing
+right_cursor row row_number font intmap_text intmap_intmap_texture seq_map (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ _)=case DIS.lookup cursor_paragraph_id intmap_intmap_texture of
     Nothing->error "right_cursor: you changed something without proper design"
     Just intmap_texture->case DIS.lookup cursor_row_id intmap_texture of
         Nothing->error "right_cursor: you changed something without proper design"
@@ -140,24 +141,25 @@ right_cursor font intmap_text intmap_intmap_texture seq_map cursor@(Cursor_singl
                 Nothing->error "right_cursor: you changed something without proper design"
                 Just text->do
                     width<-get_width font (DT.take (cursor_text_number+1-first_number) (DT.drop first_number text))
-                    return (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id (cursor_text_number+1) (x+width) (x+width),True)
+                    return (Just (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id (cursor_text_number+1) (x+width) (x+width),row))
             else let new_cursor_number_row=cursor_number_row+1 in case DS.lookup new_cursor_number_row seq_map of
-                Nothing->return (cursor,False)
+                Nothing->return Nothing
                 Just (paragraph_id,row_id)->case DIS.lookup paragraph_id intmap_intmap_texture of
                     Nothing->error "right_cursor: you changed something without proper design"
                     Just new_intmap_texture->case DIS.lookup row_id new_intmap_texture of
                         Nothing->error "right_cursor: you changed something without proper design"
-                        Just (_,new_x,_,_,new_first_number)->return (Cursor_single new_cursor_number_row paragraph_id row_id new_first_number new_x new_x,True)
-right_cursor _ _ _ _ (Cursor_double _ _ _ _ _ cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ _ x_render x_click)=return (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number x_render x_click,True)
+                        Just (_,new_x,_,_,new_first_number)->return (Just (Cursor_single new_cursor_number_row paragraph_id row_id new_first_number new_x new_x,if cursor_number_row==row+row_number-1 then row+1 else row))
+right_cursor row _ _ _ _ _ (Cursor_double _ _ _ _ _ cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ _ x_render x_click)=return (Just (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number x_render x_click,row))
+--Cursor_double有问题
 
-up_cursor::FP.Ptr SRF.Font->DIS.IntMap DT.Text->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->Cursor->IO (Cursor,Bool)
-up_cursor _ _ _ _ Cursor_none=return (Cursor_none,False)
-up_cursor font intmap_text intmap_intmap_texture seq_map cursor@(Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ cursor_x_click)=case DS.lookup (cursor_number_row-1) seq_map of
+up_cursor::Int->FP.Ptr SRF.Font->DIS.IntMap DT.Text->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->Cursor->IO (Maybe (Cursor,Int))
+up_cursor _ _ _ _ _ Cursor_none=return Nothing
+up_cursor row font intmap_text intmap_intmap_texture seq_map (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ cursor_x_click)=case DS.lookup (cursor_number_row-1) seq_map of
     Nothing->case DIS.lookup cursor_paragraph_id intmap_intmap_texture of
         Nothing->error "up_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup cursor_row_id intmap_texture of
             Nothing->error "up_cursor: you changed something without proper design"
-            Just (_,x,_,_,first_number)->if cursor_text_number==first_number then return (cursor,False) else return (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id first_number x x,True)
+            Just (_,x,_,_,first_number)->if cursor_text_number==first_number then return Nothing else return (Just (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id first_number x x,row))
     Just (paragraph_id,row_id)->case DIS.lookup paragraph_id intmap_intmap_texture of
         Nothing->error "up_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup row_id intmap_texture of
@@ -166,15 +168,15 @@ up_cursor font intmap_text intmap_intmap_texture seq_map cursor@(Cursor_single c
                 Nothing->error"up_cursor: you changed something without proper design"
                 Just text->do
                     (left_length,right_length,last_width,_,right_text)<-cut_text (cursor_x_click-x) font (DT.take text_number (DT.drop first_number text))
-                    if right_length==0 then return (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,True) else do
+                    if right_length==0 then return (Just (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,if cursor_number_row==row then row-1 else row)) else do
                         new_width<-get_width font (DT.take 1 right_text)
-                        if div new_width 2<last_width then return (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length+1) (cursor_x_click+new_width-last_width) cursor_x_click,True) else return (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,True)
-up_cursor font intmap_text intmap_intmap_texture seq_map (Cursor_double bool cursor_number_row_start cursor_paragraph_id_start cursor_row_id_start cursor_text_number_start cursor_number_row_end cursor_paragraph_id_end cursor_row_id_end cursor_text_number_end cursor_x_render_start cursor_x_click_start cursor_x_render_end cursor_x_click_end)=let (cursor_number_row,cursor_paragraph_id,cursor_row_id,_,_,cursor_x_click)=if bool then (cursor_number_row_start,cursor_paragraph_id_start,cursor_row_id_start,cursor_text_number_start,cursor_x_render_start,cursor_x_click_start) else (cursor_number_row_end,cursor_paragraph_id_end,cursor_row_id_end,cursor_text_number_end,cursor_x_render_end,cursor_x_click_end) in case DS.lookup (cursor_number_row-1) seq_map of
+                        if div new_width 2<last_width then return (Just (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length+1) (cursor_x_click+new_width-last_width) cursor_x_click,if cursor_number_row==row then row-1 else row)) else return (Just (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,if cursor_number_row==row then row-1 else row))
+up_cursor row font intmap_text intmap_intmap_texture seq_map (Cursor_double bool cursor_number_row_start cursor_paragraph_id_start cursor_row_id_start cursor_text_number_start cursor_number_row_end cursor_paragraph_id_end cursor_row_id_end cursor_text_number_end cursor_x_render_start cursor_x_click_start cursor_x_render_end cursor_x_click_end)=let (cursor_number_row,cursor_paragraph_id,cursor_row_id,_,_,cursor_x_click)=if bool then (cursor_number_row_start,cursor_paragraph_id_start,cursor_row_id_start,cursor_text_number_start,cursor_x_render_start,cursor_x_click_start) else (cursor_number_row_end,cursor_paragraph_id_end,cursor_row_id_end,cursor_text_number_end,cursor_x_render_end,cursor_x_click_end) in case DS.lookup (cursor_number_row-1) seq_map of
     Nothing->case DIS.lookup cursor_paragraph_id intmap_intmap_texture of
         Nothing->error "up_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup cursor_row_id intmap_texture of
             Nothing->error "up_cursor: you changed something without proper design"
-            Just (_,x,_,_,first_number)->return (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id first_number x x,True)
+            Just (_,x,_,_,first_number)->return (Just (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id first_number x x,row))
     Just (paragraph_id,row_id)->case DIS.lookup paragraph_id intmap_intmap_texture of
         Nothing->error "up_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup row_id intmap_texture of
@@ -183,18 +185,18 @@ up_cursor font intmap_text intmap_intmap_texture seq_map (Cursor_double bool cur
                 Nothing->error"up_cursor: you changed something without proper design"
                 Just text->do
                     (left_length,right_length,last_width,_,right_text)<-cut_text (cursor_x_click-x) font (DT.take text_number (DT.drop first_number text))
-                    if right_length==0 then return (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,True) else do
+                    if right_length==0 then return (Just (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,if cursor_number_row==row then row-1 else row)) else do
                         new_width<-get_width font (DT.take 1 right_text)
-                        if div new_width 2<last_width then return (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length+1) (cursor_x_click+new_width-last_width) cursor_x_click,True) else return (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,True)
+                        if div new_width 2<last_width then return (Just (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length+1) (cursor_x_click+new_width-last_width) cursor_x_click,if cursor_number_row==row then row-1 else row)) else return (Just (Cursor_single (cursor_number_row-1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,if cursor_number_row==row then row-1 else row))
 
-down_cursor::FP.Ptr SRF.Font->DIS.IntMap DT.Text->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->Cursor->IO (Cursor,Bool)
-down_cursor _ _ _ _ Cursor_none=return (Cursor_none,False)
-down_cursor font intmap_text intmap_intmap_texture seq_map cursor@(Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ cursor_x_click)=case DS.lookup (cursor_number_row+1) seq_map of
+down_cursor::Int->Int->FP.Ptr SRF.Font->DIS.IntMap DT.Text->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->Cursor->IO (Maybe (Cursor,Int))
+down_cursor _ _ _ _ _ _ Cursor_none=return Nothing
+down_cursor row row_number font intmap_text intmap_intmap_texture seq_map (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id cursor_text_number _ cursor_x_click)=case DS.lookup (cursor_number_row+1) seq_map of
     Nothing->case DIS.lookup cursor_paragraph_id intmap_intmap_texture of
         Nothing->error "down_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup cursor_row_id intmap_texture of
             Nothing->error "down_cursor: you changed something without proper design"
-            Just (_,x,width,text_number,first_number)->if cursor_text_number==first_number+text_number then return (cursor,False) else return (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id (first_number+text_number) (x+width) (x+width),True)
+            Just (_,x,width,text_number,first_number)->if cursor_text_number==first_number+text_number then return Nothing else return (Just (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id (first_number+text_number) (x+width) (x+width),row))
     Just (paragraph_id,row_id)->case DIS.lookup paragraph_id intmap_intmap_texture of
         Nothing->error "down_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup row_id intmap_texture of
@@ -203,15 +205,15 @@ down_cursor font intmap_text intmap_intmap_texture seq_map cursor@(Cursor_single
                 Nothing->error"down_cursor: you changed something without proper design"
                 Just text->do
                     (left_length,right_length,last_width,_,right_text)<-cut_text (cursor_x_click-x) font (DT.take text_number (DT.drop first_number text))
-                    if right_length==0 then return (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,True) else do
+                    if right_length==0 then return (Just (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,if cursor_number_row==row+row_number-1 then row+1 else row)) else do
                         new_width<-get_width font (DT.take 1 right_text)
-                        if div new_width 2<last_width then return (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length+1) (cursor_x_click+new_width-last_width) cursor_x_click,True) else return (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,True)
-down_cursor font intmap_text intmap_intmap_texture seq_map (Cursor_double bool cursor_number_row_start cursor_paragraph_id_start cursor_row_id_start cursor_text_number_start cursor_number_row_end cursor_paragraph_id_end cursor_row_id_end cursor_text_number_end cursor_x_render_start cursor_x_click_start cursor_x_render_end cursor_x_click_end)=let (cursor_number_row,cursor_paragraph_id,cursor_row_id,_,_,cursor_x_click)=if bool then (cursor_number_row_start,cursor_paragraph_id_start,cursor_row_id_start,cursor_text_number_start,cursor_x_render_start,cursor_x_click_start) else (cursor_number_row_end,cursor_paragraph_id_end,cursor_row_id_end,cursor_text_number_end,cursor_x_render_end,cursor_x_click_end) in case DS.lookup (cursor_number_row+1) seq_map of
+                        if div new_width 2<last_width then return (Just (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length+1) (cursor_x_click+new_width-last_width) cursor_x_click,if cursor_number_row==row+row_number-1 then row+1 else row)) else return (Just (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,if cursor_number_row==row+row_number-1 then row+1 else row))
+down_cursor row row_number font intmap_text intmap_intmap_texture seq_map (Cursor_double bool cursor_number_row_start cursor_paragraph_id_start cursor_row_id_start cursor_text_number_start cursor_number_row_end cursor_paragraph_id_end cursor_row_id_end cursor_text_number_end cursor_x_render_start cursor_x_click_start cursor_x_render_end cursor_x_click_end)=let (cursor_number_row,cursor_paragraph_id,cursor_row_id,_,_,cursor_x_click)=if bool then (cursor_number_row_start,cursor_paragraph_id_start,cursor_row_id_start,cursor_text_number_start,cursor_x_render_start,cursor_x_click_start) else (cursor_number_row_end,cursor_paragraph_id_end,cursor_row_id_end,cursor_text_number_end,cursor_x_render_end,cursor_x_click_end) in case DS.lookup (cursor_number_row+1) seq_map of
     Nothing->case DIS.lookup cursor_paragraph_id intmap_intmap_texture of
         Nothing->error "down_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup cursor_row_id intmap_texture of
             Nothing->error "down_cursor: you changed something without proper design"
-            Just (_,x,width,text_number,first_number)->return (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id (first_number+text_number) (x+width) (x+width),True)
+            Just (_,x,width,text_number,first_number)->return (Just (Cursor_single cursor_number_row cursor_paragraph_id cursor_row_id (first_number+text_number) (x+width) (x+width),row))
     Just (paragraph_id,row_id)->case DIS.lookup paragraph_id intmap_intmap_texture of
         Nothing->error "down_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup row_id intmap_texture of
@@ -220,43 +222,43 @@ down_cursor font intmap_text intmap_intmap_texture seq_map (Cursor_double bool c
                 Nothing->error"down_cursor: you changed something without proper design"
                 Just text->do
                     (left_length,right_length,last_width,_,right_text)<-cut_text (cursor_x_click-x) font (DT.take text_number (DT.drop first_number text))
-                    if right_length==0 then return (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,True) else do
+                    if right_length==0 then return (Just (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,if cursor_number_row==row+row_number-1 then row+1 else row)) else do
                         new_width<-get_width font (DT.take 1 right_text)
-                        if div new_width 2<last_width then return (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length+1) (cursor_x_click+new_width-last_width) cursor_x_click,True) else return (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,True)
+                        if div new_width 2<last_width then return (Just (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length+1) (cursor_x_click+new_width-last_width) cursor_x_click,if cursor_number_row==row+row_number-1 then row+1 else row)) else return (Just (Cursor_single (cursor_number_row+1) paragraph_id row_id (first_number+left_length) (cursor_x_click-last_width) cursor_x_click,if cursor_number_row==row+row_number-1 then row+1 else row))
 
-min_cursor::Cursor->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->(Cursor,Bool)
-min_cursor Cursor_none _ _=(Cursor_none,False)
-min_cursor cursor@(Cursor_single cursor_number_row _ _ cursor_text_number _ _) intmap_intmap_texture seq_map=if cursor_number_row==0&&cursor_text_number==0 then (cursor,False) else case seq_map of
+min_cursor::Cursor->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->Maybe Cursor
+min_cursor Cursor_none _ _=Nothing
+min_cursor (Cursor_single cursor_number_row _ _ cursor_text_number _ _) intmap_intmap_texture seq_map=if cursor_number_row==0&&cursor_text_number==0 then Nothing else case seq_map of
     DS.Empty->error "min_cursor: you changed something without proper design"
     (paragraph_id,row_id) DS.:<| _->case DIS.lookup paragraph_id intmap_intmap_texture of
         Nothing->error"min_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup row_id intmap_texture of
             Nothing->error "min_cursor: you changed something without proper design"
-            Just (_,x,_,_,_)->(Cursor_single 0 paragraph_id row_id 0 x x,True)
+            Just (_,x,_,_,_)->Just (Cursor_single 0 paragraph_id row_id 0 x x)
 min_cursor (Cursor_double {}) intmap_intmap_texture seq_map=case seq_map of
     DS.Empty->error "min_cursor: you changed something without proper design"
     (paragraph_id,row_id) DS.:<| _->case DIS.lookup paragraph_id intmap_intmap_texture of
         Nothing->error"min_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup row_id intmap_texture of
             Nothing->error "min_cursor: you changed something without proper design"
-            Just (_,x,_,_,_)->(Cursor_single 0 paragraph_id row_id 0 x x,True)
+            Just (_,x,_,_,_)->Just (Cursor_single 0 paragraph_id row_id 0 x x)
 
-max_cursor::Cursor->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->(Cursor,Bool)
-max_cursor Cursor_none _ _=(Cursor_none,False)
-max_cursor cursor@(Cursor_single cursor_number_row _ _ cursor_text_number _ _) intmap_intmap_texture seq_map=case seq_map of
+max_cursor::Cursor->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->Maybe Cursor
+max_cursor Cursor_none _ _=Nothing
+max_cursor (Cursor_single cursor_number_row _ _ cursor_text_number _ _) intmap_intmap_texture seq_map=case seq_map of
     DS.Empty->error "max_cursor: you changed something without proper design"
     other_seq_map DS.:|> (paragraph_id,row_id) ->case DIS.lookup paragraph_id intmap_intmap_texture of
         Nothing->error"max_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup row_id intmap_texture of
             Nothing->error "max_cursor: you changed something without proper design"
-            Just (_,x,width,text_number,first_number)->let new_row=DS.length other_seq_map in let new_first_number=text_number+first_number in let new_width=x+width in if cursor_number_row==new_row&&cursor_text_number==new_first_number then (cursor,False) else (Cursor_single new_row paragraph_id row_id new_first_number new_width new_width,True)
+            Just (_,x,width,text_number,first_number)->let new_row=DS.length other_seq_map in let new_first_number=text_number+first_number in let new_width=x+width in if cursor_number_row==new_row&&cursor_text_number==new_first_number then Nothing else Just (Cursor_single new_row paragraph_id row_id new_first_number new_width new_width)
 max_cursor (Cursor_double {}) intmap_intmap_texture seq_map=case seq_map of
     DS.Empty->error "max_cursor: you changed something without proper design"
     other_seq_map DS.:|> (paragraph_id,row_id) ->case DIS.lookup paragraph_id intmap_intmap_texture of
         Nothing->error"max_cursor: you changed something without proper design"
         Just intmap_texture->case DIS.lookup row_id intmap_texture of
             Nothing->error "max_cursor: you changed something without proper design"
-            Just (_,x,width,text_number,firt_number)->let new_width=x+width in (Cursor_single (DS.length other_seq_map) paragraph_id row_id (text_number+firt_number) new_width new_width,True)
+            Just (_,x,width,text_number,firt_number)->let new_width=x+width in Just (Cursor_single (DS.length other_seq_map) paragraph_id row_id (text_number+firt_number) new_width new_width)
 
 
 to_cursor::DIS.IntMap DT.Text->DIS.IntMap (DIS.IntMap (SRT.Texture,FCT.CInt,FCT.CInt,Int,Int))->DS.Seq (Int,Int)->FP.Ptr SRF.Font->Int->Int->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->IO (Int,Int,Int,Int,FCT.CInt,FCT.CInt)
