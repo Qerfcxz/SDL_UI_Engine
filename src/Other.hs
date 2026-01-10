@@ -45,6 +45,24 @@ error_insert error_message key value intmap=let (maybe_value,new_intmap)=DIS.ins
     Just _->error error_message
     Nothing->new_intmap
 
+alter_io::[Char]->Int->a->(a->IO ())->DIS.IntMap a->IO (DIS.IntMap a)
+alter_io error_message key value act=DIS.alterF (alter_io_a error_message value act) key
+
+alter_io_a::[Char]->a->(a->IO ())->Maybe a->IO (Maybe a)
+alter_io_a error_message _ _ Nothing=error error_message
+alter_io_a _ new_value act (Just value)=do
+    act value
+    return (Just new_value)
+
+delete_io::[Char]->Int->(a->IO ())->DIS.IntMap a->IO (DIS.IntMap a)
+delete_io error_message key act=DIS.alterF (delete_io_a error_message act) key
+
+delete_io_a::[Char]->(a->IO ())->Maybe a->IO (Maybe a)
+delete_io_a error_message _ Nothing=error error_message
+delete_io_a _ act (Just value)=do
+    act value
+    return Nothing
+
 error_insert_insert::[Char]->[Char]->Int->Int->a->DIS.IntMap (DIS.IntMap a)->DIS.IntMap (DIS.IntMap a)
 error_insert_insert first_error_message second_error_message first_key second_key value=DIS.alter (error_insert_insert_a first_error_message second_error_message second_key value) first_key
 
@@ -85,22 +103,22 @@ error_update_update_io_b _ update (Just value)=do
 
 get_renderer::Int->Engine a->SRT.Renderer
 get_renderer window_id (Engine _ window _ _ _ _ _)=case DIS.lookup window_id window of
-    Nothing->error "get_renderer: No such window"
+    Nothing->error "get_renderer: no such window"
     Just (Window _ _ renderer _ _ _ _ _ _)->renderer
 
 get_renderer_window::Int->DIS.IntMap Window->SRT.Renderer
 get_renderer_window window_id window=case DIS.lookup window_id window of
-    Nothing->error "get_renderer: No such window"
+    Nothing->error "get_renderer_window: no such window"
     Just (Window _ _ renderer _ _ _ _ _ _)->renderer
 
-get_transform::Int->DIS.IntMap Window->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
-get_transform window_id window=case DIS.lookup window_id window of
-    Nothing->error "get_transform: No such window"
+get_transform_window::Int->DIS.IntMap Window->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+get_transform_window window_id window=case DIS.lookup window_id window of
+    Nothing->error "get_transform_window: no such window"
     Just (Window _ _ _ _ _ x y design_size size)->(x,y,design_size,size)
 
-get_renderer_with_transform::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
-get_renderer_with_transform window_id window=case DIS.lookup window_id window of
-    Nothing->error "get_renderer_with_transform: No such window"
+get_renderer_with_transform_window::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+get_renderer_with_transform_window window_id window=case DIS.lookup window_id window of
+    Nothing->error "get_renderer_with_transform_window: no such window"
     Just (Window _ _ renderer _ _ x y design_size size)->(renderer,x,y,design_size,size)
 
 get_next_id::Combined_widget a->(Event->Engine a->Id)
@@ -108,45 +126,45 @@ get_next_id (Leaf_widget next_single_id _)=next_single_id
 get_next_id (Node_widget next_single_id _ _)=next_single_id
 
 get_font::DS.Seq Int->Engine a->DIS.IntMap (FP.Ptr SRF.Font)
-get_font seq_single_id engine=case get_combined_widget seq_single_id engine of
+get_font seq_single_id engine=case get_widget seq_single_id engine of
     Leaf_widget _ (Font font)->font
     _->error "get_font: not a font widget"
 
-get_combined_widget_widget::Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
-get_combined_widget_widget start_id seq_single_id widget=case seq_single_id of
-    DS.Empty->error "get_combined_widget_widget: empty seq_single_id"
-    single_id DS.:<| other_seq_single_id->get_combined_widget_a start_id single_id other_seq_single_id widget
+get_widget_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
+get_widget_widget seq_single_id start_id widget=case seq_single_id of
+    DS.Empty->error "get_widget_widget: empty seq_single_id"
+    single_id DS.:<| other_seq_single_id->get_widget_a start_id single_id other_seq_single_id widget
 
-get_combined_widget::DS.Seq Int->Engine a->Combined_widget a
-get_combined_widget seq_single_id (Engine widget _ _ _ _ start_id _)=case seq_single_id of
-    DS.Empty->error "get_combined_widget: empty seq_single_id"
-    (single_id DS.:<| other_seq_single_id)->get_combined_widget_a start_id single_id other_seq_single_id widget
+get_widget::DS.Seq Int->Engine a->Combined_widget a
+get_widget seq_single_id (Engine widget _ _ _ _ start_id _)=case seq_single_id of
+    DS.Empty->error "get_widget: empty seq_single_id"
+    (single_id DS.:<| other_seq_single_id)->get_widget_a start_id single_id other_seq_single_id widget
 
-get_combined_widget_a::Int->Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
-get_combined_widget_a combined_id single_id seq_single_id widget=case DIS.lookup combined_id widget of
-    Nothing->error "get_combined_widget_a: no such combined_id"
+get_widget_a::Int->Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
+get_widget_a combined_id single_id seq_single_id widget=case DIS.lookup combined_id widget of
+    Nothing->error "get_widget_a: no such combined_id"
     Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
-        Nothing->error "get_combined_widget_a: no such single_id"
+        Nothing->error "get_widget_a: no such single_id"
         Just combined_widget->case seq_single_id of
             DS.Empty->combined_widget
             (new_single_id DS.:<| other_seq_single_id)->case combined_widget of
-                Leaf_widget _ _->error "get_combined_widget_a: wrong seq_single_id"
-                Node_widget _ _ new_combined_id->get_combined_widget_a new_combined_id new_single_id other_seq_single_id widget
+                Leaf_widget _ _->error "get_widget_a: wrong seq_single_id"
+                Node_widget _ _ new_combined_id->get_widget_a new_combined_id new_single_id other_seq_single_id widget
 
 update_combined_widget::Int->DS.Seq Int->(Combined_widget a->IO (Combined_widget a))->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (DIS.IntMap (DIS.IntMap (Combined_widget a)))
 update_combined_widget start_id seq_single_id update widget=case seq_single_id of
-    DS.Empty->error "get_combined_widget: empty seq_single_id"
+    DS.Empty->error "update_combined_widget: empty seq_single_id"
     single_id DS.:<| other_seq_single_id->update_combined_widget_a start_id single_id other_seq_single_id update widget
 
 update_combined_widget_a::Int->Int->DS.Seq Int->(Combined_widget a->IO (Combined_widget a))->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (DIS.IntMap (DIS.IntMap (Combined_widget a)))
 update_combined_widget_a combined_id single_id seq_single_id update widget=case seq_single_id of
     DS.Empty->error_update_update_io "update_combined_widget_a: no such combined_id" "update_combined_widget_a: no such single_id" combined_id single_id update widget
     (new_single_id DS.:<| other_seq_single_id)->case DIS.lookup single_id widget of
-        Nothing->error "get_combined_widget_with_id_a: no such combined_id"
+        Nothing->error "update_combined_widget_a: no such combined_id"
         Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
-            Nothing->error "get_combined_widget_with_id_a: no such single_id"
+            Nothing->error "update_combined_widget_a: no such single_id"
             Just new_combined_widget->case new_combined_widget of
-                Leaf_widget _ _->error "get_combined_widget_with_id_a: wrong seq_single_id"
+                Leaf_widget _ _->error "update_combined_widget_a: wrong seq_single_id"
                 Node_widget _ _ new_combined_id->update_combined_widget_a new_combined_id new_single_id other_seq_single_id update widget
 
 clean_row::Row->IO ()

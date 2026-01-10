@@ -2,13 +2,13 @@
 {-# HLINT ignore "Use camelCase" #-}
 module Request where
 import Other
+import Text
 import Type
 import Widget
 import qualified Control.Monad as CM
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Foreign as DTF
-import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -32,13 +32,13 @@ do_request (Create_window window_id window_name left right up down) (Engine widg
     CM.when (renderer==FP.nullPtr) (error "do_request: SDL.Raw.Video.createRenderer returns error")
     catch_error "do_request: SDL.Raw.setRenderDrawBlendMode returns error" 0 (SRV.setRenderDrawBlendMode renderer SRE.SDL_BLENDMODE_BLEND)
     sdl_window_id<-SRV.getWindowID new_window
-    let new_sdl_window_id=fromIntegral sdl_window_id in return (Engine widget (error_insert "do_request: window_id already exists" window_id (Window new_sdl_window_id new_window renderer width height 0 0 1 1) window) (error_insert "do_request: you changed window_map without proper design" (fromIntegral sdl_window_id) window_id window_map) request count_id start_id main_id)
+    let new_sdl_window_id=fromIntegral sdl_window_id in return (Engine widget (error_insert "do_request: window_id already exists" window_id (Window new_sdl_window_id new_window renderer width height 0 0 1 1) window) (error_insert "do_request: you changed something without proper design" (fromIntegral sdl_window_id) window_id window_map) request count_id start_id main_id)
 do_request (Remove_window window_id) (Engine widget window window_map request count_id start_id main_id)=case DIS.updateLookupWithKey (\_ _->Nothing) window_id window of
     (Nothing,_)->error "do_request: no such window_id"
     (Just (Window sdl_window_id this_window renderer _ _ _ _ _ _),new_window)->do
         SRV.destroyRenderer renderer
         SRV.destroyWindow this_window
-        return (Engine widget new_window (simple_error_remove "do_request: you changed window_map without proper design" sdl_window_id window_map) request count_id start_id main_id)
+        return (Engine widget new_window (simple_error_remove "do_request: you changed something without proper design" sdl_window_id window_map) request count_id start_id main_id)
 do_request (Present_window window_id) engine=do
     SRV.renderPresent (get_renderer window_id engine)
     return engine
@@ -69,7 +69,7 @@ do_request (Render_picture window_id path x y width_multiply width_divide height
     let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in catch_error "do_request: SDL.Raw.Video.renderCopy returns error" 0 (FMU.with (SRT.Rect (x-div new_width 2) (y-div new_height 2) new_width new_height) (SRV.renderCopy renderer texture FP.nullPtr))
     SRV.destroyTexture texture
     return engine
-do_request (Render_rectangle_widget seq_id) engine=case get_combined_widget seq_id engine of
+do_request (Render_rectangle_widget seq_id) engine=case get_widget seq_id engine of
     Leaf_widget _ (Rectangle window_id red green blue alpha _ _ _ _ x y width height)->do
         let renderer=get_renderer window_id engine
         catch_error "do_request: SDL.Raw.setRenderDrawColor returns error" 0 (SRV.setRenderDrawColor renderer red green blue alpha)
@@ -78,14 +78,14 @@ do_request (Render_rectangle_widget seq_id) engine=case get_combined_widget seq_
             catch_error "do_request: SDL.Raw.renderFillRect returns error" 0 (SRV.renderFillRect renderer rect)
         return engine
     _->error "do_request: not a rectangle widget"
-do_request (Render_picture_widget seq_id) engine=case get_combined_widget seq_id engine of
+do_request (Render_picture_widget seq_id) engine=case get_widget seq_id engine of
     Leaf_widget _ (Picture window_id texture _ _ _ _ _ _ _ _ x y width height)->do
         let renderer=get_renderer window_id engine
         catch_error "do_request: SDL.Raw.Video.renderCopy returns error" 0 (FMU.with (SRT.Rect x y width height) (SRV.renderCopy renderer texture FP.nullPtr))
         return engine
     _->error "do_request: not a picture widget"
-do_request (Render_text_widget seq_id) engine=case get_combined_widget seq_id engine of
-    Leaf_widget _ (Text window_id row _ _ _ _ _ _ _ _ _ left _ up down _ seq_row)->case DS.drop row seq_row of
+do_request (Render_text_widget seq_id) engine=case get_widget seq_id engine of
+    Leaf_widget _ (Text window_id row _ _ _ _ _ _ _ _ _ _ left _ up down _ seq_row)->case DS.drop row seq_row of
         DS.Empty->return engine
         (new_row DS.:<| other_seq_row)->let renderer=get_renderer window_id engine in case new_row of
             Row seq_texture y row_height->if down<up+row_height then return engine else let new_up=up-y in do
@@ -96,17 +96,3 @@ do_request (Render_text_widget seq_id) engine=case get_combined_widget seq_id en
                 render_seq_row left new_up down renderer other_seq_row
                 return engine
     _->error "do_request: not a text widget"
-
-render_seq_texture::FCT.CInt->FCT.CInt->FCT.CInt->SRT.Renderer->DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO ()
-render_seq_texture _ _ _ _ DS.Empty=return ()
-render_seq_texture left up down renderer ((texture,x,y,width,height) DS.:<| seq_texture)=do
-    catch_error "render_seq_texture: SDL.Raw.Video.renderCopy returns error" 0 (FMU.with (SRT.Rect (left+x) (up+y) width height) (SRV.renderCopy renderer texture FP.nullPtr))
-    render_seq_texture left up down renderer seq_texture
-
-render_seq_row::FCT.CInt->FCT.CInt->FCT.CInt->SRT.Renderer->DS.Seq Row->IO ()
-render_seq_row _ _ _ _ DS.Empty=return ()
-render_seq_row left up down renderer (row DS.:<| seq_row)=case row of
-    Row seq_texture y row_height->if down<up+y+row_height then return () else do
-        render_seq_texture left up down renderer seq_texture
-        render_seq_row left up down renderer seq_row
-    Row_blank y row_height->if down<up+y+row_height then return () else render_seq_row left up down renderer seq_row

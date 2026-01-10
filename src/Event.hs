@@ -39,6 +39,14 @@ get_event window_map maybe_event_type=FMA.alloca $ \pointer->do
                     Nothing->return Unknown
                     Just window->return (Resize window (fromIntegral data_one) (fromIntegral data_two))
             _->return Unknown
+        SRT.MouseWheelEvent event_type _ window_id _ _ delta_y direction->case event_type of
+            SRE.SDL_MOUSEWHEEL->case DIS.lookup (fromIntegral window_id) window_map of
+                Nothing->return Unknown
+                Just window->case direction of
+                    SRE.SDL_MOUSEWHEEL_NORMAL->return (At window (Wheel (fromIntegral delta_y)))
+                    SRE.SDL_MOUSEWHEEL_FLIPPED->return (At window (Wheel (-fromIntegral delta_y)))
+                    _->return Unknown
+            _->return Unknown
         SRT.MouseButtonEvent event_type _ window_id _ button_code _ _ x y->case event_type of
             SRE.SDL_MOUSEBUTTONUP->case button_code of
                 SRE.SDL_BUTTON_LEFT->case DIS.lookup (fromIntegral window_id) window_map of
@@ -98,6 +106,37 @@ get_event window_map maybe_event_type=FMA.alloca $ \pointer->do
                         SRE.SDLK_RIGHT->return (At window (Press Press_up Key_right))
                         SRE.SDLK_UP->return (At window (Press Press_up Key_up))
                         SRE.SDLK_DOWN->return (At window (Press Press_up Key_down))
+                        SRE.SDLK_BACKSPACE->return (At window (Press Press_up Key_backspace))
+                        SRE.SDLK_DELETE->return (At window (Press Press_up Key_delete))
+                        SRE.SDLK_RETURN->return (At window (Press Press_up Key_enter))
+                        SRE.SDLK_ESCAPE->return (At window (Press Press_up Key_escape))
+                        SRE.SDLK_TAB->return (At window (Press Press_up Key_tab))
+                        SRE.SDLK_LSHIFT->return (At window (Press Press_up Key_left_shift))
+                        SRE.SDLK_RSHIFT->return (At window (Press Press_up Key_right_shift))
+                        SRE.SDLK_LCTRL->return (At window (Press Press_up Key_left_ctrl))
+                        SRE.SDLK_RCTRL->return (At window (Press Press_up Key_right_ctrl))
+                        SRE.SDLK_KP_0->return (At window (Press Press_up Key_numpad_0))
+                        SRE.SDLK_KP_1->return (At window (Press Press_up Key_numpad_1))
+                        SRE.SDLK_KP_2->return (At window (Press Press_up Key_numpad_2))
+                        SRE.SDLK_KP_3->return (At window (Press Press_up Key_numpad_3))
+                        SRE.SDLK_KP_4->return (At window (Press Press_up Key_numpad_4))
+                        SRE.SDLK_KP_5->return (At window (Press Press_up Key_numpad_5))
+                        SRE.SDLK_KP_6->return (At window (Press Press_up Key_numpad_6))
+                        SRE.SDLK_KP_7->return (At window (Press Press_up Key_numpad_7))
+                        SRE.SDLK_KP_8->return (At window (Press Press_up Key_numpad_8))
+                        SRE.SDLK_KP_9->return (At window (Press Press_up Key_numpad_9))
+                        SRE.SDLK_F1->return (At window (Press Press_up Key_f1))
+                        SRE.SDLK_F2->return (At window (Press Press_up Key_f2))
+                        SRE.SDLK_F3->return (At window (Press Press_up Key_f3))
+                        SRE.SDLK_F4->return (At window (Press Press_up Key_f4))
+                        SRE.SDLK_F5->return (At window (Press Press_up Key_f5))
+                        SRE.SDLK_F6->return (At window (Press Press_up Key_f6))
+                        SRE.SDLK_F7->return (At window (Press Press_up Key_f7))
+                        SRE.SDLK_F8->return (At window (Press Press_up Key_f8))
+                        SRE.SDLK_F9->return (At window (Press Press_up Key_f9))
+                        SRE.SDLK_F10->return (At window (Press Press_up Key_f10))
+                        SRE.SDLK_F11->return (At window (Press Press_up Key_f11))
+                        SRE.SDLK_F12->return (At window (Press Press_up Key_f12))
                         _->return (At window (Press Press_up Key_unknown))
             SRE.SDL_KEYDOWN->do
                 case DIS.lookup (fromIntegral window_id) window_map of
@@ -133,6 +172,37 @@ get_event window_map maybe_event_type=FMA.alloca $ \pointer->do
                         SRE.SDLK_RIGHT->return (At window (Press Press_down Key_right))
                         SRE.SDLK_UP->return (At window (Press Press_down Key_up))
                         SRE.SDLK_DOWN->return (At window (Press Press_down Key_down))
+                        SRE.SDLK_BACKSPACE->return (At window (Press Press_down Key_backspace))
+                        SRE.SDLK_DELETE->return (At window (Press Press_down Key_delete))
+                        SRE.SDLK_RETURN->return (At window (Press Press_down Key_enter))
+                        SRE.SDLK_ESCAPE->return (At window (Press Press_down Key_escape))
+                        SRE.SDLK_TAB->return (At window (Press Press_down Key_tab))
+                        SRE.SDLK_LSHIFT->return (At window (Press Press_down Key_left_shift))
+                        SRE.SDLK_RSHIFT->return (At window (Press Press_down Key_right_shift))
+                        SRE.SDLK_LCTRL->return (At window (Press Press_down Key_left_ctrl))
+                        SRE.SDLK_RCTRL->return (At window (Press Press_down Key_right_ctrl))
+                        SRE.SDLK_KP_0->return (At window (Press Press_down Key_numpad_0))
+                        SRE.SDLK_KP_1->return (At window (Press Press_down Key_numpad_1))
+                        SRE.SDLK_KP_2->return (At window (Press Press_down Key_numpad_2))
+                        SRE.SDLK_KP_3->return (At window (Press Press_down Key_numpad_3))
+                        SRE.SDLK_KP_4->return (At window (Press Press_down Key_numpad_4))
+                        SRE.SDLK_KP_5->return (At window (Press Press_down Key_numpad_5))
+                        SRE.SDLK_KP_6->return (At window (Press Press_down Key_numpad_6))
+                        SRE.SDLK_KP_7->return (At window (Press Press_down Key_numpad_7))
+                        SRE.SDLK_KP_8->return (At window (Press Press_down Key_numpad_8))
+                        SRE.SDLK_KP_9->return (At window (Press Press_down Key_numpad_9))
+                        SRE.SDLK_F1->return (At window (Press Press_down Key_f1))
+                        SRE.SDLK_F2->return (At window (Press Press_down Key_f2))
+                        SRE.SDLK_F3->return (At window (Press Press_down Key_f3))
+                        SRE.SDLK_F4->return (At window (Press Press_down Key_f4))
+                        SRE.SDLK_F5->return (At window (Press Press_down Key_f5))
+                        SRE.SDLK_F6->return (At window (Press Press_down Key_f6))
+                        SRE.SDLK_F7->return (At window (Press Press_down Key_f7))
+                        SRE.SDLK_F8->return (At window (Press Press_down Key_f8))
+                        SRE.SDLK_F9->return (At window (Press Press_down Key_f9))
+                        SRE.SDLK_F10->return (At window (Press Press_down Key_f10))
+                        SRE.SDLK_F11->return (At window (Press Press_down Key_f11))
+                        SRE.SDLK_F12->return (At window (Press Press_down Key_f12))
                         _->return (At window (Press Press_down Key_unknown))
             _->return Unknown
         _->return Unknown

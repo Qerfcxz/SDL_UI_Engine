@@ -10,6 +10,7 @@ import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Foreign as DTF
 import qualified Foreign.C.String as FCS
+import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 import qualified SDL.Raw.Font as SRF
@@ -23,24 +24,27 @@ create_single_widget _ _ (Io_trigger_request handle) _=return (Io_trigger handle
 create_single_widget _ _ (Font_request path size) _=do
     font<-DTF.withCString path (`create_font` size)
     return (Font font)
+create_single_widget _ _ (Texture_font_request window_id path size) _=do
+    font<-DTF.withCString path (`create_texture_font` size)
+    return (Texture_font window_id font)
 create_single_widget _ window (Rectangle_request window_id red green blue alpha left right up down) _=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: no such window"
     Just (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
 create_single_widget _ window (Picture_request window_id path x y width_multiply width_divide height_multiply height_divide) _=case DIS.lookup window_id window of
-    Nothing->error "alter_single_widget: no such window_id"
+    Nothing->error "create_single_widget: no such window_id"
     Just (Window _ _ renderer _ _ window_x window_y design_size size)->do
         surface<-DTF.withCString path SRV.loadBMP
-        CM.when (surface==FP.nullPtr) $ error "alter_single_widget: SDL.Raw.Font.renderUTF8_Blended returns error"
+        CM.when (surface==FP.nullPtr) $ error "create_single_widget: SDL.Raw.Font.renderUTF8_Blended returns error"
         (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
         texture<-SRV.createTextureFromSurface renderer surface
         SRV.freeSurface surface
-        CM.when (texture==FP.nullPtr) $ error "to_texture: SDL.Raw.Video.createTextureFromSurface returns error"
+        CM.when (texture==FP.nullPtr) $ error "create_single_widget: SDL.Raw.Video.createTextureFromSurface returns error"
         let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id texture x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
 create_single_widget start_id window (Text_request window_id row find delta_height left right up down seq_paragraph) widget=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: no such window"
     Just (Window _ _ renderer _ _ x y design_size size)->let new_delta_height=div (delta_height*size) design_size in do
-        seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
-        let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max seq_row new_up new_down in return (Text window_id (max 0 (min row max_row)) max_row False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph seq_row)
+        seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
+        let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max seq_row new_up new_down in return (Text window_id (max 0 (min row max_row)) max_row False False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph seq_row)
 
 create_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font))
 create_font _ DS.Empty=return DIS.empty
@@ -49,6 +53,16 @@ create_font path (size DS.:<| other_size)=do
     new_font<-SRF.openFont path (fromIntegral size)
     CM.when (new_font==FP.nullPtr) $ error "create_font: SDL.Raw.Font.openFont returns error"
     return (DIS.insert size new_font font)
+
+create_texture_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,FCT.CInt,DIS.IntMap (SRT.Texture,Int,FCT.CInt,FCT.CInt)))
+create_texture_font _ DS.Empty=return DIS.empty
+create_texture_font path (size DS.:<| other_size)=do
+    font<-create_texture_font path other_size
+    new_font<-SRF.openFont path (fromIntegral size)
+    CM.when (new_font==FP.nullPtr) $ error "create_font: SDL.Raw.Font.openFont returns error"
+    ascent<-SRF.fontAscent new_font
+    descent<-SRF.fontDescent new_font
+    return (DIS.insert size (new_font,ascent,ascent-descent,DIS.empty) font)
 
 create_widget::DS.Seq Int->Combined_widget_request a->Engine a->IO (Engine a)
 create_widget seq_single_id combined_widget_request (Engine widget window window_map request count_id start_id main_id)=case seq_single_id of
@@ -71,7 +85,7 @@ create_widget_top::Int->Int->Int->Int->DIS.IntMap Window->Combined_widget_reques
 create_widget_top count_id combined_id single_id start_id window (Leaf_widget_request next_id single_widget_request) widget=do
     new_single_widget<-create_single_widget start_id window single_widget_request widget
     return (count_id,error_insert_insert "create_widget_top: no such combined_id" "create_widget_top: no such single_id" combined_id single_id (Leaf_widget next_id new_single_widget) widget)
-create_widget_top count_id combined_id single_id start_id window (Node_widget_request next_id main_single_id intmap_combined_widget_request) widget=DIS.foldlWithKey (\io this_single_id->create_widget_top_a count_id this_single_id start_id window io)  (return (count_id+1,error_insert "create_widget_top: you changed count_id without proper design" count_id DIS.empty (error_insert_insert "create_widget_top: no such combined_id" "create_widget_top: no such single_id" combined_id single_id (Node_widget next_id main_single_id count_id) widget))) intmap_combined_widget_request
+create_widget_top count_id combined_id single_id start_id window (Node_widget_request next_id main_single_id intmap_combined_widget_request) widget=DIS.foldlWithKey (\io this_single_id->create_widget_top_a count_id this_single_id start_id window io)  (return (count_id+1,error_insert "create_widget_top: you changed something without proper design" count_id DIS.empty (error_insert_insert "create_widget_top: no such combined_id" "create_widget_top: no such single_id" combined_id single_id (Node_widget next_id main_single_id count_id) widget))) intmap_combined_widget_request
 
 create_widget_top_a::Int->Int->Int->DIS.IntMap Window->IO (Int,DIS.IntMap (DIS.IntMap (Combined_widget a)))->Combined_widget_request a->IO (Int,DIS.IntMap (DIS.IntMap (Combined_widget a)))
 create_widget_top_a combined_id single_id start_id window io combined_widget_request=do
@@ -85,9 +99,18 @@ remove_single_widget (Io_trigger _)=return ()
 remove_single_widget (Font intmap_font)=do
     _<-DIS.traverseWithKey (\_ font->SRF.closeFont font) intmap_font
     return ()
+remove_single_widget (Texture_font _ font)=do
+    _<-DIS.traverseWithKey (\_ this_font->clean_texture_font this_font) font
+    return ()
 remove_single_widget (Rectangle {})=return ()
 remove_single_widget (Picture _ texture _ _ _ _ _ _ _ _ _ _ _ _)=SRV.destroyTexture texture
-remove_single_widget (Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row)=DF.mapM_ clean_row seq_row
+remove_single_widget (Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row)=DF.mapM_ clean_row seq_row
+remove_single_widget (Editor {})=return ()
+
+clean_texture_font::(FP.Ptr SRF.Font,FCT.CInt,FCT.CInt,DIS.IntMap (SRT.Texture,Int,FCT.CInt,FCT.CInt))->IO ()
+clean_texture_font (font,_,_,intmap_texture)=do
+    _<-DIS.traverseWithKey (\_ (texture,_,_,_)->SRV.destroyTexture texture) intmap_texture
+    SRF.closeFont font
 
 remove_widget::Data a=>DS.Seq Int->Engine a->IO (Engine a)
 remove_widget seq_single_id (Engine widget window window_map request count_id start_id main_id)=case seq_single_id of
@@ -115,7 +138,7 @@ remove_widget_top combined_id single_id widget=let (combined_widget,intmap_combi
     (Leaf_widget _ single_widget)->do
         remove_single_widget single_widget
         return (intmap_combined_widget,new_widget)
-    (Node_widget _ _ new_combined_id)->let (new_intmap_combined_widget,new_new_widget)=error_remove "remove_widget_top: you changed combined_id without proper design" new_combined_id new_widget in do
+    (Node_widget _ _ new_combined_id)->let (new_intmap_combined_widget,new_new_widget)=error_remove "remove_widget_top: you changed something without proper design" new_combined_id new_widget in do
         new_new_new_widget<-DIS.foldl remove_widget_top_a (return new_new_widget) new_intmap_combined_widget
         return (intmap_combined_widget,new_new_new_widget)
 
@@ -126,7 +149,7 @@ remove_widget_top_a io (Leaf_widget _ single_widget)=do
     return widget
 remove_widget_top_a io (Node_widget _ _ combined_id)=do
     widget<-io
-    let (intmap_combined_widget,new_widget)=error_remove "remove_widget_top_a: you changed combined_id without proper design" combined_id widget
+    let (intmap_combined_widget,new_widget)=error_remove "remove_widget_top_a: you changed something without proper design" combined_id widget
     DIS.foldl remove_widget_top_a (return new_widget) intmap_combined_widget
 
 replace_widget::Data a=>DS.Seq Int->Combined_widget_request a->Engine a->IO (Engine a)
@@ -164,15 +187,15 @@ update_widget seq_id (Engine widget window window_map request count_id start_id 
     return (Engine new_widget window window_map request count_id start_id main_id)
 
 update_widget_a::Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->IO (Combined_widget a)
-update_widget_a _ window _ (Leaf_widget next_id (Rectangle window_id red green blue alpha left right up down _ _ _ _))=let (x,y,design_size,size)=get_transform window_id window in return (Leaf_widget next_id (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size)))
-update_widget_a _ window _ (Leaf_widget next_id (Picture window_id texture x y width_multiply width_divide height_multiply height_divide width height _ _ _ _))=let (window_x,window_y,design_size,size)=get_transform window_id window in let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Leaf_widget next_id (Picture window_id texture x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size)))
-update_widget_a start_id window widget (Leaf_widget next_id (Text window_id row _ bool find delta_height left right up down _ _ _ _ _ seq_paragraph seq_row))=do
+update_widget_a _ window _ (Leaf_widget next_id (Rectangle window_id red green blue alpha left right up down _ _ _ _))=let (x,y,design_size,size)=get_transform_window window_id window in return (Leaf_widget next_id (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size)))
+update_widget_a _ window _ (Leaf_widget next_id (Picture window_id texture x y width_multiply width_divide height_multiply height_divide width height _ _ _ _))=let (window_x,window_y,design_size,size)=get_transform_window window_id window in let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Leaf_widget next_id (Picture window_id texture x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size)))
+update_widget_a start_id window widget (Leaf_widget next_id (Text window_id row _ _ select find delta_height left right up down _ _ _ _ _ seq_paragraph seq_row))=do
     DF.mapM_ clean_row seq_row
-    let (renderer,x,y,design_size,size)=get_renderer_with_transform window_id window
+    let (renderer,x,y,design_size,size)=get_renderer_with_transform_window window_id window
     let new_delta_height=div (delta_height*size) design_size
-    new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
-    let new_up=(y+div (up*size) design_size) in let new_down=(y+div (down*size) design_size) in let max_row=find_max new_seq_row new_up new_down in return (Leaf_widget next_id (Text window_id (max 0 (min row max_row)) max_row bool find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row))
-update_widget_a _ _ _ _=error "updata_text_a: wrong widget"
+    new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
+    let new_up=(y+div (up*size) design_size) in let new_down=(y+div (down*size) design_size) in let max_row=find_max new_seq_row new_up new_down in return (Leaf_widget next_id (Text window_id (max 0 (min row max_row)) max_row True select find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row))
+update_widget_a _ _ _ _=error "update_widget_a: wrong widget"
 
 create_window_trigger::(Event->Engine a->Id)->DS.Seq Int->DS.Seq Int->Engine a->IO (Engine a)
 create_window_trigger next_id seq_id seq_window_id=create_widget seq_id (Leaf_widget_request next_id (Trigger_request (create_window_trigger_a seq_window_id)))
@@ -184,50 +207,54 @@ create_window_trigger_a seq_window_id event engine@(Engine widget window window_
         Just _->Engine widget (error_update "create_window_trigger_a: no such window_id" window_id (\(Window this_window_id this_window renderer design_width design_height _ _ _ _)->let (x,y,design_size,size)=adaptive_window design_width design_height width height in Window this_window_id this_window renderer design_width design_height x y design_size size) window) window_map request count_id start_id main_id
     _->engine
 
-create_text_trigger::DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Click,Mouse)->(Event->Engine a->Id)->DS.Seq Int->DS.Seq (DS.Seq Int)->Engine a->IO (Engine a)
-create_text_trigger up_press down_press select_click next_id seq_id seq_seq_id=create_widget seq_id (Leaf_widget_request next_id (Trigger_request (\event (Engine widget window window_map request count_id start_id main_id)->Engine (DF.foldl' (\this_widget this_seq_id->let (combined_id,single_id)=get_combined_widget_id_widget this_seq_id start_id this_widget in error_update_update "create_text_trigger: no such combined_id" "create_text_trigger: no such single_id" combined_id single_id (create_text_trigger_a up_press down_press select_click event) this_widget) widget seq_seq_id) window window_map request count_id start_id main_id)))
+create_text_trigger::Bool->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Click,Mouse)->(Event->Engine a->Id)->DS.Seq Int->DS.Seq (DS.Seq Int)->Engine a->IO (Engine a)
+create_text_trigger wheel up_press down_press min_press max_press select_click next_id seq_id seq_seq_id=create_widget seq_id (Leaf_widget_request next_id (Trigger_request (\event (Engine widget window window_map request count_id start_id main_id)->let new_widget=DF.foldl' (\this_widget this_seq_id->let (combined_id,single_id)=get_widget_id_widget this_seq_id start_id this_widget in DIS.alter (create_text_trigger_a wheel up_press down_press min_press max_press select_click single_id event) combined_id this_widget) widget seq_seq_id in Engine new_widget window window_map request count_id start_id main_id)))
 
-create_text_trigger_a::DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Click,Mouse)->Event->Combined_widget a->Combined_widget a
-create_text_trigger_a up_press down_press select_click event widget@(Leaf_widget next_id (Text window_id row max_row bool find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row))=if bool
+create_text_trigger_a::Bool->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Click,Mouse)->Int->Event->Maybe (DIS.IntMap (Combined_widget a))->Maybe (DIS.IntMap (Combined_widget a))
+create_text_trigger_a _ _ _ _ _ _ _ _ Nothing=error "create_text_trigger_a: no such combined_id"
+create_text_trigger_a wheel up_press down_press min_press max_press select_click single_id event (Just intmap_combined_widget)=Just (DIS.alter (create_text_trigger_b wheel up_press down_press min_press max_press select_click event) single_id intmap_combined_widget)
+
+create_text_trigger_b::Bool->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Click,Mouse)->Event->Maybe (Combined_widget a)->Maybe (Combined_widget a)
+create_text_trigger_b _ _ _ _ _ _ _ Nothing=error "create_text_trigger_b: no such single_id"
+create_text_trigger_b wheel up_press down_press min_press max_press select_click event (Just combined_widget)=Just (create_text_trigger_c wheel up_press down_press min_press max_press select_click event combined_widget)
+
+create_text_trigger_c::Bool->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Click,Mouse)->Event->Combined_widget a->Combined_widget a
+create_text_trigger_c wheel up_press down_press min_press max_press select_click event widget@(Leaf_widget next_id (Text window_id row max_row render select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row))=if select
     then case event of
         At this_window_id action->if window_id==this_window_id
             then case action of
-                Press press key->if belong (press,key) up_press then Leaf_widget next_id (Text window_id (max 0 (row-1)) max_row bool find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else if belong (press,key) down_press then Leaf_widget next_id (Text window_id (min max_row (row+1)) max_row bool find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else widget
-                Click click mouse x y->if belong (click,mouse) select_click&&(x<left||right<x||y<up||down<y) then Leaf_widget next_id (Text window_id row max_row False find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else widget
+                Wheel delta_y->if wheel then let new_row=max 0 (min max_row (row-delta_y)) in if row==new_row then widget else Leaf_widget next_id (Text window_id new_row max_row True select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else widget
+                Press press key->if belong (press,key) up_press then if 0<row then Leaf_widget next_id (Text window_id (row-1) max_row True select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else widget else if belong (press,key) down_press then if row<max_row then Leaf_widget next_id (Text window_id (row+1) max_row True select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else widget else if belong (press,key) min_press then if row==0 then widget else Leaf_widget next_id (Text window_id 0 max_row True select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else if belong (press,key) max_press then if row==max_row then widget else Leaf_widget next_id (Text window_id max_row max_row True select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else widget
+                Click click mouse x y->if belong (click,mouse) select_click&&(x<left||right<x||y<up||down<y) then Leaf_widget next_id (Text window_id row max_row render False find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else widget
                 _->widget
             else widget
         _->widget
     else case event of
         At this_window_id action->if window_id==this_window_id
             then case action of
-                Click click mouse x y->if belong (click,mouse) select_click&&left<=x&&x<=right&&up<=y&&y<=down then Leaf_widget next_id (Text window_id row max_row True find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else widget
+                Click click mouse x y->if belong (click,mouse) select_click&&left<=x&&x<=right&&up<=y&&y<=down then Leaf_widget next_id (Text window_id row max_row render True find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row) else widget
                 _->widget
             else widget
         _->widget
-create_text_trigger_a _ _ _ _ widget=widget
+create_text_trigger_c _ _ _ _ _ _ _ widget=widget
 
-get_combined_widget_id::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
-get_combined_widget_id seq_single_id start_id widget=case seq_single_id of
-    DS.Empty->error "get_combined_widget_id: empty seq_single_id"
-    single_id DS.:<| other_seq_single_id->get_combined_widget_id_a other_seq_single_id start_id single_id widget
+get_widget_id_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
+get_widget_id_widget seq_single_id start_id widget=case seq_single_id of
+    DS.Empty->error "get_widget_id_widget: empty seq_single_id"
+    single_id DS.:<| other_seq_single_id->get_widget_id_widget_a other_seq_single_id start_id single_id widget
 
-get_combined_widget_id_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
-get_combined_widget_id_widget seq_single_id start_id widget=case seq_single_id of
-    DS.Empty->error "get_combined_widget_id_widget: empty seq_single_id"
-    single_id DS.:<| other_seq_single_id->get_combined_widget_id_a other_seq_single_id start_id single_id widget
-
-get_combined_widget_id_a::DS.Seq Int->Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
-get_combined_widget_id_a seq_single_id combined_id single_id widget=case seq_single_id of
+get_widget_id_widget_a::DS.Seq Int->Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
+get_widget_id_widget_a seq_single_id combined_id single_id widget=case seq_single_id of
     DS.Empty->(combined_id,single_id)
     (new_single_id DS.:<| other_seq_single_id)->case DIS.lookup combined_id widget of
-        Nothing->error "get_combined_widget_id_a: no such combined_id"
+        Nothing->error "get_widget_id_widget_a: no such combined_id"
         Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
-            Nothing->error "get_combined_widget_id_a: no such single_id"
-            Just (Leaf_widget _ _)->error "get_combined_widget_id_a: wrong seq_single_id"
-            Just (Node_widget _ _ new_combined_id)->get_combined_widget_id_a other_seq_single_id new_combined_id new_single_id widget
+            Nothing->error "get_widget_id_widget_a: no such single_id"
+            Just (Leaf_widget _ _)->error "get_widget_id_widget_a: wrong seq_single_id"
+            Just (Node_widget _ _ new_combined_id)->get_widget_id_widget_a other_seq_single_id new_combined_id new_single_id widget
 
 alter_widget::Data a=>DS.Seq Int->Combined_widget_request a->Engine a->IO (Engine a)
-alter_widget seq_single_id combined_widget_request (Engine widget window window_map request count_id start_id main_id)=let (combined_id,single_id)=get_combined_widget_id_widget seq_single_id start_id widget in do
+alter_widget seq_single_id combined_widget_request (Engine widget window window_map request count_id start_id main_id)=let (combined_id,single_id)=get_widget_id_widget seq_single_id start_id widget in do
     new_widget<-error_update_update_io "alter_widget: no such combined_id" "alter_widget: no such single_id" combined_id single_id (alter_widget_a start_id window widget combined_widget_request) widget
     return (Engine new_widget window window_map request count_id start_id main_id)
 
@@ -247,7 +274,7 @@ alter_single_widget _ _ _ (Trigger_request handle) this_widget=case this_widget 
     Trigger _->return (Trigger handle)
     _->error "alter_single_widget: not a trigger widget"
 alter_single_widget _ _ _ (Io_trigger_request handle) this_widget=case this_widget of
-    Trigger _->return (Io_trigger handle)
+    Io_trigger _->return (Io_trigger handle)
     _->error "alter_single_widget: not a io_trigger widget"
 alter_single_widget _ _ _ (Font_request path size) this_widget=case this_widget of
     Font intmap_font->do
@@ -255,6 +282,12 @@ alter_single_widget _ _ _ (Font_request path size) this_widget=case this_widget 
         font<-DTF.withCString path (`create_font` size)
         return (Font font)
     _->error "alter_single_widget: not a font widget"
+alter_single_widget _ _ _ (Texture_font_request window_id path size) this_widget=case this_widget of
+    Texture_font _ font->do
+        _<-DIS.traverseWithKey (\_ this_font->clean_texture_font this_font) font
+        new_font<-DTF.withCString path (`create_texture_font` size)
+        return (Texture_font window_id new_font)
+    _->error "alter_single_widget: not a texture_font widget"
 alter_single_widget _ window _ (Rectangle_request window_id red green blue alpha left right up down) this_widget=case this_widget of
     Rectangle {}->case DIS.lookup window_id window of
         Nothing->error "alter_single_widget: no such window_id"
@@ -270,15 +303,15 @@ alter_single_widget _ window _ (Picture_request window_id path x y width_multipl
             (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
             new_texture<-SRV.createTextureFromSurface renderer surface
             SRV.freeSurface surface
-            CM.when (new_texture==FP.nullPtr) $ error "to_texture: SDL.Raw.Video.createTextureFromSurface returns error"
+            CM.when (new_texture==FP.nullPtr) $ error "alter_single_widget: SDL.Raw.Video.createTextureFromSurface returns error"
             let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id new_texture x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
     _->error "alter_single_widget: not a picture widget"
 alter_single_widget start_id window widget (Text_request window_id row find delta_height left right up down seq_paragraph) this_widget=case this_widget of
-    Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row->case DIS.lookup window_id window of
+    Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row->case DIS.lookup window_id window of
         Nothing->error "alter_single_widget: no such window_id"
         Just (Window _ _ renderer _ _ x y design_size size)->do
             DF.mapM_ clean_row seq_row
             let new_delta_height=div (delta_height*size) design_size
-            new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
-            let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max new_seq_row new_up new_down in return (Text window_id (max 0 (min max_row row)) max_row False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row)
+            new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
+            let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max new_seq_row new_up new_down in return (Text window_id (max 0 (min max_row row)) max_row False False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row)
     _->error "alter_single_widget: not a text widget"
