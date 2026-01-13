@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 module Widget where
+import Editor
 import Other
 import Text
 import Type
@@ -9,8 +10,10 @@ import qualified Data.Foldable as DF
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Foreign as DTF
+import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
+import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 import qualified SDL.Raw.Font as SRF
@@ -24,9 +27,9 @@ create_single_widget _ _ (Io_trigger_request handle) _=return (Io_trigger handle
 create_single_widget _ _ (Font_request path size) _=do
     font<-DTF.withCString path (`create_font` size)
     return (Font font)
-create_single_widget _ _ (Texture_font_request window_id path size) _=do
-    font<-DTF.withCString path (`create_texture_font` size)
-    return (Texture_font window_id font)
+create_single_widget _ _ (Block_font_request window_id red green blue alpha path size) _=do
+    font<-DTF.withCString path (`create_block_font` size)
+    return (Block_font window_id red green blue alpha font)
 create_single_widget _ window (Rectangle_request window_id red green blue alpha left right up down) _=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: no such window"
     Just (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
@@ -45,6 +48,19 @@ create_single_widget start_id window (Text_request window_id row find delta_heig
     Just (Window _ _ renderer _ _ x y design_size size)->let new_delta_height=div (delta_height*size) design_size in do
         seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
         let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max seq_row new_up new_down in return (Text window_id (max 0 (min row max_row)) max_row False False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph seq_row)
+create_single_widget start_id window (Editor_request window_id block_number font_size path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_text) widget=case DIS.lookup window_id window of
+    Nothing->error "create_single_widget: no such window"
+    Just (Window _ _ renderer _ _ window_x window_y design_size size)->do
+        let (this_window_id,font,font_height,intmap_texture)=find_block_font find widget design_size size start_id font_size path
+        if window_id==this_window_id
+            then FMA.alloca $ \text_color->do
+                FS.poke text_color (color text_red text_green text_blue text_alpha)
+                let new_block_width=div (block_width*size) design_size
+                new_seq_text<-from_seq_seq_char renderer text_color font intmap_texture block_number new_block_width seq_text DS.empty
+                let new_delta_height=div (delta_height*size) design_size
+                let new_height=div ((height+delta_height)*size) design_size
+                return (Editor window_id block_number (fromIntegral (div new_height (font_height+new_delta_height))) 0 font_size False path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height new_delta_height (window_x+div (x*size) design_size-div (fromIntegral block_number*new_block_width) 2) (window_y+div (y*size) design_size-div new_height 2) (window_x+div ((x-extra_width)*size) design_size) (window_x+div ((x+extra_width)*size) design_size) (window_y+div ((y-extra_height)*size) design_size) (window_y+div ((y+extra_height)*size) design_size) Cursor_none new_seq_text)
+            else error "create_single_widget: wrong window_id"
 
 create_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font))
 create_font _ DS.Empty=return DIS.empty
@@ -54,15 +70,15 @@ create_font path (size DS.:<| other_size)=do
     CM.when (new_font==FP.nullPtr) $ error "create_font: SDL.Raw.Font.openFont returns error"
     return (DIS.insert size new_font font)
 
-create_texture_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,FCT.CInt,DIS.IntMap (SRT.Texture,Int,FCT.CInt,FCT.CInt)))
-create_texture_font _ DS.Empty=return DIS.empty
-create_texture_font path (size DS.:<| other_size)=do
-    font<-create_texture_font path other_size
+create_block_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
+create_block_font _ DS.Empty=return DIS.empty
+create_block_font path (size DS.:<| other_size)=do
+    font<-create_block_font path other_size
     new_font<-SRF.openFont path (fromIntegral size)
     CM.when (new_font==FP.nullPtr) $ error "create_font: SDL.Raw.Font.openFont returns error"
     ascent<-SRF.fontAscent new_font
     descent<-SRF.fontDescent new_font
-    return (DIS.insert size (new_font,ascent,ascent-descent,DIS.empty) font)
+    return (DIS.insert size (new_font,ascent-descent,DIS.empty) font)
 
 create_widget::DS.Seq Int->Combined_widget_request a->Engine a->IO (Engine a)
 create_widget seq_single_id combined_widget_request (Engine widget window window_map request count_id start_id main_id)=case seq_single_id of
@@ -99,17 +115,17 @@ remove_single_widget (Io_trigger _)=return ()
 remove_single_widget (Font intmap_font)=do
     _<-DIS.traverseWithKey (\_ font->SRF.closeFont font) intmap_font
     return ()
-remove_single_widget (Texture_font _ font)=do
-    _<-DIS.traverseWithKey (\_ this_font->clean_texture_font this_font) font
+remove_single_widget (Block_font _ _ _ _ _ font)=do
+    _<-DIS.traverseWithKey (\_ this_font->clean_block_font this_font) font
     return ()
 remove_single_widget (Rectangle {})=return ()
 remove_single_widget (Picture _ texture _ _ _ _ _ _ _ _ _ _ _ _)=SRV.destroyTexture texture
 remove_single_widget (Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row)=DF.mapM_ clean_row seq_row
 remove_single_widget (Editor {})=return ()
 
-clean_texture_font::(FP.Ptr SRF.Font,FCT.CInt,FCT.CInt,DIS.IntMap (SRT.Texture,Int,FCT.CInt,FCT.CInt))->IO ()
-clean_texture_font (font,_,_,intmap_texture)=do
-    _<-DIS.traverseWithKey (\_ (texture,_,_,_)->SRV.destroyTexture texture) intmap_texture
+clean_block_font::(FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))->IO ()
+clean_block_font (font,_,intmap_texture)=do
+    _<-DIS.traverseWithKey (\_ (texture,_,_,_,_,_,_)->SRV.destroyTexture texture) intmap_texture
     SRF.closeFont font
 
 remove_widget::Data a=>DS.Seq Int->Engine a->IO (Engine a)
@@ -238,21 +254,6 @@ create_text_trigger_c wheel up_press down_press min_press max_press select_click
         _->widget
 create_text_trigger_c _ _ _ _ _ _ _ widget=widget
 
-get_widget_id_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
-get_widget_id_widget seq_single_id start_id widget=case seq_single_id of
-    DS.Empty->error "get_widget_id_widget: empty seq_single_id"
-    single_id DS.:<| other_seq_single_id->get_widget_id_widget_a other_seq_single_id start_id single_id widget
-
-get_widget_id_widget_a::DS.Seq Int->Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
-get_widget_id_widget_a seq_single_id combined_id single_id widget=case seq_single_id of
-    DS.Empty->(combined_id,single_id)
-    (new_single_id DS.:<| other_seq_single_id)->case DIS.lookup combined_id widget of
-        Nothing->error "get_widget_id_widget_a: no such combined_id"
-        Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
-            Nothing->error "get_widget_id_widget_a: no such single_id"
-            Just (Leaf_widget _ _)->error "get_widget_id_widget_a: wrong seq_single_id"
-            Just (Node_widget _ _ new_combined_id)->get_widget_id_widget_a other_seq_single_id new_combined_id new_single_id widget
-
 alter_widget::Data a=>DS.Seq Int->Combined_widget_request a->Engine a->IO (Engine a)
 alter_widget seq_single_id combined_widget_request (Engine widget window window_map request count_id start_id main_id)=let (combined_id,single_id)=get_widget_id_widget seq_single_id start_id widget in do
     new_widget<-error_update_update_io "alter_widget: no such combined_id" "alter_widget: no such single_id" combined_id single_id (alter_widget_a start_id window widget combined_widget_request) widget
@@ -282,12 +283,12 @@ alter_single_widget _ _ _ (Font_request path size) this_widget=case this_widget 
         font<-DTF.withCString path (`create_font` size)
         return (Font font)
     _->error "alter_single_widget: not a font widget"
-alter_single_widget _ _ _ (Texture_font_request window_id path size) this_widget=case this_widget of
-    Texture_font _ font->do
-        _<-DIS.traverseWithKey (\_ this_font->clean_texture_font this_font) font
-        new_font<-DTF.withCString path (`create_texture_font` size)
-        return (Texture_font window_id new_font)
-    _->error "alter_single_widget: not a texture_font widget"
+alter_single_widget _ _ _ (Block_font_request window_id red green blue alpha path size) this_widget=case this_widget of
+    Block_font _ _ _ _ _ font->do
+        _<-DIS.traverseWithKey (\_ this_font->clean_block_font this_font) font
+        new_font<-DTF.withCString path (`create_block_font` size)
+        return (Block_font window_id red green blue alpha new_font)
+    _->error "alter_single_widget: not a block_font widget"
 alter_single_widget _ window _ (Rectangle_request window_id red green blue alpha left right up down) this_widget=case this_widget of
     Rectangle {}->case DIS.lookup window_id window of
         Nothing->error "alter_single_widget: no such window_id"
@@ -315,3 +316,18 @@ alter_single_widget start_id window widget (Text_request window_id row find delt
             new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
             let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max new_seq_row new_up new_down in return (Text window_id (max 0 (min max_row row)) max_row False False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row)
     _->error "alter_single_widget: not a text widget"
+alter_single_widget start_id window widget (Editor_request window_id block_number font_size path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_text) this_widget=case this_widget of
+    Editor {}->case DIS.lookup window_id window of
+        Nothing->error "alter_single_widget: no such window"
+        Just (Window _ _ renderer _ _ window_x window_y design_size size)->do
+            let (this_window_id,font,font_height,intmap_texture)=find_block_font find widget design_size size start_id font_size path
+            if window_id==this_window_id
+                then FMA.alloca $ \text_color->do
+                    FS.poke text_color (color text_red text_green text_blue text_alpha)
+                    let new_block_width=div (block_width*size) design_size
+                    new_seq_text<-from_seq_seq_char renderer text_color font intmap_texture block_number new_block_width seq_text DS.empty
+                    let new_delta_height=div (delta_height*size) design_size
+                    let new_height=div ((height+delta_height)*size) design_size
+                    return (Editor window_id block_number (fromIntegral (div new_height (font_height+new_delta_height))) 0 font_size False path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height new_delta_height (window_x+div (x*size) design_size-div (fromIntegral block_number*new_block_width) 2) (window_y+div (y*size) design_size-div new_height 2) (window_x+div ((x-extra_width)*size) design_size) (window_x+div ((x+extra_width)*size) design_size) (window_y+div ((y-extra_height)*size) design_size) (window_y+div ((y+extra_height)*size) design_size) Cursor_none new_seq_text)
+                else error "alter_single_widget: wrong window_id"
+    _->error "alter_single_widget: not a editor widget"

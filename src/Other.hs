@@ -7,8 +7,13 @@ import qualified Data.Foldable as DF
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Word as DW
+import qualified Data.Text as DT
+import qualified Data.Text.Foreign as DTF
+import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
+import qualified Foreign.Storable as FS
+import qualified Foreign.Marshal.Alloc as FMA
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Video as SRV
@@ -116,6 +121,11 @@ get_transform_window window_id window=case DIS.lookup window_id window of
     Nothing->error "get_transform_window: no such window"
     Just (Window _ _ _ _ _ x y design_size size)->(x,y,design_size,size)
 
+get_renderer_with_size_window::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CInt,FCT.CInt)
+get_renderer_with_size_window window_id window=case DIS.lookup window_id window of
+    Nothing->error "get_renderer_with_size_window: no such window"
+    Just (Window _ _ renderer _ _ _ _ design_size size)->(renderer,design_size,size)
+
 get_renderer_with_transform_window::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
 get_renderer_with_transform_window window_id window=case DIS.lookup window_id window of
     Nothing->error "get_renderer_with_transform_window: no such window"
@@ -151,6 +161,21 @@ get_widget_a combined_id single_id seq_single_id widget=case DIS.lookup combined
                 Leaf_widget _ _->error "get_widget_a: wrong seq_single_id"
                 Node_widget _ _ new_combined_id->get_widget_a new_combined_id new_single_id other_seq_single_id widget
 
+get_widget_id_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
+get_widget_id_widget seq_single_id start_id widget=case seq_single_id of
+    DS.Empty->error "get_widget_id_widget: empty seq_single_id"
+    single_id DS.:<| other_seq_single_id->get_widget_id_widget_a other_seq_single_id start_id single_id widget
+
+get_widget_id_widget_a::DS.Seq Int->Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
+get_widget_id_widget_a seq_single_id combined_id single_id widget=case seq_single_id of
+    DS.Empty->(combined_id,single_id)
+    (new_single_id DS.:<| other_seq_single_id)->case DIS.lookup combined_id widget of
+        Nothing->error "get_widget_id_widget_a: no such combined_id"
+        Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
+            Nothing->error "get_widget_id_widget_a: no such single_id"
+            Just (Leaf_widget _ _)->error "get_widget_id_widget_a: wrong seq_single_id"
+            Just (Node_widget _ _ new_combined_id)->get_widget_id_widget_a other_seq_single_id new_combined_id new_single_id widget
+
 update_combined_widget::Int->DS.Seq Int->(Combined_widget a->IO (Combined_widget a))->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (DIS.IntMap (DIS.IntMap (Combined_widget a)))
 update_combined_widget start_id seq_single_id update widget=case seq_single_id of
     DS.Empty->error "update_combined_widget: empty seq_single_id"
@@ -176,3 +201,38 @@ adaptive_window design_x design_y x y=let new_x=design_y*x in let new_y=design_x
 
 color::DW.Word8->DW.Word8->DW.Word8->DW.Word8->Color
 color=SRT.Color
+
+get_width::FP.Ptr SRF.Font->DT.Text->IO FCT.CInt
+get_width font text=FMA.alloca $ \width->FMA.alloca $ \height->DTF.withCString text $ \new_text->do
+    catch_error "get_width: SDL.Raw.Font.sizeUTF8 returns error" 0 (SRF.sizeUTF8 font new_text width height)
+    FS.peek width
+
+cut_text::FCT.CInt->FP.Ptr SRF.Font->DT.Text->IO (Int,Int,FCT.CInt,DT.Text,DT.Text)
+cut_text width font text=let text_length=DT.length text in do
+    (left_length,last_width,left_text,right_text)<-cut_text_a 0 text_length width width font text
+    return (left_length,text_length-left_length,last_width,left_text,right_text)
+
+cut_text_a::Int->Int->FCT.CInt->FCT.CInt->FP.Ptr SRF.Font->DT.Text->IO (Int,FCT.CInt,DT.Text,DT.Text)
+cut_text_a left right last_width width font text=if left==right then let (left_text,right_text)=DT.splitAt left text in return (left,last_width,left_text,right_text) else let middle=div (left+right+1) 2 in let left_text=DT.take middle text in do
+    new_width<-get_width font left_text
+    let new_new_width=width-new_width in if new_new_width==0 then return (middle,0,left_text,DT.drop middle text) else if 0<new_new_width then cut_text_a middle right new_new_width width font text else cut_text_a left (middle-1) last_width width font text
+
+to_texture::SRT.Renderer->FP.Ptr Color->FP.Ptr SRF.Font->FCS.CString->IO SRT.Texture
+to_texture renderer text_color font text=do
+    surface<-SRF.renderUTF8_Blended font text text_color
+    CM.when (surface==FP.nullPtr) $ error "to_texture: SDL.Raw.Font.renderUTF8_Blended returns error"
+    texture<-SRV.createTextureFromSurface renderer surface
+    SRV.freeSurface surface
+    CM.when (texture==FP.nullPtr) $ error "to_texture: SDL.Raw.Video.createTextureFromSurface returns error"
+    return texture
+
+to_texture_with_width::SRT.Renderer->FP.Ptr Color->FP.Ptr SRF.Font->FCS.CString->IO (SRT.Texture,FCT.CInt)
+to_texture_with_width renderer text_color font text=do
+    surface<-SRF.renderUTF8_Blended font text text_color
+    CM.when (surface==FP.nullPtr) $ error "to_texture_with_width: SDL.Raw.Font.renderUTF8_Blended returns error"
+    this_surface<-FS.peek surface
+    let width=SRT.surfaceW this_surface
+    texture<-SRV.createTextureFromSurface renderer surface
+    SRV.freeSurface surface
+    CM.when (texture==FP.nullPtr) $ error "to_texture_with_width: SDL.Raw.Video.createTextureFromSurface returns error"
+    return (texture,width)

@@ -1,11 +1,13 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 module Request where
+import Editor
 import Other
 import Text
 import Type
 import Widget
 import qualified Control.Monad as CM
+import qualified Data.IORef as DI
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Foreign as DTF
@@ -53,7 +55,7 @@ do_request (Resize_window window_id left right up down) (Engine widget window wi
         SRV.setWindowSize sdl_window width height
         return (Engine widget new_window window_map request count_id start_id main_id)
 do_request (Io_request handle) engine=handle engine
-do_request (Render_rectangle window_id red green blue alpha up down left right) engine=let renderer=get_renderer window_id engine in do
+do_request (Render_rectangle window_id red green blue alpha left right up down) engine=let renderer=get_renderer window_id engine in do
     catch_error "do_request: SDL.Raw.setRenderDrawColor returns error" 0 (SRV.setRenderDrawColor renderer red green blue alpha)
     FMA.alloca $ \rect->do
         FS.poke rect (SRT.Rect left up (right-left) (down-up))
@@ -84,15 +86,43 @@ do_request (Render_picture_widget seq_id) engine=case get_widget seq_id engine o
         catch_error "do_request: SDL.Raw.Video.renderCopy returns error" 0 (FMU.with (SRT.Rect x y width height) (SRV.renderCopy renderer texture FP.nullPtr))
         return engine
     _->error "do_request: not a picture widget"
-do_request (Render_text_widget seq_id) engine=case get_widget seq_id engine of
-    Leaf_widget _ (Text window_id row _ _ _ _ _ _ _ _ _ _ left _ up down _ seq_row)->case DS.drop row seq_row of
-        DS.Empty->return engine
-        (new_row DS.:<| other_seq_row)->let renderer=get_renderer window_id engine in case new_row of
-            Row seq_texture y row_height->if down<up+row_height then return engine else let new_up=up-y in do
-                    render_seq_texture left new_up down renderer seq_texture
+do_request (Render_text_widget seq_id) (Engine widget window window_map request count_id start_id main_id)=do
+    ioref<-DI.newIORef (error "do_request: fail to ioref text widget")
+    let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget
+    new_widget<-error_update_update_io "do_request: no such combined_id" "do_request: no such single_id" combined_id single_id (update_widget_render ioref) widget
+    combined_widget<-DI.readIORef ioref
+    case combined_widget of
+        Leaf_widget _ (Text window_id row _ _ _ _ _ _ _ _ _ _ left _ up down _ seq_row)->case DS.drop row seq_row of
+            DS.Empty->return (Engine new_widget window window_map request count_id start_id main_id)
+            (new_row DS.:<| other_seq_row)->let renderer=get_renderer_window window_id window in case new_row of
+                Row seq_texture y row_height->if down<up+row_height then return (Engine new_widget window window_map request count_id start_id main_id) else let new_up=up-y in do
+                        render_seq_texture left new_up down renderer seq_texture
+                        render_seq_row left new_up down renderer other_seq_row
+                        return (Engine new_widget window window_map request count_id start_id main_id)
+                Row_blank y row_height->if down<up+row_height then return (Engine new_widget window window_map request count_id start_id main_id) else let new_up=up-y in do
                     render_seq_row left new_up down renderer other_seq_row
-                    return engine
-            Row_blank y row_height->if down<up+row_height then return engine else let new_up=up-y in do
-                render_seq_row left new_up down renderer other_seq_row
-                return engine
-    _->error "do_request: not a text widget"
+                    return (Engine new_widget window window_map request count_id start_id main_id)
+        _->error "do_request: not a text widget"
+do_request (Render_editor_widget seq_id) (Engine widget window window_map request count_id start_id main_id)=do
+    ioref<-DI.newIORef (error "do_request: fail to ioref editor widget")
+    let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget
+    new_widget<-error_update_update_io "do_request: no such combined_id" "do_request: no such single_id" combined_id single_id (update_widget_render ioref) widget
+    maybe_combined_widget<-DI.readIORef ioref
+    case maybe_combined_widget of
+        Leaf_widget _ (Editor window_id block_number row_number row font_size _ path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width _ _ _ _ _ _ delta_height x y _ _ _ _ cursor seq_seq_char)->do
+            let (renderer,design_size,size)=get_renderer_with_size_window window_id window
+            new_new_widget<-use_block_font find design_size size path start_id font_size (\font height intmap_texture->render_editor renderer block_number row_number row typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font height block_width delta_height x y cursor seq_seq_char intmap_texture) new_widget
+            return (Engine new_new_widget window window_map request count_id start_id main_id)
+        _->error "do_request: not a editor widget"
+do_request (Update_block_font_widget seq_id size block_width seq_char) (Engine widget window window_map request count_id start_id main_id)=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in do
+    new_widget<-error_update_update_io "do_request: no such combined_id" "do_request: no such single_id" combined_id single_id (update_block_font window size block_width seq_char) widget
+    return (Engine new_widget window window_map request count_id start_id main_id)
+
+update_widget_render::DI.IORef (Combined_widget a)->Combined_widget a->IO (Combined_widget a)
+update_widget_render ioref widget@(Leaf_widget next_id (Text window_id row max_row _ select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row))=do
+    DI.writeIORef ioref widget
+    return (Leaf_widget next_id (Text window_id row max_row False select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row))
+update_widget_render ioref widget@(Leaf_widget next_id (Editor window_id block_number row_number row font_size _ path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height design_delta_height design_x design_y design_extra_width design_extra_height delta_height x y left right up down cursor seq_seq_char))=do
+    DI.writeIORef ioref widget
+    return (Leaf_widget next_id (Editor window_id block_number row_number row font_size False path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height design_delta_height design_x design_y design_extra_width design_extra_height delta_height x y left right up down cursor seq_seq_char))
+update_widget_render _ _=error "update_widget_render: wrong widget"
