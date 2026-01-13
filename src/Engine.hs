@@ -56,8 +56,8 @@ loop_engine (Engine widget window window_map request count_id start_id main_id)=
 run_request::Data a=>DS.Seq (Request a)->Engine a->IO (Engine a)
 run_request DS.Empty engine=return engine
 run_request (request DS.:<| other_request) engine=do
-    new_engine<-do_request request engine
-    run_request other_request new_engine
+    (Engine new_widget new_window new_window_map new_request new_count_id new_start_id new_main_id)<-do_request request engine
+    run_request (other_request DS.>< new_request) (Engine new_widget new_window new_window_map DS.empty new_count_id new_start_id new_main_id)
 
 run_event::Data a=>Int->Int->DS.Seq Int->Event->Engine a->Engine a
 run_event start_id main_id single_id_history event engine@(Engine widget _ _ _ _ _ _)=case DIS.lookup start_id widget of

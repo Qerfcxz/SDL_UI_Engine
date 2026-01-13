@@ -28,7 +28,7 @@ render_editor renderer block_number row_number row typesetting text_red text_gre
     if cursor_row<row||row+row_number<=cursor_row then render_seq_seq_char renderer block_number typesetting font text_color text_red text_green text_blue text_alpha height block_width delta_height x y (DS.take row_number (DS.drop row seq_seq_char)) intmap_texture else do
         new_intmap_texture<-render_seq_seq_char renderer block_number typesetting font text_color text_red text_green text_blue text_alpha height block_width delta_height x y (DS.take row_number (DS.drop row seq_seq_char)) intmap_texture
         catch_error "render_editor: SDL.Raw.setRenderDrawColor returns error" 0 (SRV.setRenderDrawColor renderer cursor_red cursor_green cursor_blue cursor_alpha)
-        let new_x=x+fromIntegral cursor_number*block_width in let new_y=y+fromIntegral (cursor_row-row)*(height+delta_height) in catch_error "render_editor: SDL.Raw.renderDrawLine returns error" 0 (SRV.renderDrawLine renderer new_x new_y new_x (new_y+height))
+        let new_x=x+fromIntegral cursor_number*block_width in let new_y=y+fromIntegral (cursor_row-row)*(height+delta_height) in catch_error "render_editor: SDL.Raw.renderDrawLine returns error" 0 (SRV.renderDrawLine renderer new_x new_y new_x (new_y+height-1))
         return new_intmap_texture
 render_editor renderer block_number row_number row typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font height block_width delta_height x y (Cursor_double cursor_where cursor_row_start cursor_number_start cursor_row_end cursor_number_end _ _) seq_seq_char intmap_texture=let (cursor_row,cursor_number)=if cursor_where then (cursor_row_start,cursor_number_start) else (cursor_row_end,cursor_number_end) in if cursor_row<row||row+row_number<=cursor_row
     then do
@@ -42,7 +42,7 @@ render_editor renderer block_number row_number row typesetting text_red text_gre
             FS.poke text_color (color text_red text_green text_blue text_alpha)
             new_intmap_texture<-render_seq_seq_char renderer block_number typesetting font text_color text_red text_green text_blue text_alpha height block_width delta_height x y (DS.take row_number (DS.drop row seq_seq_char)) intmap_texture
             catch_error "render_editor: SDL.Raw.setRenderDrawColor returns error" 0 (SRV.setRenderDrawColor renderer cursor_red cursor_green cursor_blue cursor_alpha)
-            let new_x=x+fromIntegral cursor_number*block_width in let new_y=y+fromIntegral (cursor_row-row)*(height+delta_height) in catch_error "render_editor: SDL.Raw.renderDrawLine returns error" 0 (SRV.renderDrawLine renderer new_x new_y new_x (new_y+height))
+            let new_x=x+fromIntegral cursor_number*block_width in let new_y=y+fromIntegral (cursor_row-row)*(height+delta_height) in catch_error "render_editor: SDL.Raw.renderDrawLine returns error" 0 (SRV.renderDrawLine renderer new_x new_y new_x (new_y+height-1))
             return new_intmap_texture
 
 render_select::SRT.Renderer->Int->Int->Int->Int->Int->Int->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DS.Seq Char,Int,Bool)->IO ()
