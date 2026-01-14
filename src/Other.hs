@@ -75,6 +75,14 @@ error_insert_insert_a::[Char]->[Char]->Int->a->Maybe (DIS.IntMap a)->Maybe (DIS.
 error_insert_insert_a first_error_message _ _ _ Nothing=error first_error_message
 error_insert_insert_a _ second_error_message key value (Just intmap)=if DIS.member key intmap then error second_error_message else Just (DIS.insert key value intmap)
 
+error_replace_replace::[Char]->[Char]->Int->Int->a->DIS.IntMap (DIS.IntMap a)->DIS.IntMap (DIS.IntMap a)
+error_replace_replace first_error_message second_error_message first_key second_key value=DIS.alter (error_replace_replace_a first_error_message second_error_message second_key value) first_key
+
+error_replace_replace_a::[Char]->[Char]->Int->a->Maybe (DIS.IntMap a)->Maybe (DIS.IntMap a)
+error_replace_replace_a first_error_message _ _ _ Nothing=error first_error_message
+error_replace_replace_a _ second_error_message key value (Just intmap)=if DIS.member key intmap then Just (DIS.insert key value intmap) else error second_error_message
+
+
 error_update::[Char]->Int->(a->a)->DIS.IntMap a->DIS.IntMap a
 error_update error_message key update=DIS.alter (error_update_a error_message update) key
 
@@ -108,27 +116,27 @@ error_update_update_io_b _ update (Just value)=do
 
 get_renderer::Int->Engine a->SRT.Renderer
 get_renderer window_id (Engine _ window _ _ _ _ _)=case DIS.lookup window_id window of
-    Nothing->error "get_renderer: no such window"
+    Nothing->error "get_renderer: error 1"
     Just (Window _ _ renderer _ _ _ _ _ _)->renderer
 
 get_renderer_window::Int->DIS.IntMap Window->SRT.Renderer
 get_renderer_window window_id window=case DIS.lookup window_id window of
-    Nothing->error "get_renderer_window: no such window"
+    Nothing->error "get_renderer_window: error 1"
     Just (Window _ _ renderer _ _ _ _ _ _)->renderer
 
 get_transform_window::Int->DIS.IntMap Window->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
 get_transform_window window_id window=case DIS.lookup window_id window of
-    Nothing->error "get_transform_window: no such window"
+    Nothing->error "get_transform_window: error 1"
     Just (Window _ _ _ _ _ x y design_size size)->(x,y,design_size,size)
 
 get_renderer_with_size_window::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CInt,FCT.CInt)
 get_renderer_with_size_window window_id window=case DIS.lookup window_id window of
-    Nothing->error "get_renderer_with_size_window: no such window"
+    Nothing->error "get_renderer_with_size_window: error 1"
     Just (Window _ _ renderer _ _ _ _ design_size size)->(renderer,design_size,size)
 
 get_renderer_with_transform_window::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
 get_renderer_with_transform_window window_id window=case DIS.lookup window_id window of
-    Nothing->error "get_renderer_with_transform_window: no such window"
+    Nothing->error "get_renderer_with_transform_window: error 1"
     Just (Window _ _ renderer _ _ x y design_size size)->(renderer,x,y,design_size,size)
 
 get_next_id::Combined_widget a->(Event->Engine a->Id)
@@ -138,59 +146,43 @@ get_next_id (Node_widget next_single_id _ _)=next_single_id
 get_font::DS.Seq Int->Engine a->DIS.IntMap (FP.Ptr SRF.Font)
 get_font seq_single_id engine=case get_widget seq_single_id engine of
     Leaf_widget _ (Font font)->font
-    _->error "get_font: not a font widget"
+    _->error "get_font: error 1"
 
 get_widget_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
 get_widget_widget seq_single_id start_id widget=case seq_single_id of
-    DS.Empty->error "get_widget_widget: empty seq_single_id"
+    DS.Empty->error "get_widget_widget: error 1"
     single_id DS.:<| other_seq_single_id->get_widget_a start_id single_id other_seq_single_id widget
 
 get_widget::DS.Seq Int->Engine a->Combined_widget a
 get_widget seq_single_id (Engine widget _ _ _ _ start_id _)=case seq_single_id of
-    DS.Empty->error "get_widget: empty seq_single_id"
+    DS.Empty->error "get_widget: error 1"
     (single_id DS.:<| other_seq_single_id)->get_widget_a start_id single_id other_seq_single_id widget
 
 get_widget_a::Int->Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
 get_widget_a combined_id single_id seq_single_id widget=case DIS.lookup combined_id widget of
-    Nothing->error "get_widget_a: no such combined_id"
+    Nothing->error "get_widget_a: error 1"
     Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
-        Nothing->error "get_widget_a: no such single_id"
+        Nothing->error "get_widget_a: error 2"
         Just combined_widget->case seq_single_id of
             DS.Empty->combined_widget
             (new_single_id DS.:<| other_seq_single_id)->case combined_widget of
-                Leaf_widget _ _->error "get_widget_a: wrong seq_single_id"
+                Leaf_widget _ _->error "get_widget_a: error 3"
                 Node_widget _ _ new_combined_id->get_widget_a new_combined_id new_single_id other_seq_single_id widget
 
 get_widget_id_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
 get_widget_id_widget seq_single_id start_id widget=case seq_single_id of
-    DS.Empty->error "get_widget_id_widget: empty seq_single_id"
+    DS.Empty->error "get_widget_id_widget: error 1"
     single_id DS.:<| other_seq_single_id->get_widget_id_widget_a other_seq_single_id start_id single_id widget
 
 get_widget_id_widget_a::DS.Seq Int->Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
 get_widget_id_widget_a seq_single_id combined_id single_id widget=case seq_single_id of
     DS.Empty->(combined_id,single_id)
     (new_single_id DS.:<| other_seq_single_id)->case DIS.lookup combined_id widget of
-        Nothing->error "get_widget_id_widget_a: no such combined_id"
+        Nothing->error "get_widget_id_widget_a: error 1"
         Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
-            Nothing->error "get_widget_id_widget_a: no such single_id"
-            Just (Leaf_widget _ _)->error "get_widget_id_widget_a: wrong seq_single_id"
+            Nothing->error "get_widget_id_widget_a: error 2"
+            Just (Leaf_widget _ _)->error "get_widget_id_widget_a: error 3"
             Just (Node_widget _ _ new_combined_id)->get_widget_id_widget_a other_seq_single_id new_combined_id new_single_id widget
-
-update_combined_widget::Int->DS.Seq Int->(Combined_widget a->IO (Combined_widget a))->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (DIS.IntMap (DIS.IntMap (Combined_widget a)))
-update_combined_widget start_id seq_single_id update widget=case seq_single_id of
-    DS.Empty->error "update_combined_widget: empty seq_single_id"
-    single_id DS.:<| other_seq_single_id->update_combined_widget_a start_id single_id other_seq_single_id update widget
-
-update_combined_widget_a::Int->Int->DS.Seq Int->(Combined_widget a->IO (Combined_widget a))->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (DIS.IntMap (DIS.IntMap (Combined_widget a)))
-update_combined_widget_a combined_id single_id seq_single_id update widget=case seq_single_id of
-    DS.Empty->error_update_update_io "update_combined_widget_a: no such combined_id" "update_combined_widget_a: no such single_id" combined_id single_id update widget
-    (new_single_id DS.:<| other_seq_single_id)->case DIS.lookup single_id widget of
-        Nothing->error "update_combined_widget_a: no such combined_id"
-        Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
-            Nothing->error "update_combined_widget_a: no such single_id"
-            Just new_combined_widget->case new_combined_widget of
-                Leaf_widget _ _->error "update_combined_widget_a: wrong seq_single_id"
-                Node_widget _ _ new_combined_id->update_combined_widget_a new_combined_id new_single_id other_seq_single_id update widget
 
 clean_row::Row->IO ()
 clean_row (Row seq_texture _ _)=DF.mapM_ (\(texture,_,_,_,_)->SRV.destroyTexture texture) seq_texture
@@ -204,7 +196,7 @@ color=SRT.Color
 
 get_width::FP.Ptr SRF.Font->DT.Text->IO FCT.CInt
 get_width font text=FMA.alloca $ \width->FMA.alloca $ \height->DTF.withCString text $ \new_text->do
-    catch_error "get_width: SDL.Raw.Font.sizeUTF8 returns error" 0 (SRF.sizeUTF8 font new_text width height)
+    catch_error "get_width: error 1" 0 (SRF.sizeUTF8 font new_text width height)
     FS.peek width
 
 cut_text::FCT.CInt->FP.Ptr SRF.Font->DT.Text->IO (Int,Int,FCT.CInt,DT.Text,DT.Text)
@@ -220,19 +212,19 @@ cut_text_a left right last_width width font text=if left==right then let (left_t
 to_texture::SRT.Renderer->FP.Ptr Color->FP.Ptr SRF.Font->FCS.CString->IO SRT.Texture
 to_texture renderer text_color font text=do
     surface<-SRF.renderUTF8_Blended font text text_color
-    CM.when (surface==FP.nullPtr) $ error "to_texture: SDL.Raw.Font.renderUTF8_Blended returns error"
+    CM.when (surface==FP.nullPtr) $ error "to_texture: error 1"
     texture<-SRV.createTextureFromSurface renderer surface
     SRV.freeSurface surface
-    CM.when (texture==FP.nullPtr) $ error "to_texture: SDL.Raw.Video.createTextureFromSurface returns error"
+    CM.when (texture==FP.nullPtr) $ error "to_texture: error 2"
     return texture
 
 to_texture_with_width::SRT.Renderer->FP.Ptr Color->FP.Ptr SRF.Font->FCS.CString->IO (SRT.Texture,FCT.CInt)
 to_texture_with_width renderer text_color font text=do
     surface<-SRF.renderUTF8_Blended font text text_color
-    CM.when (surface==FP.nullPtr) $ error "to_texture_with_width: SDL.Raw.Font.renderUTF8_Blended returns error"
+    CM.when (surface==FP.nullPtr) $ error "to_texture_with_width: error 1"
     this_surface<-FS.peek surface
     let width=SRT.surfaceW this_surface
     texture<-SRV.createTextureFromSurface renderer surface
     SRV.freeSurface surface
-    CM.when (texture==FP.nullPtr) $ error "to_texture_with_width: SDL.Raw.Video.createTextureFromSurface returns error"
+    CM.when (texture==FP.nullPtr) $ error "to_texture_with_width: error 2"
     return (texture,width)

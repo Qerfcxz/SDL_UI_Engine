@@ -19,5 +19,5 @@ add_timer event_type time=do
 remove_timer::(SRT.TimerID,SRT.TimerCallback)->IO ()
 remove_timer (timer_id,callback)=do
     ok<-SRT.removeTimer timer_id
-    CM.unless ok (error "remove_timer: SDL.Raw.Timer.removeTimer returns error")
+    CM.unless ok (error "remove_timer: error 1")
     FP.freeHaskellFunPtr callback

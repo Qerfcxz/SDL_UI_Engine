@@ -17,9 +17,9 @@ data Engine a=Engine (DIS.IntMap (DIS.IntMap (Combined_widget a))) (DIS.IntMap W
 data Combined_widget a=Leaf_widget (Event->Engine a->Id) (Single_widget a)|Node_widget (Event->Engine a->Id) Int Int
 --Node_widget:后继函数，该组合控件的主控件id，跳转id（到它的组合控件id）
 
-data Single_widget a=Data a|Trigger (Event->Engine a->Engine a)|Io_trigger (Event->Engine a->IO (Engine a))|Font (DIS.IntMap (FP.Ptr SRF.Font))|Block_font Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))|Rectangle Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture Int SRT.Texture FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text Int Int Int Bool Bool Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq Paragraph) (DS.Seq Row)|Editor Int Int Int Int Int Bool (DS.Seq Int) Texture_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt Cursor (DS.Seq (DS.Seq Char,Int,Bool))
+data Single_widget a=Data a|Trigger (Event->Engine a->Engine a)|Io_trigger (Event->Engine a->IO (Engine a))|Font (DIS.IntMap (FP.Ptr SRF.Font))|Block_font Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))|Rectangle Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture Int SRT.Texture FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text Int Int Int Bool Bool Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq Paragraph) (DS.Seq Row)|Editor Int Int Int Int Int Int Bool (DS.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt Cursor (DS.Seq (DS.Seq Char,Int,Bool))
 
-data Cursor=Cursor_none|Cursor_single Int Int FCT.CInt|Cursor_double Bool Int Int Int Int FCT.CInt FCT.CInt
+data Cursor=Cursor_none|Cursor_single Int Int Int FCT.CInt|Cursor_double Bool Int Int Int Int Int Int FCT.CInt FCT.CInt
 
 data Window=Window Int SRT.Window SRT.Renderer FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt
 
@@ -30,7 +30,7 @@ data Request a=Create_widget (DS.Seq Int) (Combined_widget_request a)|Remove_wid
 data Combined_widget_request a=Leaf_widget_request (Event->Engine a->Id) (Single_widget_request a)|Node_widget_request (Event->Engine a->Id) Int (DIS.IntMap (Combined_widget_request a))
 --Node_widget_requestInt：其主控件id::Int
 
-data Single_widget_request a=Data_request a|Trigger_request (Event->Engine a->Engine a)|Io_trigger_request (Event->Engine a->IO (Engine a))|Font_request DT.Text (DS.Seq Int)|Block_font_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 DT.Text (DS.Seq Int)|Rectangle_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture_request Int DT.Text FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text_request Int Int Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq Paragraph)|Editor_request Int Int Int (DS.Seq Int) Texture_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq (DS.Seq Char))
+data Single_widget_request a=Data_request a|Trigger_request (Event->Engine a->Engine a)|Io_trigger_request (Event->Engine a->IO (Engine a))|Font_request DT.Text (DS.Seq Int)|Block_font_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 DT.Text (DS.Seq Int)|Rectangle_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture_request Int DT.Text FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text_request Int Int Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq Paragraph)|Editor_request Int Int Int (DS.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq (DS.Seq Char))
 
 data Paragraph=Paragraph (DS.Seq (DT.Text,Color,DS.Seq Int,Int)) Typesetting|Paragraph_blank (DS.Seq Int) Int
 
@@ -41,7 +41,7 @@ data Row=Row (DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)) FCT.CInt
 
 data Find=Equal|Near
 
-data Texture_find=Texture_equal|Texture_near
+data Block_find=Block_equal|Block_near
 
 data Event=Unknown|Quit|Time|At Int Action|Resize Int FCT.CInt FCT.CInt
 

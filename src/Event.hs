@@ -18,11 +18,11 @@ import qualified SDL.Raw.Event as SRE
 import qualified SDL.Raw.Types as SRT
 
 push_event::DW.Word32->DW.Word32->DW.Word32->DI.Int32->FP.Ptr ()->FP.Ptr ()->IO ()
-push_event event_type time window_id event_code data_one data_two=FMU.with (SRT.UserEvent event_type time window_id event_code data_one data_two) (catch_error "SDL.Raw.Event.pushEvent returns error" 1 . SRE.pushEvent)
+push_event event_type time window_id event_code data_one data_two=FMU.with (SRT.UserEvent event_type time window_id event_code data_one data_two) (catch_error "push_event: error 1" 1 . SRE.pushEvent)
 
 get_event::DIS.IntMap Int->Maybe DW.Word32->IO Event
 get_event window_map maybe_event_type=FMA.alloca $ \pointer->do
-    catch_error "get_event: SDL.Raw.Event.waitEvent returns error" 1 (SRE.waitEvent pointer)
+    catch_error "get_event: error 1" 1 (SRE.waitEvent pointer)
     event<-FS.peek pointer
     case event of
         SRT.UserEvent event_type _ _ _ _ _->case maybe_event_type of

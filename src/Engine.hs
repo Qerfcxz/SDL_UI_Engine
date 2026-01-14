@@ -16,8 +16,8 @@ import qualified SDL.Raw.Font as SRF
 
 init_engine::IO ()
 init_engine=do
-    catch_error "init_engine: SDL.Raw.init returns error" 0 (SRB.init SRE.SDL_INIT_EVERYTHING)
-    catch_error "init_engine: SDL.Raw.Font.init returns error" 0 SRF.init
+    catch_error "init_engine: error 1" 0 (SRB.init SRE.SDL_INIT_EVERYTHING)
+    catch_error "init_engine: error 2" 0 SRF.init
 
 quit_engine::IO ()
 quit_engine=do
@@ -61,21 +61,21 @@ run_request (request DS.:<| other_request) engine=do
 
 run_event::Data a=>Int->Int->DS.Seq Int->Event->Engine a->Engine a
 run_event start_id main_id single_id_history event engine@(Engine widget _ _ _ _ _ _)=case DIS.lookup start_id widget of
-    Nothing->error "run_event: you changed something without proper design"
+    Nothing->error "run_event: error 1"
     Just intmap_combined_widget->run_event_a start_id main_id single_id_history intmap_combined_widget event engine
 
 --涉及到run_event_b之后重新在combined_widget获得最新的Next_id的问题
 run_event_a::Data a=>Int->Int->DS.Seq Int->DIS.IntMap (Combined_widget a)->Event->Engine a->Engine a
 run_event_a combined_id single_id single_id_history intmap_combined_widget event engine=case DIS.lookup single_id intmap_combined_widget of
-    Nothing->error "run_event_a: no such single_id"
+    Nothing->error "run_event_a: error 1"
     Just combined_widget->let new_engine@(Engine new_widget _ _ _ _ _ _)=run_event_b combined_widget event engine in case get_next_id combined_widget event new_engine of
         End->new_engine
         Goto new_single_id->case DIS.lookup combined_id new_widget of
-            Nothing->error "run_event_a: you changed something without proper design"
+            Nothing->error "run_event_a: error 2"
             Just new_intmap_combined_widget->run_event_a combined_id new_single_id (single_id_history DS.|> new_single_id) new_intmap_combined_widget event new_engine
         Back number->case DIS.lookup combined_id new_widget of
-            Nothing->error "run_event_a: you changed something without proper design"
-            Just new_intmap_combined_widget->let max_index=DS.length single_id_history-1 in if number<0 || max_index<number then error "run_event_a: Back number out of range" else let new_single_id=DS.index single_id_history (max_index-number) in run_event_a combined_id new_single_id (single_id_history DS.|> new_single_id) new_intmap_combined_widget event new_engine
+            Nothing->error "run_event_a: error 3"
+            Just new_intmap_combined_widget->let max_index=DS.length single_id_history-1 in if number<0 || max_index<number then error "run_event_a: error 4" else let new_single_id=DS.index single_id_history (max_index-number) in run_event_a combined_id new_single_id (single_id_history DS.|> new_single_id) new_intmap_combined_widget event new_engine
 
 run_event_b::Data a=>Combined_widget a->Event->Engine a->Engine a
 run_event_b (Leaf_widget _ widget) event engine=run_widget event widget engine
