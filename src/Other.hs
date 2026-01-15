@@ -228,3 +228,9 @@ to_texture_with_width renderer text_color font text=do
     SRV.freeSurface surface
     CM.when (texture==FP.nullPtr) $ error "to_texture_with_width: error 2"
     return (texture,width)
+
+check_render::DS.Seq Int->Engine a->Bool
+check_render seq_id engnie=case get_widget seq_id engnie of
+    Leaf_widget _ (Text _ _ _ render _ _ _ _ _ _ _ _ _ _ _ _ _ _)->render
+    Leaf_widget _ (Editor _ _ _ _ _ _ render _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)->render
+    _->error "check_render: error 1"

@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 module Request where
+import Block
 import Editor
 import Other
 import Text
@@ -95,26 +96,30 @@ do_request (Render_text_widget seq_id) (Engine widget window window_map request 
         Leaf_widget _ (Text window_id row _ _ _ _ _ _ _ _ _ _ left _ up down _ seq_row)->case DS.drop row seq_row of
             DS.Empty->return (Engine new_widget window window_map request count_id start_id main_id)
             (new_row DS.:<| other_seq_row)->let renderer=get_renderer_window window_id window in case new_row of
-                Row seq_texture y row_height->if down<up+row_height then return (Engine new_widget window window_map request count_id start_id main_id) else let new_up=up-y in do
-                        render_seq_texture left new_up down renderer seq_texture
-                        render_seq_row left new_up down renderer other_seq_row
-                        return (Engine new_widget window window_map request count_id start_id main_id)
-                Row_blank y row_height->if down<up+row_height then return (Engine new_widget window window_map request count_id start_id main_id) else let new_up=up-y in do
-                    render_seq_row left new_up down renderer other_seq_row
+                Row seq_texture y font_height->if down<up+font_height then return (Engine new_widget window window_map request count_id start_id main_id) else let new_up=up-y in FMA.alloca $ \rect->do
+                    render_seq_texture rect left new_up down renderer seq_texture
+                    render_seq_row rect left new_up down renderer other_seq_row
+                    return (Engine new_widget window window_map request count_id start_id main_id)
+                Row_blank y font_height->if down<up+font_height then return (Engine new_widget window window_map request count_id start_id main_id) else let new_up=up-y in FMA.alloca $ \rect->do
+                    render_seq_row rect left new_up down renderer other_seq_row
                     return (Engine new_widget window window_map request count_id start_id main_id)
         _->error "do_request: error 24"
 do_request (Render_editor_widget seq_id) (Engine widget window window_map request count_id start_id main_id)=do
-    ioref<-DI.newIORef (error "do_request: error 25")
+    ioref<-DI.newIORef (error "")
     let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget
-    new_widget<-error_update_update_io "do_request: error 26" "do_request: error 27" combined_id single_id (update_widget_render ioref) widget
-    maybe_combined_widget<-DI.readIORef ioref
-    case maybe_combined_widget of
-        Leaf_widget _ (Editor window_id block_number row_number row _ font_size _ path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha _ _ _ _ _ _ _ font_height block_width delta_height x y _ _ _ _ cursor seq_seq_char)->do
-            new_new_widget<-use_block_font find path start_id font_size (\font intmap_texture->render_editor (get_renderer_window window_id window) block_number row_number row typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font font_height block_width delta_height x y cursor seq_seq_char intmap_texture) new_widget
-            return (Engine new_new_widget window window_map request count_id start_id main_id)
-        _->error "do_request: error 28"
+    new_widget<-error_update_update_io "" "" combined_id single_id (update_widget_render ioref) widget
+    combined_widget<-DI.readIORef ioref
+    case combined_widget of
+        Leaf_widget _ (Editor window_id block_number row_number row _ font_size _ path _ typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha _ _ _ _ _ _ _ font_height block_width delta_height x y _ _ _ _ cursor seq_seq_char)->case get_widget_widget path start_id widget of
+            (Leaf_widget _ (Block_font _ _ _ _ _ intmap_intmap_texture))->case DIS.lookup font_size intmap_intmap_texture of
+                Nothing->error "do_request: error 25"
+                Just (_,_,intmap_texture)->do
+                    render_editor (get_renderer_window window_id window) block_number row_number row typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char intmap_texture
+                    return (Engine new_widget window window_map request count_id start_id main_id)
+            _->error "do_request: error 26"
+        _->error "do_request: error 27"
 do_request (Update_block_font_widget seq_id size block_width seq_char) (Engine widget window window_map request count_id start_id main_id)=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in do
-    new_widget<-error_update_update_io "do_request: error 29" "do_request: error 30" combined_id single_id (update_block_font window size block_width seq_char) widget
+    new_widget<-error_update_update_io "do_request: error 28" "do_request: error 29" combined_id single_id (update_block_font window size block_width seq_char) widget
     return (Engine new_widget window window_map request count_id start_id main_id)
 
 update_widget_render::DI.IORef (Combined_widget a)->Combined_widget a->IO (Combined_widget a)
