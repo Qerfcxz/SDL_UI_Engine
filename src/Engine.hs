@@ -38,26 +38,27 @@ run_engine timer_setting engine=do
             remove_timer timer
 
 loop_engine_time::Data a=>DW.Word32->Engine a->IO()
-loop_engine_time time_event_type (Engine widget window window_map request count_id start_id main_id)=do
-    new_engine@(Engine _ _ new_window_map _ _ new_start_id new_main_id)<-run_request request (Engine widget window window_map DS.empty count_id start_id main_id)
+loop_engine_time time_event_type engine=do
+    new_engine@(Engine _ _ new_window_map _ _ new_start_id new_main_id)<-run_request engine
     event<-get_event new_window_map (Just time_event_type)
     case event of
         Quit->clean_engine new_engine
         _->loop_engine_time time_event_type (run_event new_start_id new_main_id (DS.singleton new_main_id) event new_engine)
 
 loop_engine::Data a=>Engine a->IO()
-loop_engine (Engine widget window window_map request count_id start_id main_id)=do
-    new_engine@(Engine _ _ new_window_map _ _ new_start_id new_main_id)<-run_request request (Engine widget window window_map DS.empty count_id start_id main_id)
+loop_engine engine=do
+    new_engine@(Engine _ _ new_window_map _ _ new_start_id new_main_id)<-run_request engine
     event<-get_event new_window_map Nothing
     case event of
         Quit->clean_engine new_engine
         _->loop_engine (run_event new_start_id new_main_id (DS.singleton new_main_id) event new_engine)
 
-run_request::Data a=>DS.Seq (Request a)->Engine a->IO (Engine a)
-run_request DS.Empty engine=return engine
-run_request (request DS.:<| other_request) engine=do
-    (Engine new_widget new_window new_window_map new_request new_count_id new_start_id new_main_id)<-do_request request engine
-    run_request (other_request DS.>< new_request) (Engine new_widget new_window new_window_map DS.empty new_count_id new_start_id new_main_id)
+run_request::Data a=>Engine a->IO (Engine a)
+run_request (Engine widget window window_map request count_id start_id main_id)=case request of
+    DS.Empty->return (Engine widget window window_map DS.Empty count_id start_id main_id)
+    (this_request DS.:<| other_request)->do
+        new_engine<-do_request this_request (Engine widget window window_map other_request count_id start_id main_id)
+        run_request new_engine
 
 run_event::Data a=>Int->Int->DS.Seq Int->Event->Engine a->Engine a
 run_event start_id main_id single_id_history event engine@(Engine widget _ _ _ _ _ _)=case DIS.lookup start_id widget of

@@ -18,6 +18,10 @@ import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Video as SRV
 
+maybe_handle::Maybe a->(a->b)->b->b
+maybe_handle Nothing _ value=value
+maybe_handle (Just value) handle _=handle value
+
 belong::Eq a=>a->DS.Seq a->Bool
 belong value seq_value=case DS.elemIndexL value seq_value of
     Nothing->False
@@ -81,7 +85,6 @@ error_replace_replace first_error_message second_error_message first_key second_
 error_replace_replace_a::[Char]->[Char]->Int->a->Maybe (DIS.IntMap a)->Maybe (DIS.IntMap a)
 error_replace_replace_a first_error_message _ _ _ Nothing=error first_error_message
 error_replace_replace_a _ second_error_message key value (Just intmap)=if DIS.member key intmap then Just (DIS.insert key value intmap) else error second_error_message
-
 
 error_update::[Char]->Int->(a->a)->DIS.IntMap a->DIS.IntMap a
 error_update error_message key update=DIS.alter (error_update_a error_message update) key
