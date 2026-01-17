@@ -18,10 +18,6 @@ import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Video as SRV
 
-maybe_handle::Maybe a->(a->b)->b->b
-maybe_handle Nothing _ value=value
-maybe_handle (Just value) handle _=handle value
-
 belong::Eq a=>a->DS.Seq a->Bool
 belong value seq_value=case DS.elemIndexL value seq_value of
     Nothing->False
