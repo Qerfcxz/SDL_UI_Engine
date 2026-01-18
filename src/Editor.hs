@@ -3,9 +3,16 @@
 module Editor where
 import Other
 import Type
+import qualified Control.Monad as CM
+import qualified Data.ByteString as DB
 import qualified Data.Char as DC
+import qualified Data.Foldable as DF
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
+import qualified Data.Text as DT
+import qualified Data.Text.Encoding as DTE
+import qualified Data.Text.Lazy as DTL
+import qualified Data.Text.Lazy.Builder as DTLB
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
@@ -15,22 +22,24 @@ import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Video as SRV
 
-render_editor::SRT.Renderer->Int->Int->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Cursor->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt)->IO ()
+render_editor::SRT.Renderer->Int->Int->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Cursor->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))
 render_editor renderer block_number row_number row typesetting text_red text_green text_blue text_alpha _ _ _ _ _ _ _ _ font_height block_width delta_height x y Cursor_none seq_seq_char intmap_texture=FMA.alloca (\rect->render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x y font_height (font_height+delta_height) (DS.take row_number (DS.drop row seq_seq_char)) intmap_texture)
 render_editor renderer block_number row_number row typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha _ _ _ _ font_height block_width delta_height x y (Cursor_single cursor_row cursor_block _ _) seq_seq_char intmap_texture=do
     if cursor_row<row||row+row_number<=cursor_row then FMA.alloca (\rect->render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x y font_height (font_height+delta_height) (DS.take row_number (DS.drop row seq_seq_char)) intmap_texture) else do
-        FMA.alloca (\rect->render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x y font_height (font_height+delta_height) (DS.take row_number (DS.drop row seq_seq_char)) intmap_texture)
+        new_intmap_texture<-FMA.alloca (\rect->render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x y font_height (font_height+delta_height) (DS.take row_number (DS.drop row seq_seq_char)) intmap_texture)
         catch_error "render_editor: error 1" 0 (SRV.setRenderDrawColor renderer cursor_red cursor_green cursor_blue cursor_alpha)
         let new_x=x+fromIntegral cursor_block*block_width in let new_y=y+fromIntegral (cursor_row-row)*(font_height+delta_height) in catch_error "render_editor: error 2" 0 (SRV.renderDrawLine renderer new_x new_y new_x (new_y+font_height-1))
+        return new_intmap_texture
 render_editor renderer block_number row_number row typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y (Cursor_double cursor_where cursor_row_start cursor_number_start _ _ cursor_row_end cursor_number_end _ _) seq_seq_char intmap_texture=let (cursor_row,cursor_block)=if cursor_where then (cursor_row_start,cursor_number_start) else (cursor_row_end,cursor_number_end) in if cursor_row<row||row+row_number<=cursor_row
     then FMA.alloca $ \rect->do
             render_select renderer rect cursor_row_start cursor_number_start cursor_row_end cursor_number_end block_number row_number row typesetting select_red select_green select_blue select_alpha block_width delta_height x y font_height seq_seq_char
             render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x y font_height (font_height+delta_height) (DS.take row_number (DS.drop row seq_seq_char)) intmap_texture
     else FMA.alloca $ \rect->do
         render_select renderer rect cursor_row_start cursor_number_start cursor_row_end cursor_number_end block_number row_number row typesetting select_red select_green select_blue select_alpha block_width delta_height x y font_height seq_seq_char
-        render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x y font_height (font_height+delta_height) (DS.take row_number (DS.drop row seq_seq_char)) intmap_texture
+        new_intmap_texture<-render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x y font_height (font_height+delta_height) (DS.take row_number (DS.drop row seq_seq_char)) intmap_texture
         catch_error "render_editor: error 3" 0 (SRV.setRenderDrawColor renderer cursor_red cursor_green cursor_blue cursor_alpha)
         let new_x=x+fromIntegral cursor_block*block_width in let new_y=y+fromIntegral (cursor_row-row)*(font_height+delta_height) in catch_error "render_editor: error 4" 0 (SRV.renderDrawLine renderer new_x new_y new_x (new_y+font_height-1))
+        return new_intmap_texture
 
 render_select::SRT.Renderer->FP.Ptr SRT.Rect->Int->Int->Int->Int->Int->Int->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->IO ()
 render_select renderer rect cursor_row_start cursor_number_start cursor_row_end cursor_number_end block_number row_number row typesetting select_red select_green select_blue select_alpha block_width delta_height x y font_height seq_seq_char=let min_row=max cursor_row_start row in let max_row=min cursor_row_end (row+row_number-1) in if max_row<min_row then return () else if min_row==cursor_row_start
@@ -85,22 +94,24 @@ render_row render renderer rect number_start number_end this_row row red green b
         catch_error "render_row: error 3" 0 (SRV.renderFillRect renderer rect)
         return True
 
-render_seq_seq_char::SRT.Renderer->FP.Ptr SRT.Rect->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt)->IO ()
-render_seq_seq_char _ _ _ _ _ _ _ _ _ _ _ _ _ DS.Empty _=return ()
+render_seq_seq_char::SRT.Renderer->FP.Ptr SRT.Rect->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))
+render_seq_seq_char _ _ _ _ _ _ _ _ _ _ _ _ _ DS.Empty intmap_texture=return intmap_texture
 render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x y font_height height ((seq_char,number,_,_) DS.:<| seq_seq_char) intmap_texture=do
-    render_seq_seq_char_a renderer rect text_red text_green text_blue text_alpha block_width (x+fromIntegral (typesetting_left typesetting number block_number)*block_width) y font_height seq_char intmap_texture
-    render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x (y+height) font_height height seq_seq_char intmap_texture
+    new_intmap_texture<-render_seq_seq_char_a renderer rect text_red text_green text_blue text_alpha block_width (x+fromIntegral (typesetting_left typesetting number block_number)*block_width) y font_height seq_char intmap_texture
+    render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x (y+height) font_height height seq_seq_char new_intmap_texture
 
-render_seq_seq_char_a::SRT.Renderer->FP.Ptr SRT.Rect->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (Char,Int,FCT.CInt)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt)->IO ()
-render_seq_seq_char_a _ _ _ _ _ _ _ _ _ _ DS.Empty _=return () 
+render_seq_seq_char_a::SRT.Renderer->FP.Ptr SRT.Rect->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (Char,Int,FCT.CInt)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))
+render_seq_seq_char_a _ _ _ _ _ _ _ _ _ _ DS.Empty intmap_texture=return intmap_texture 
 render_seq_seq_char_a renderer rect text_red text_green text_blue text_alpha block_width x y font_height ((char,block,delta_x) DS.:<| seq_char) intmap_texture=let char_ord=DC.ord char in case DIS.lookup char_ord intmap_texture of
     Nothing->error "render_seq_seq_char_a: error 1"
-    Just (texture,_,width)->do
-        catch_error "render_seq_seq_char_a: error 2" 0 (SRV.setTextureColorMod texture text_red text_green text_blue)
-        catch_error "render_seq_seq_char_a: error 3" 0 (SRV.setTextureAlphaMod texture text_alpha)
+    Just (texture,intmap_int,width,red,green,blue,alpha)->do
+        let first_check=text_red/=red||text_green/=green||text_blue/=blue
+        let second_check=text_alpha/=alpha
+        CM.when first_check (catch_error "render_seq_seq_char_a: error 2" 0 (SRV.setTextureColorMod texture text_red text_green text_blue))
+        CM.when second_check (catch_error "render_seq_seq_char_a: error 3" 0 (SRV.setTextureAlphaMod texture text_alpha))
         FS.poke rect (SRT.Rect (x+delta_x) y width font_height)
         catch_error "render_seq_seq_char_a: error 4" 0 (SRV.renderCopy renderer texture FP.nullPtr rect)
-        render_seq_seq_char_a renderer rect text_red text_green text_blue text_alpha block_width (x+fromIntegral block*block_width) y font_height seq_char intmap_texture
+        render_seq_seq_char_a renderer rect text_red text_green text_blue text_alpha block_width (x+fromIntegral block*block_width) y font_height seq_char (if first_check||second_check then DIS.insert char_ord (texture,intmap_int,width,text_red,text_green,text_blue,text_alpha) intmap_texture else intmap_texture)
     
 typesetting_left::Typesetting->Int->Int->Int
 typesetting_left Typesetting_left _ _=0
@@ -112,14 +123,14 @@ typesetting_right Typesetting_left number _=number
 typesetting_right Typesetting_right _ block_number=block_number
 typesetting_right Typesetting_center number block_number=div (block_number+number) 2
 
-find_block_font_equal::DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->DS.Seq Int->Int->Int->(Int,Int,FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt))
+find_block_font_equal::DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->DS.Seq Int->Int->Int->(Int,Int,FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))
 find_block_font_equal widget design_window_size window_size seq_id start_id size=case get_widget_widget seq_id start_id widget of
     Leaf_widget _ (Block_font window_id _ _ _ _ font)->let new_size=div (size*fromIntegral window_size) (fromIntegral design_window_size) in case DIS.lookup new_size font of
         Nothing->error "find_block_font_equal: error 1"
         Just (this_font,font_height,intmap_texture)->(window_id,new_size,this_font,font_height,intmap_texture)
     _->error "find_block_font_equal: error 2"
 
-find_block_font_near::DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->DS.Seq Int->Int->Int->(Int,Int,FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt))
+find_block_font_near::DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->DS.Seq Int->Int->Int->(Int,Int,FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))
 find_block_font_near widget design_window_size window_size seq_id start_id size=case get_widget_widget seq_id start_id widget of
     Leaf_widget _ (Block_font window_id _ _ _ _ font)->let new_size=div (size*fromIntegral window_size) (fromIntegral design_window_size) in case DIS.lookupLE new_size font of
         Nothing->case DIS.lookupGE new_size font of
@@ -130,11 +141,11 @@ find_block_font_near widget design_window_size window_size seq_id start_id size=
             Just (great_size,(great_font,great_height,great_intmap_texture))->if 2*new_size<small_size+great_size then (window_id,small_size,small_font,small_height,small_intmap_texture) else (window_id,great_size,great_font,great_height,great_intmap_texture)
     _->error "find_block_font_near: error 2"
 
-find_block_font::Block_find->(DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->DS.Seq Int->Int->Int->(Int,Int,FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt)))
+find_block_font::Block_find->(DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->DS.Seq Int->Int->Int->(Int,Int,FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
 find_block_font Block_near=find_block_font_equal
 find_block_font Block_equal=find_block_font_near
 
-get_block_font::Block_find->Int->DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt))->(Int,FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt))
+get_block_font::Block_find->Int->DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))->(Int,FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))
 get_block_font Block_equal size font=case DIS.lookup size font of
     Nothing->error "get_block_font: error 1"
     Just (this_font,font_height,intmap_texture)->(size,this_font,font_height,intmap_texture)
@@ -146,15 +157,15 @@ get_block_font Block_near size font=case DIS.lookupLE size font of
         Nothing->(small_size,small_font,small_height,small_intmap_texture)
         Just (great_size,(great_font,great_height,great_intmap_texture))->if 2*size<small_size+great_size then (small_size,small_font,small_height,small_intmap_texture) else (great_size,great_font,great_height,great_intmap_texture)
 
-from_seq_seq_char::DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt)->Int->FCT.CInt->DS.Seq (DS.Seq Char)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)
+from_seq_seq_char::DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->Int->FCT.CInt->DS.Seq (DS.Seq Char)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)
 from_seq_seq_char _ _ _ DS.Empty seq_seq_char=seq_seq_char
 from_seq_seq_char intmap_texture block_number block_width (seq_char DS.:<| other_seq_text) seq_seq_char=from_seq_seq_char intmap_texture block_number block_width other_seq_text (from_seq_seq_char_a intmap_texture 0 0 block_number block_width seq_char DS.empty seq_seq_char)
 
-from_seq_seq_char_a::DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt)->Int->Int->Int->FCT.CInt->DS.Seq Char->DS.Seq (Char,Int,FCT.CInt)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)
+from_seq_seq_char_a::DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->Int->Int->Int->FCT.CInt->DS.Seq Char->DS.Seq (Char,Int,FCT.CInt)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)
 from_seq_seq_char_a _ number char_number _ _ DS.Empty seq_char seq_seq_char=seq_seq_char DS.|> (seq_char,number,char_number,True)
 from_seq_seq_char_a intmap_texture number char_number block_number block_width (char DS.:<| other_text) seq_char seq_seq_char=let char_ord=DC.ord char in case DIS.lookup char_ord intmap_texture of
     Nothing->error "from_seq_seq_char_a: error 1"
-    Just (_,intmap_int,_)->case DIS.lookup (fromIntegral block_width) intmap_int of
+    Just (_,intmap_int,_,_,_,_,_)->case DIS.lookup (fromIntegral block_width) intmap_int of
         Nothing->error "from_seq_seq_char_a: error 2"
         Just (block,delta_x)->let new_number=number+block in if new_number<=block_number then from_seq_seq_char_a intmap_texture new_number (char_number+1) block_number block_width other_text (seq_char DS.:|> (char,block,delta_x)) seq_seq_char else if block_number<block then error "from_seq_seq_char_a: error 3" else from_seq_seq_char_a intmap_texture block 1 block_number block_width other_text (DS.singleton (char,block,delta_x)) (seq_seq_char DS.|> (seq_char,number,char_number,False))
 
@@ -311,6 +322,48 @@ cursor_row_max block_number typesetting seq_seq_char (Cursor_double cursor_where
     else case DS.lookup cursor_row_end seq_seq_char of
     Nothing->error "cursor_row_max: error 1"
     Just (_,number,char_number,_)->let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block char_number new_cursor_block))
+
+copy::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->IO ()
+copy _ Cursor_none=return ()
+copy _ (Cursor_single {})=return ()
+copy seq_seq_char (Cursor_double _ cursor_row_start _ cursor_char_start _ cursor_row_end _ cursor_char_end _)=if cursor_row_start==cursor_row_end
+    then if cursor_char_start==cursor_char_end then return () else case DS.lookup cursor_row_start seq_seq_char of
+        Nothing->error "copy: error 1"
+        Just (seq_char_start,_,_,_)->catch_error "copy: error 2" 0 (DB.useAsCString (DTE.encodeUtf8 (to_text DS.Empty (DS.take (cursor_char_end-cursor_char_start) (DS.drop cursor_char_start seq_char_start)) DS.Empty False)) SRV.setClipboardText)
+    else case DS.take (cursor_row_end+1-cursor_row_start) (DS.drop cursor_row_start seq_seq_char) of
+        DS.Empty->error "copy: error 3"
+        ((seq_char_start,_,_,end_start) DS.:<| new_seq_seq_char)->case new_seq_seq_char of
+            DS.Empty->error "copy: error 4"
+            (other_seq_seq_char DS.:|> (seq_char_end,_,_,_))->catch_error "copy: error 5" 0 (DB.useAsCString (DTE.encodeUtf8 (to_text other_seq_seq_char (DS.drop cursor_char_start seq_char_start) (DS.take cursor_char_end seq_char_end) end_start)) SRV.setClipboardText)
+
+to_text::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DS.Seq (Char,Int,FCT.CInt)->DS.Seq (Char,Int,FCT.CInt)->Bool->DT.Text
+to_text seq_seq_char seq_char_start seq_char_end end_start=DTL.toStrict (DTLB.toLazyText (DF.foldMap (\(char,_,_)->DTLB.singleton char) seq_char_start<>(if end_start then DTLB.singleton '\n' else mempty)<>DF.foldMap (\(seq_char,_,_,end)->DF.foldMap (\(char,_,_)->DTLB.singleton char) seq_char<>(if end then DTLB.singleton '\n' else mempty)) seq_seq_char<>DF.foldMap (\(char,_,_)->DTLB.singleton char) seq_char_end))
+
+--to_seq_seq_char::Int->Int->Int->Int->Int->Int->FP.Ptr SRF.Font->FCT.CInt->FCT.CInt->DS.Seq Char->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->IO (Int,Int,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8),DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool))
+--to_seq_seq_char block_number row_start char_start row_end char_end font font_height block_width seq_char intmap_texture seq_seq_char=
+
+to_seq_seq_char_a::SRT.Renderer->Int->Int->Int->Int->FP.Ptr Color->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FP.Ptr SRF.Font->FCT.CInt->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->DS.Seq Char->DS.Seq (DS.Seq Char)->DS.Seq (Char,Int,FCT.CInt)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->IO (Int,Int,Int,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8),DS.Seq (Char,Int,FCT.CInt),DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool))
+to_seq_seq_char_a _ row number_block number_char _ _ _ _ _ _ _ _ intmap_texture DS.Empty DS.Empty seq_char_start seq_seq_char_start=return (row,number_block,number_char,intmap_texture,seq_char_start,seq_seq_char_start)
+to_seq_seq_char_a renderer row number_block number_char block_number text_color text_red text_green text_blue text_alpha font block_width intmap_texture DS.Empty (seq_char DS.:<| seq_seq_char) seq_char_start seq_seq_char_start=to_seq_seq_char_a renderer (row+1) 0 0 block_number text_color text_red text_green text_blue text_alpha font block_width intmap_texture seq_char seq_seq_char DS.empty (seq_seq_char_start DS.|> (seq_char_start,number_block,number_char,True))
+to_seq_seq_char_a renderer row number_block number_char block_number text_color text_red text_green text_blue text_alpha font block_width intmap_texture (char DS.:<| seq_char) seq_seq_char seq_char_start seq_seq_char_start=let char_ord=DC.ord char in case DIS.lookup char_ord intmap_texture of
+    Nothing->do
+        (texture,width)<-DB.useAsCString (DTE.encodeUtf8 (DT.singleton char)) (to_texture_with_width renderer text_color font)
+        let width_mod=mod width block_width
+        let block=if width_mod==0 then div width block_width else div width block_width+1
+        let new_block=fromIntegral block
+        let new_number_block=number_block+new_block
+        let delta_x=if width_mod==0 then 0 else div (block_width-width_mod) 2
+        if block_number<new_number_block then if block_number<new_block then error "to_seq_seq_char_a: error 1" else to_seq_seq_char_a renderer (row+1) new_block 1 block_number text_color text_red text_green text_blue text_alpha font block_width (DIS.insert char_ord (texture,DIS.singleton (fromIntegral block_width) (new_block,delta_x),width,text_red,text_green,text_blue,text_alpha) intmap_texture) seq_char seq_seq_char (DS.singleton (char,new_block,delta_x)) (seq_seq_char_start DS.|> (seq_char_start,number_block,number_char,False)) else to_seq_seq_char_a renderer row new_number_block (number_char+1) block_number text_color text_red text_green text_blue text_alpha font block_width (DIS.insert char_ord (texture,DIS.singleton (fromIntegral block_width) (new_block,delta_x),width,text_red,text_green,text_blue,text_alpha) intmap_texture) seq_char seq_seq_char (seq_char_start DS.|> (char,new_block,delta_x)) seq_seq_char_start
+    Just (texture,intmap_int,width,red,green,blue,alpha)->case DIS.lookup (fromIntegral block_width) intmap_int of
+        Nothing->do
+            let width_mod=mod width block_width
+            let block=if width_mod==0 then div width block_width else div width block_width+1
+            let new_block=fromIntegral block
+            let new_number_block=number_block+new_block
+            let delta_x=if width_mod==0 then 0 else div (block_width-width_mod) 2
+            if block_number<new_number_block then if block_number<new_block then error "to_seq_seq_char_a: error 2" else to_seq_seq_char_a renderer (row+1) new_block 1 block_number text_color text_red text_green text_blue text_alpha font block_width (DIS.insert char_ord (texture,DIS.insert (fromIntegral block_width) (new_block,delta_x) intmap_int,width,red,green,blue,alpha) intmap_texture) seq_char seq_seq_char (DS.singleton (char,new_block,delta_x)) (seq_seq_char_start DS.|> (seq_char_start,number_block,number_char,False)) else to_seq_seq_char_a renderer row new_number_block (number_char+1) block_number text_color text_red text_green text_blue text_alpha font block_width (DIS.insert char_ord (texture,DIS.insert (fromIntegral block_width) (new_block,delta_x) intmap_int,width,red,green,blue,alpha) intmap_texture) seq_char seq_seq_char (seq_char_start DS.|> (char,new_block,delta_x)) seq_seq_char_start
+        Just (block,delta_x)->let new_number_block=number_block+block in if block_number<new_number_block then if block_number<block then error "to_seq_seq_char_a: error 3" else to_seq_seq_char_a renderer (row+1) block 1 block_number text_color text_red text_green text_blue text_alpha font block_width intmap_texture seq_char seq_seq_char (DS.singleton (char,block,delta_x)) (seq_seq_char_start DS.|> (seq_char_start,number_block,number_char,False)) else to_seq_seq_char_a renderer row new_number_block (number_char+1) block_number text_color text_red text_green text_blue text_alpha font block_width intmap_texture seq_char seq_seq_char (seq_char_start DS.|> (char,block,delta_x)) seq_seq_char_start
+
 
 --Editor Int（window_id） Int（每行几个格子） Int（显示几行） Int（当前文本框第一行是文本第几行） Int（字体大小）Int（实际的字体大小）
 --Bool（render标记） DS.Seq Int（字体路径） Texture_find（字体资源查找策略） Typesetting（排版模式） Color（文字颜色） DW.Word8 DW.Word8 DW.Word8 DW.Word8（光标颜色） DW.Word8 DW.Word8 DW.Word8 DW.Word8（选择框颜色）

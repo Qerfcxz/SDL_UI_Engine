@@ -3,10 +3,11 @@
 module Text where
 import Other
 import Type
+import qualified Data.ByteString as DB
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text as DT
-import qualified Data.Text.Foreign as DTF
+import qualified Data.Text.Encoding as DTE
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Ptr as FP
@@ -44,7 +45,7 @@ by_left renderer find up width last_width delta_height max_ascent min_descent ((
             ascent<-SRF.fontAscent font
             descent<-SRF.fontDescent font
             FS.poke new_color text_color
-            texture<-DTF.withCString left_text (to_texture renderer new_color font)
+            texture<-DB.useAsCString (DTE.encodeUtf8 left_text) (to_texture renderer new_color font)
             let new_height=ascent-descent
             if right_length==0 then let new_ascent=max ascent max_ascent in let new_descent=min descent min_descent in by_left renderer find up width new_last_width delta_height new_ascent new_descent seq_text (DS.singleton (texture,width-last_width,ascent,last_width-new_last_width,new_height)) seq_row else do
                 (new_seq_row,new_texture,new_new_last_width,new_up)<-by_left_a renderer (up+new_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (DS.singleton (texture,0,up,last_width-new_last_width,new_height)) up new_height)
@@ -58,7 +59,7 @@ by_left renderer find up width last_width delta_height max_ascent min_descent ((
                     (new_seq_row,new_texture,new_new_last_width,new_up)<-by_left_a renderer (up+font_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,this_x,up+max_ascent-this_ascent,this_width,this_height)) seq_texture) up font_height)
                     by_left renderer find new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,0,ascent,width-new_new_last_width,new_height)) new_seq_row
                 else let new_ascent=max ascent max_ascent in let new_descent=min descent min_descent in let font_height=new_ascent-new_descent in do
-                    texture<-DTF.withCString left_text (to_texture renderer new_color font)
+                    texture<-DB.useAsCString (DTE.encodeUtf8 left_text) (to_texture renderer new_color font)
                     if right_length==0 then by_left renderer find up width new_last_width delta_height new_ascent new_descent seq_text (seq_texture DS.|> (texture,width-last_width,ascent,last_width-new_last_width,new_height)) seq_row else do
                         (new_seq_row,new_texture,new_new_last_width,new_up)<-let base_height=up+new_ascent in by_left_a renderer (up+font_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,this_x,base_height-this_ascent,this_width,this_height)) seq_texture DS.|> (texture,width-last_width,base_height-ascent,last_width-new_last_width,new_height)) up font_height)
                         by_left renderer find new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,0,ascent,width-new_new_last_width,new_height)) new_seq_row
@@ -67,7 +68,7 @@ by_left_a::SRT.Renderer->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FP.Ptr Color->F
 by_left_a renderer up width this_height delta_height text_color font text seq_row=do
     (left_length,right_length,last_width,left_text,right_text)<-cut_text width font text
     if left_length==0 then error "by_left_a: error 1" else do
-        texture<-DTF.withCString left_text (to_texture renderer text_color font)
+        texture<-DB.useAsCString (DTE.encodeUtf8 left_text) (to_texture renderer text_color font)
         if right_length==0 then return (seq_row,texture,last_width,up) else by_left_a renderer (up+this_height+delta_height) width this_height delta_height text_color font right_text (seq_row DS.|> Row (DS.singleton (texture,0,up,width-last_width,this_height)) up this_height)
 
 by_right::SRT.Renderer->(Int->DS.Seq Int->FP.Ptr SRF.Font)->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DT.Text,Color,DS.Seq Int,Int)->DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->DS.Seq Row->IO (DS.Seq Row,FCT.CInt)
@@ -79,7 +80,7 @@ by_right renderer find up width last_width delta_height max_ascent min_descent (
             ascent<-SRF.fontAscent font
             descent<-SRF.fontDescent font
             FS.poke new_color text_color
-            texture<-DTF.withCString left_text (to_texture renderer new_color font)
+            texture<-DB.useAsCString (DTE.encodeUtf8 left_text) (to_texture renderer new_color font)
             let new_height=ascent-descent
             if right_length==0 then let new_ascent=max ascent max_ascent in let new_descent=min descent min_descent in by_right renderer find up width new_last_width delta_height new_ascent new_descent seq_text (DS.singleton (texture,width-last_width,ascent,last_width-new_last_width,new_height)) seq_row else do
                 (new_seq_row,new_texture,new_new_last_width,new_up)<-by_right_a renderer (up+new_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (DS.singleton (texture,new_last_width,up,last_width-new_last_width,new_height)) up new_height)
@@ -93,7 +94,7 @@ by_right renderer find up width last_width delta_height max_ascent min_descent (
                     (new_seq_row,new_texture,new_new_last_width,new_up)<-by_right_a renderer (up+font_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,new_last_width+this_x,up+max_ascent-this_ascent,this_width,this_height)) seq_texture) up font_height)
                     by_right renderer find new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,0,ascent,width-new_new_last_width,new_height)) new_seq_row
                 else let new_ascent=max ascent max_ascent in let new_descent=min descent min_descent in let font_height=new_ascent-new_descent in do
-                    texture<-DTF.withCString left_text (to_texture renderer new_color font)
+                    texture<-DB.useAsCString (DTE.encodeUtf8 left_text) (to_texture renderer new_color font)
                     if right_length==0 then by_right renderer find up width new_last_width delta_height new_ascent new_descent seq_text (seq_texture DS.|> (texture,width-last_width,ascent,last_width-new_last_width,new_height)) seq_row else do
                         (new_seq_row,new_texture,new_new_last_width,new_up)<-let base_height=up+new_ascent in by_right_a renderer (up+font_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,new_last_width+this_x,base_height-this_ascent,this_width,this_height)) seq_texture DS.|> (texture,new_last_width+width-last_width,base_height-ascent,last_width-new_last_width,new_height)) up font_height)
                         by_right renderer find new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,0,ascent,width-new_new_last_width,new_height)) new_seq_row
@@ -102,7 +103,7 @@ by_right_a::SRT.Renderer->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FP.Ptr Color->
 by_right_a renderer up width this_height delta_height text_color font text seq_row=do
     (left_length,right_length,last_width,left_text,right_text)<-cut_text width font text
     if left_length==0 then error "by_right_a: error 1" else do
-        texture<-DTF.withCString left_text (to_texture renderer text_color font)
+        texture<-DB.useAsCString (DTE.encodeUtf8 left_text) (to_texture renderer text_color font)
         if right_length==0 then return (seq_row,texture,last_width,up) else by_right_a renderer (up+this_height+delta_height) width this_height delta_height text_color font right_text (seq_row DS.|> Row (DS.singleton (texture,last_width,up,width-last_width,this_height)) up this_height)
 
 by_center::SRT.Renderer->(Int->DS.Seq Int->FP.Ptr SRF.Font)->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DT.Text,Color,DS.Seq Int,Int)->DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->DS.Seq Row->IO (DS.Seq Row,FCT.CInt)
@@ -114,7 +115,7 @@ by_center renderer find up width last_width delta_height max_ascent min_descent 
             ascent<-SRF.fontAscent font
             descent<-SRF.fontDescent font
             FS.poke new_color text_color
-            texture<-DTF.withCString left_text (to_texture renderer new_color font)
+            texture<-DB.useAsCString (DTE.encodeUtf8 left_text) (to_texture renderer new_color font)
             let new_height=ascent-descent
             if right_length==0 then let new_ascent=max ascent max_ascent in let new_descent=min descent min_descent in by_center renderer find up width new_last_width delta_height new_ascent new_descent seq_text (DS.singleton (texture,width-last_width,ascent,last_width-new_last_width,new_height)) seq_row else do
                 (new_seq_row,new_texture,new_new_last_width,new_up)<-by_center_a renderer (up+new_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (DS.singleton (texture,div new_last_width 2,up,last_width-new_last_width,new_height)) up new_height)
@@ -128,7 +129,7 @@ by_center renderer find up width last_width delta_height max_ascent min_descent 
                     (new_seq_row,new_texture,new_new_last_width,new_up)<-by_center_a renderer (up+font_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,div new_last_width 2+this_x,up+max_ascent-this_ascent,this_width,this_height)) seq_texture) up font_height)
                     by_center renderer find new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,0,ascent,width-new_new_last_width,new_height)) new_seq_row
                 else let new_ascent=max ascent max_ascent in let new_descent=min descent min_descent in let font_height=new_ascent-new_descent in do
-                    texture<-DTF.withCString left_text (to_texture renderer new_color font)
+                    texture<-DB.useAsCString (DTE.encodeUtf8 left_text) (to_texture renderer new_color font)
                     if right_length==0 then by_center renderer find up width new_last_width delta_height new_ascent new_descent seq_text (seq_texture DS.|> (texture,width-last_width,ascent,last_width-new_last_width,new_height)) seq_row else do
                         (new_seq_row,new_texture,new_new_last_width,new_up)<-let base_height=up+new_ascent in by_center_a renderer (up+font_height+delta_height) width new_height delta_height new_color font right_text (seq_row DS.|> Row (fmap (\(this_texture,this_x,this_ascent,this_width,this_height)->(this_texture,div new_last_width 2+this_x,base_height-this_ascent,this_width,this_height)) seq_texture DS.|> (texture,div new_last_width 2+width-last_width,base_height-ascent,last_width-new_last_width,new_height)) up font_height)
                         by_center renderer find new_up width new_new_last_width delta_height ascent descent seq_text (DS.singleton (new_texture,0,ascent,width-new_new_last_width,new_height)) new_seq_row
@@ -137,7 +138,7 @@ by_center_a::SRT.Renderer->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FP.Ptr Color-
 by_center_a renderer up width this_height delta_height text_color font text seq_row=do
     (left_length,right_length,last_width,left_text,right_text)<-cut_text width font text
     if left_length==0 then error "by_center_a: error 1" else do
-        texture<-DTF.withCString left_text (to_texture renderer text_color font)
+        texture<-DB.useAsCString (DTE.encodeUtf8 left_text) (to_texture renderer text_color font)
         if right_length==0 then return (seq_row,texture,last_width,up) else by_center_a renderer (up+this_height+delta_height) width this_height delta_height text_color font right_text (seq_row DS.|> Row (DS.singleton (texture,div last_width 2,up,width-last_width,this_height)) up this_height)
 
 find_font_equal::DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->Int->Int->DS.Seq Int->FP.Ptr SRF.Font

@@ -8,10 +8,13 @@ import Text
 import Type
 import Widget
 import qualified Control.Monad as CM
+import qualified Data.ByteString as DB
 import qualified Data.IORef as DI
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
-import qualified Data.Text.Foreign as DTF
+import qualified Data.Text.Encoding as DTE
+import qualified Data.Word as DW
+import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -28,7 +31,7 @@ do_request (Create_widget seq_single_id combined_widget_request) engine=create_w
 do_request (Remove_widget seq_single_id) engine=remove_widget seq_single_id engine
 do_request (Replace_widget seq_single_id combined_widget_request) engine=replace_widget seq_single_id combined_widget_request engine
 do_request (Alter_widget seq_single_id combined_widget_request) engine=alter_widget seq_single_id combined_widget_request engine
-do_request (Create_window window_id window_name left right up down) (Engine widget window window_map request count_id start_id main_id)=DTF.withCString window_name $ \name->let width=right-left in let height=down-up in do
+do_request (Create_window window_id window_name left right up down) (Engine widget window window_map request count_id start_id main_id)=DB.useAsCString (DTE.encodeUtf8 window_name) $ \name->let width=right-left in let height=down-up in do
     new_window<-SRV.createWindow name left up width height SRE.SDL_WINDOW_RESIZABLE
     CM.when (new_window==FP.nullPtr) (error "do_request: error 1")
     renderer<-SRV.createRenderer new_window (-1) SRE.SDL_RENDERER_ACCELERATED
@@ -63,7 +66,7 @@ do_request (Render_rectangle window_id red green blue alpha left right up down) 
         catch_error "do_request: error 12" 0 (SRV.renderFillRect renderer rect)
     return engine
 do_request (Render_picture window_id path x y width_multiply width_divide height_multiply height_divide) engine=let renderer=get_renderer window_id engine in do
-    surface<-DTF.withCString path SRV.loadBMP
+    surface<-DB.useAsCString (DTE.encodeUtf8 path) SRV.loadBMP
     CM.when (surface==FP.nullPtr) $ error "do_request: error 13"
     SRT.Surface _ width height _ _ _ _<-FS.peek surface
     texture<-SRV.createTextureFromSurface renderer surface
@@ -105,22 +108,27 @@ do_request (Render_text_widget seq_id) (Engine widget window window_map request 
                     return (Engine new_widget window window_map request count_id start_id main_id)
         _->error "do_request: error 24"
 do_request (Render_editor_widget seq_id) (Engine widget window window_map request count_id start_id main_id)=do
-    ioref<-DI.newIORef (error "")
+    ioref<-DI.newIORef (error "do_request: error 25")
     let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget
-    new_widget<-error_update_update_io "" "" combined_id single_id (update_widget_render ioref) widget
+    new_widget<-error_update_update_io "do_request: error 26" "do_request: error 27" combined_id single_id (update_widget_render ioref) widget
     combined_widget<-DI.readIORef ioref
     case combined_widget of
-        Leaf_widget _ (Editor window_id block_number row_number row _ font_size _ path _ typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha _ _ _ _ _ _ _ font_height block_width delta_height x y _ _ _ _ cursor seq_seq_char)->case get_widget_widget path start_id widget of
-            (Leaf_widget _ (Block_font _ _ _ _ _ intmap_intmap_texture))->case DIS.lookup font_size intmap_intmap_texture of
-                Nothing->error "do_request: error 25"
-                Just (_,_,intmap_texture)->do
-                    render_editor (get_renderer_window window_id window) block_number row_number row typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char intmap_texture
-                    return (Engine new_widget window window_map request count_id start_id main_id)
-            _->error "do_request: error 26"
-        _->error "do_request: error 27"
+        Leaf_widget _ (Editor window_id block_number row_number row _ font_size _ path _ typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha _ _ _ _ _ _ _ font_height block_width delta_height x y _ _ _ _ cursor seq_seq_char)->let (new_combined_id,new_single_id)=get_widget_id_widget path start_id new_widget in do
+            new_new_widget<-error_update_update_io "do_request: error 28" "do_request: error 29" new_combined_id new_single_id (from_render_editor (get_renderer_window window_id window) block_number row_number row font_size typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char) new_widget
+            return (Engine new_new_widget window window_map request count_id start_id main_id)
+        _->error "do_request: error 30"
 do_request (Update_block_font_widget seq_id size block_width seq_char) (Engine widget window window_map request count_id start_id main_id)=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in do
-    new_widget<-error_update_update_io "do_request: error 28" "do_request: error 29" combined_id single_id (update_block_font window size block_width seq_char) widget
+    new_widget<-error_update_update_io "do_request: error 31" "do_request: error 32" combined_id single_id (update_block_font window size block_width seq_char) widget
     return (Engine new_widget window window_map request count_id start_id main_id)
+
+from_render_editor::SRT.Renderer->Int->Int->Int->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Cursor->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Combined_widget a->IO (Combined_widget a)
+from_render_editor renderer block_number row_number row font_size typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char widget=case widget of
+    Leaf_widget next_id (Block_font window_id red green blue alpha font)->case DIS.lookup font_size font of
+        Nothing->error "from_render_editor: error 1"
+        Just (this_font,height,intmap_texture)->do
+            new_intmap_texture<-render_editor renderer block_number row_number row typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char intmap_texture
+            return (Leaf_widget next_id (Block_font window_id red green blue alpha (DIS.insert font_size (this_font,height,new_intmap_texture) font)))
+    _->error "from_render_editor: error 2"
 
 update_widget_render::DI.IORef (Combined_widget a)->Combined_widget a->IO (Combined_widget a)
 update_widget_render ioref widget@(Leaf_widget next_id (Text window_id row max_row _ select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row))=do

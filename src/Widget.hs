@@ -6,10 +6,12 @@ import Other
 import Text
 import Type
 import qualified Control.Monad as CM
+import qualified Data.ByteString as DB
 import qualified Data.Foldable as DF
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
-import qualified Data.Text.Foreign as DTF
+import qualified Data.Text.Encoding as DTE
+import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
@@ -24,10 +26,10 @@ create_single_widget _ _ (Data_request content) _=return (Data content)
 create_single_widget _ _ (Trigger_request handle) _=return (Trigger handle)
 create_single_widget _ _ (Io_trigger_request handle) _=return (Io_trigger handle)
 create_single_widget _ _ (Font_request path size) _=do
-    font<-DTF.withCString path (`create_font` size)
+    font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_font` size)
     return (Font font)
 create_single_widget _ _ (Block_font_request window_id red green blue alpha path size) _=do
-    font<-DTF.withCString path (`create_block_font` size)
+    font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_block_font` size)
     return (Block_font window_id red green blue alpha font)
 create_single_widget _ window (Rectangle_request window_id red green blue alpha left right up down) _=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: error 1"
@@ -35,7 +37,7 @@ create_single_widget _ window (Rectangle_request window_id red green blue alpha 
 create_single_widget _ window (Picture_request window_id path x y width_multiply width_divide height_multiply height_divide) _=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: error 2"
     Just (Window _ _ renderer _ _ window_x window_y design_size size)->do
-        surface<-DTF.withCString path SRV.loadBMP
+        surface<-DB.useAsCString (DTE.encodeUtf8 path) SRV.loadBMP
         CM.when (surface==FP.nullPtr) $ error "create_single_widget: error 3"
         (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
         texture<-SRV.createTextureFromSurface renderer surface
@@ -66,7 +68,7 @@ create_font path (size DS.:<| other_size)=do
     CM.when (new_font==FP.nullPtr) $ error "create_font: error 1"
     return (DIS.insert size new_font font)
 
-create_block_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt)))
+create_block_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
 create_block_font _ DS.Empty=return DIS.empty
 create_block_font path (size DS.:<| other_size)=do
     font<-create_block_font path other_size
@@ -119,9 +121,9 @@ remove_single_widget (Picture _ texture _ _ _ _ _ _ _ _ _ _ _ _)=SRV.destroyText
 remove_single_widget (Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row)=DF.mapM_ clean_row seq_row
 remove_single_widget (Editor {})=return ()
 
-clean_block_font::(FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt))->IO ()
+clean_block_font::(FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))->IO ()
 clean_block_font (font,_,intmap_texture)=do
-    _<-DIS.traverseWithKey (\_ (texture,_,_)->SRV.destroyTexture texture) intmap_texture
+    _<-DIS.traverseWithKey (\_ (texture,_,_,_,_,_,_)->SRV.destroyTexture texture) intmap_texture
     SRF.closeFont font
 
 remove_widget::Data a=>DS.Seq Int->Engine a->IO (Engine a)
@@ -298,7 +300,7 @@ create_editor_trigger_b wheel up_press down_press min_press max_press min_trace_
                 _->error "create_editor_trigger_b: error 8"
             _->error "create_editor_trigger_b: error 9"
 
-create_editor_trigger_c::Bool->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Click,Mouse)->DS.Seq (Click,Mouse)->Event->FP.Ptr SRF.Font->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt)->Combined_widget a->IO (Maybe (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt)),Maybe (Combined_widget a))
+create_editor_trigger_c::Bool->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Click,Mouse)->DS.Seq (Click,Mouse)->Event->FP.Ptr SRF.Font->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->Combined_widget a->IO (Maybe (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)),Maybe (Combined_widget a))
 create_editor_trigger_c wheel up_press down_press min_press max_press min_trace_press max_trace_press cursor_left_press cursor_right_press cursor_up_press cursor_down_press cursor_min_press cursor_max_press cursor_paragraph_min_press cursor_paragraph_max_press cursor_row_min_press cursor_row_max_press copy_press paste_press cut_press select_all_press select_paragraph_all_press select_row_all_press select_left_press select_right_press select_up_press select_down_press select_swap_press backspace_press delete_press return_press exit_press up_click down_click event font intmap_texture (Leaf_widget next_id (Editor window_id block_number row_number row design_font_size font_size render path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char))=case event of
     At this_window_id action->if window_id==this_window_id
         then case action of
@@ -371,7 +373,11 @@ create_editor_trigger_c wheel up_press down_press min_press max_press min_trace_
                                                                                 Nothing->return (Nothing,Nothing)
                                                                                 Just (cursor_row,Nothing)->if row<=cursor_row&&cursor_row<row+row_number then return (Nothing,Nothing) else return (Nothing,Just (Leaf_widget next_id (Editor window_id block_number row_number (max 0 (cursor_row+1-row_number)) design_font_size font_size True path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char)))
                                                                                 Just (cursor_row,Just new_cursor)->return (Nothing,Just (Leaf_widget next_id (Editor window_id block_number row_number (if row<=cursor_row&&cursor_row<row+row_number then row else max 0 (cursor_row+1-row_number)) design_font_size font_size True path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down new_cursor seq_seq_char)))
-                                                                            else return (Nothing,Nothing)
+                                                                            else if belong (press,key) copy_press
+                                                                                then do
+                                                                                    copy seq_seq_char cursor
+                                                                                    return (Nothing,Nothing)
+                                                                                else return (Nothing,Nothing)
             Click click mouse click_x click_y->case cursor of
                 Cursor_none->if belong (click,mouse) down_click&&left<=click_x&&click_x<=right&&up<=click_y&&click_y<=down then let (cursor_row,cursor_block,cursor_char,cursor_click)=to_cursor block_number (min row_number (DS.length seq_seq_char-row)) row typesetting click_x click_y font_height block_width delta_height x y seq_seq_char in return (Nothing,Just (Leaf_widget next_id (Editor window_id block_number row_number row design_font_size font_size True path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down (Cursor_single cursor_row cursor_block cursor_char cursor_click) seq_seq_char))) else return (Nothing,Nothing)
                 Cursor_single cursor_row cursor_block cursor_char cursor_click->if belong (click,mouse) up_click then if left<=click_x&&click_x<=right&&up<=click_y&&click_y<=down then let (new_cursor_row,new_cursor_block,new_cursor_char,new_cursor_click)=to_cursor block_number (min row_number (DS.length seq_seq_char-row)) row typesetting click_x click_y font_height block_width delta_height x y seq_seq_char in if cursor_row==new_cursor_row&&cursor_block==new_cursor_block then return (Nothing,Just (Leaf_widget next_id (Editor window_id block_number row_number row design_font_size font_size render path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char))) else if (cursor_row,cursor_block)<(new_cursor_row,new_cursor_block) then return (Nothing,Just (Leaf_widget next_id (Editor window_id block_number row_number row design_font_size font_size True path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down (Cursor_double False cursor_row cursor_block cursor_char cursor_click new_cursor_row new_cursor_block new_cursor_char new_cursor_click) seq_seq_char))) else return (Nothing,Just (Leaf_widget next_id (Editor window_id block_number row_number row design_font_size font_size True path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down (Cursor_double True new_cursor_row new_cursor_block new_cursor_char new_cursor_click cursor_row cursor_block cursor_char cursor_click) seq_seq_char))) else return (Nothing,Nothing) else if belong (click,mouse) down_click then if left<=click_x&&click_x<=right&&up<=click_y&&click_y<=down then let (new_cursor_row,new_cursor_block,new_cursor_char,new_cursor_click)=to_cursor block_number (min row_number (DS.length seq_seq_char-row)) row typesetting click_x click_y font_height block_width delta_height x y seq_seq_char in return (Nothing,Just (Leaf_widget next_id (Editor window_id block_number row_number row design_font_size font_size (not (cursor_row==new_cursor_row&&cursor_block==new_cursor_block)) path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down (Cursor_single new_cursor_row new_cursor_block new_cursor_char new_cursor_click) seq_seq_char))) else return (Nothing,Just (Leaf_widget next_id (Editor window_id block_number row_number row design_font_size font_size True path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down Cursor_none seq_seq_char))) else return (Nothing,Nothing)
@@ -381,7 +387,7 @@ create_editor_trigger_c wheel up_press down_press min_press max_press min_trace_
     _->return (Nothing,Nothing)
 create_editor_trigger_c _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _=error "create_editor_trigger_c: error 1"
 
-create_editor_trigger_d::Int->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt)->Combined_widget a->IO (Combined_widget a)
+create_editor_trigger_d::Int->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->Combined_widget a->IO (Combined_widget a)
 create_editor_trigger_d size intmap_texture (Leaf_widget next_id (Block_font window_id red green blue alpha font))=return (Leaf_widget next_id (Block_font window_id red green blue alpha (DIS.adjust (\(this_font,height,_)->(this_font,height,intmap_texture)) size font)))
 create_editor_trigger_d _ _ _=error "create_editor_trigger_d: error 1"
 
@@ -411,13 +417,13 @@ alter_single_widget _ _ _ (Io_trigger_request handle) this_widget=case this_widg
 alter_single_widget _ _ _ (Font_request path size) this_widget=case this_widget of
     Font intmap_font->do
         _<-DIS.traverseWithKey (\_ font->SRF.closeFont font) intmap_font
-        font<-DTF.withCString path (`create_font` size)
+        font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_font` size)
         return (Font font)
     _->error "alter_single_widget: error 4"
 alter_single_widget _ _ _ (Block_font_request window_id red green blue alpha path size) this_widget=case this_widget of
     Block_font _ _ _ _ _ font->do
         _<-DIS.traverseWithKey (\_ this_font->clean_block_font this_font) font
-        new_font<-DTF.withCString path (`create_block_font` size)
+        new_font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_block_font` size)
         return (Block_font window_id red green blue alpha new_font)
     _->error "alter_single_widget: error 5"
 alter_single_widget _ window _ (Rectangle_request window_id red green blue alpha left right up down) this_widget=case this_widget of
@@ -430,7 +436,7 @@ alter_single_widget _ window _ (Picture_request window_id path x y width_multipl
         Nothing->error "alter_single_widget: error 8"
         Just (Window _ _ renderer _ _ window_x window_y design_size size)->do
             SRV.destroyTexture texture
-            surface<-DTF.withCString path SRV.loadBMP
+            surface<-DB.useAsCString (DTE.encodeUtf8 path) SRV.loadBMP
             CM.when (surface==FP.nullPtr) $ error "alter_single_widget: error 9"
             (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
             new_texture<-SRV.createTextureFromSurface renderer surface

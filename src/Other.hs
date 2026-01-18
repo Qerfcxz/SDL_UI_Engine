@@ -3,12 +3,13 @@
 module Other where
 import Type
 import qualified Control.Monad as CM
+import qualified Data.ByteString as DB
 import qualified Data.Foldable as DF
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Word as DW
 import qualified Data.Text as DT
-import qualified Data.Text.Foreign as DTF
+import qualified Data.Text.Encoding as DTE
 import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
@@ -194,7 +195,7 @@ color::DW.Word8->DW.Word8->DW.Word8->DW.Word8->Color
 color=SRT.Color
 
 get_width::FP.Ptr SRF.Font->DT.Text->IO FCT.CInt
-get_width font text=FMA.alloca $ \width->FMA.alloca $ \height->DTF.withCString text $ \new_text->do
+get_width font text=FMA.alloca $ \width->FMA.alloca $ \height->DB.useAsCString (DTE.encodeUtf8 text) $ \new_text->do
     catch_error "get_width: error 1" 0 (SRF.sizeUTF8 font new_text width height)
     FS.peek width
 
