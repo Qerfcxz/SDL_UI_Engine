@@ -1,8 +1,9 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 module Engine where
+import Other.Error
+import Other.Get
 import Event
-import Other
 import Request
 import Timer
 import Type

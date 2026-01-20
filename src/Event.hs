@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 module Event where
-import Other
+import Other.Error
 import Type
 import qualified Data.ByteString as DB
 import qualified Data.Int as DI

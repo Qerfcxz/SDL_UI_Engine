@@ -2,11 +2,16 @@
 {-# HLINT ignore "Use camelCase" #-}
 module Request where
 import Block
-import Editor
-import Other
-import Text
+import Editor.Render
+import Other.Error
+import Other.Get
+import Other.Other
+import Text.Render
+import Widget.Alter
+import Widget.Create
+import Widget.Remove
+import Widget.Replace
 import Type
-import Widget
 import qualified Control.Monad as CM
 import qualified Data.ByteString as DB
 import qualified Data.IORef as DI

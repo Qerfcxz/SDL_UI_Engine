@@ -1,7 +1,9 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 module Block where
-import Other
+import Other.Get
+import Other.Other
+import Other.Text
 import Type
 import qualified Data.ByteString as DB
 import qualified Data.Char as DC
@@ -15,8 +17,8 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
-import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Font as SRF
+import qualified SDL.Raw.Types as SRT
 
 update_block_font::DIS.IntMap Window->Int->FCT.CInt->DS.Set Char->Combined_widget a->IO (Combined_widget a)
 update_block_font window size block_width seq_char (Leaf_widget next_id (Block_font window_id red green blue alpha font))=do
