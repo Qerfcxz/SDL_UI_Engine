@@ -79,17 +79,17 @@ from_text (char DT.:< text) seq_char=if char=='\n' then seq_char DS.<| from_text
 
 to_seq_seq_char::SRT.Renderer->Int->Int->Int->Int->Int->Int->Typesetting->FP.Ptr Color->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FP.Ptr SRF.Font->FCT.CInt->DS.Seq (DS.Seq Char)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (Int,Int,Int,DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool),Maybe (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
 to_seq_seq_char renderer row_start block_start char_start row_end char_end block_number typesetting text_color text_red text_green text_blue text_alpha font block_width this_seq_seq_char seq_seq_char intmap_texture=case DS.take (row_start+1) seq_seq_char of
-        DS.Empty->error "to_seq_seq_char: error 1"
-        (seq_seq_char_start DS.:|> (seq_char_start,number_start,_,_))->case DS.drop row_end seq_seq_char of
-            DS.Empty->error "to_seq_seq_char: error 2"
-            ((seq_char_end,_,_,end_start) DS.:<| seq_seq_char_end)->case this_seq_seq_char of
-                DS.Empty->do
-                    let new_block_start=block_start-typesetting_left typesetting number_start block_number
-                    let (number,new_seq_seq_char)=to_seq_seq_char_b end_start Nothing new_block_start char_start block_number (DS.take char_start seq_char_start) (DS.drop char_end seq_char_end) seq_seq_char_start seq_seq_char_end
-                    return (row_start,new_block_start+typesetting_left typesetting number block_number,char_start,new_seq_seq_char,Nothing)
-                (this_seq_char DS.:<| other_seq_seq_char)->do
-                    (row,number_block,number_char,new_seq_char,new_seq_seq_char,new_intmap_texture)<-to_seq_seq_char_a False renderer row_start (block_start-typesetting_left typesetting number_start block_number) char_start block_number text_color text_red text_green text_blue text_alpha font block_width this_seq_char other_seq_seq_char (DS.take char_start seq_char_start) seq_seq_char_start intmap_texture
-                    let (number,new_new_seq_seq_char)=to_seq_seq_char_b end_start Nothing number_block number_char block_number new_seq_char (DS.drop char_end seq_char_end) new_seq_seq_char seq_seq_char_end in return (row,number_block+typesetting_left typesetting number block_number,number_char,new_new_seq_seq_char,new_intmap_texture)
+    DS.Empty->error "to_seq_seq_char: error 1"
+    (seq_seq_char_start DS.:|> (seq_char_start,number_start,_,_))->case DS.drop row_end seq_seq_char of
+        DS.Empty->error "to_seq_seq_char: error 2"
+        ((seq_char_end,_,_,end_start) DS.:<| seq_seq_char_end)->case this_seq_seq_char of
+            DS.Empty->do
+                let new_block_start=block_start-typesetting_left typesetting number_start block_number
+                let (number,new_seq_seq_char)=to_seq_seq_char_b end_start Nothing new_block_start char_start block_number (DS.take char_start seq_char_start) (DS.drop char_end seq_char_end) seq_seq_char_start seq_seq_char_end
+                return (row_start,new_block_start+typesetting_left typesetting number block_number,char_start,new_seq_seq_char,Nothing)
+            (this_seq_char DS.:<| other_seq_seq_char)->do
+                (row,number_block,number_char,new_seq_char,new_seq_seq_char,new_intmap_texture)<-to_seq_seq_char_a False renderer row_start (block_start-typesetting_left typesetting number_start block_number) char_start block_number text_color text_red text_green text_blue text_alpha font block_width this_seq_char other_seq_seq_char (DS.take char_start seq_char_start) seq_seq_char_start intmap_texture
+                let (number,new_new_seq_seq_char)=to_seq_seq_char_b end_start Nothing number_block number_char block_number new_seq_char (DS.drop char_end seq_char_end) new_seq_seq_char seq_seq_char_end in return (row,number_block+typesetting_left typesetting number block_number,number_char,new_new_seq_seq_char,new_intmap_texture) 
 
 to_seq_seq_char_a::Bool->SRT.Renderer->Int->Int->Int->Int->FP.Ptr Color->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FP.Ptr SRF.Font->FCT.CInt->DS.Seq Char->DS.Seq (DS.Seq Char)->DS.Seq (Char,Int,FCT.CInt)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (Int,Int,Int,DS.Seq (Char,Int,FCT.CInt),DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool),Maybe (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
 to_seq_seq_char_a change _ row number_block number_char _ _ _ _ _ _ _ _ DS.Empty DS.Empty seq_char seq_seq_char intmap_texture=return (row,number_block,number_char,seq_char,seq_seq_char,if change then Just intmap_texture else Nothing)
@@ -112,20 +112,12 @@ to_seq_seq_char_a change renderer row number_block number_char block_number text
         Just (block,delta_x)->let new_number_block=number_block+block in if block_number<new_number_block then if block_number<block then error "to_seq_seq_char_a: error 3" else to_seq_seq_char_a change renderer (row+1) block 1 block_number text_color text_red text_green text_blue text_alpha font block_width this_seq_char this_seq_seq_char (DS.singleton (char,block,delta_x)) (seq_seq_char DS.|> (seq_char,number_block,number_char,False)) intmap_texture else to_seq_seq_char_a change renderer row new_number_block (number_char+1) block_number text_color text_red text_green text_blue text_alpha font block_width this_seq_char this_seq_seq_char (seq_char DS.|> (char,block,delta_x)) seq_seq_char intmap_texture
 
 to_seq_seq_char_b::Bool->Maybe Int->Int->Int->Int->DS.Seq (Char,Int,FCT.CInt)->DS.Seq (Char,Int,FCT.CInt)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->(Int,DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool))
-to_seq_seq_char_b end number number_block number_char block_number this_seq_char DS.Empty this_seq_seq_char seq_seq_char=if end then (to_seq_seq_char_c number number_block,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True)) DS.>< seq_seq_char) else case seq_seq_char of
-    DS.Empty->(to_seq_seq_char_c number number_block,this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True))
+to_seq_seq_char_b end number number_block number_char block_number this_seq_char DS.Empty this_seq_seq_char seq_seq_char=if end then (maybe_get number number_block,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True)) DS.>< seq_seq_char) else case seq_seq_char of
+    DS.Empty->(maybe_get number number_block,this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True))
     ((seq_char,_,_,new_end) DS.:<| other_seq_seq_char)->case seq_char of
-        DS.Empty->(to_seq_seq_char_c number number_block,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True)) DS.>< other_seq_seq_char)
-        (char,block,delta_x) DS.:<| other_seq_char->let new_number_block=number_block+block in if block_number<new_number_block then (to_seq_seq_char_c number number_block,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,False)) DS.>< seq_seq_char) else to_seq_seq_char_b new_end number new_number_block (number_char+1) block_number (this_seq_char DS.|> (char,block,delta_x)) other_seq_char this_seq_seq_char other_seq_seq_char
-to_seq_seq_char_b end number number_block number_char block_number this_seq_char ((char,block,delta_x) DS.:<| seq_char) this_seq_seq_char seq_seq_char=let new_number_block=number_block+block in if block_number<new_number_block then to_seq_seq_char_b end (to_seq_seq_char_d number_block number) block 1 block_number (DS.singleton (char,block,delta_x)) seq_char (this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,False)) seq_seq_char else to_seq_seq_char_b end number new_number_block (number_char+1) block_number (this_seq_char DS.|> (char,block,delta_x)) seq_char this_seq_seq_char seq_seq_char
-
-to_seq_seq_char_c::Maybe Int->Int->Int
-to_seq_seq_char_c Nothing number=number
-to_seq_seq_char_c (Just number) _=number
-
-to_seq_seq_char_d::Int->Maybe Int->Maybe Int
-to_seq_seq_char_d number Nothing=Just number
-to_seq_seq_char_d _ (Just number)=Just number
+        DS.Empty->(maybe_get number number_block,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True)) DS.>< other_seq_seq_char)
+        (char,block,delta_x) DS.:<| other_seq_char->let new_number_block=number_block+block in if block_number<new_number_block then (maybe_get number number_block,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,False)) DS.>< seq_seq_char) else to_seq_seq_char_b new_end number new_number_block (number_char+1) block_number (this_seq_char DS.|> (char,block,delta_x)) other_seq_char this_seq_seq_char other_seq_seq_char
+to_seq_seq_char_b end number number_block number_char block_number this_seq_char ((char,block,delta_x) DS.:<| seq_char) this_seq_seq_char seq_seq_char=let new_number_block=number_block+block in if block_number<new_number_block then to_seq_seq_char_b end (maybe_set number_block number) block 1 block_number (DS.singleton (char,block,delta_x)) seq_char (this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,False)) seq_seq_char else to_seq_seq_char_b end number new_number_block (number_char+1) block_number (this_seq_char DS.|> (char,block,delta_x)) seq_char this_seq_seq_char seq_seq_char
 
 --Editor Int（window_id） Int（每行几个格子） Int（显示几行） Int（当前文本框第一行是文本第几行） Int（字体大小）Int（实际的字体大小）
 --Bool（render标记） DS.Seq Int（字体路径） Texture_find（字体资源查找策略） Typesetting（排版模式） Color（文字颜色） DW.Word8 DW.Word8 DW.Word8 DW.Word8（光标颜色） DW.Word8 DW.Word8 DW.Word8 DW.Word8（选择框颜色）
