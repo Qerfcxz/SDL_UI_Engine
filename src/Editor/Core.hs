@@ -75,7 +75,21 @@ paste renderer block_number typesetting text_red text_green text_blue text_alpha
 
 from_text::DT.Text->DS.Seq Char->DS.Seq (DS.Seq Char)
 from_text DT.Empty seq_char=DS.singleton seq_char
-from_text (char DT.:< text) seq_char=if char=='\n' then seq_char DS.<| from_text text DS.empty else from_text text (seq_char DS.|> char)
+from_text (char DT.:< text) seq_char=case char of
+    '\r'->from_text text seq_char
+    '\n'->seq_char DS.<| from_text text DS.empty
+    _->from_text text (seq_char DS.|> char)
+
+cut::Int->Typesetting->Cursor->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Maybe (Int,Cursor,DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool))
+cut _ _ Cursor_none _=Nothing
+cut _ _ (Cursor_single {}) _=Nothing
+cut block_number typesetting (Cursor_double _ cursor_row_start cursor_block_start cursor_char_start _ cursor_row_end cursor_block_end cursor_char_end _) seq_seq_char=case DS.take (cursor_row_start+1) seq_seq_char of
+    DS.Empty->case DS.drop cursor_row_end seq_seq_char of
+        DS.Empty->error "cut: error 1"
+        (seq_char_end,_,char_number_end,end_end) DS.:<| seq_seq_char_end->let (number,new_seq_seq_char)=to_seq_seq_char_b end_end Nothing (cursor_block_end-typesetting_left typesetting 0 block_number) (char_number_end-cursor_char_end) block_number (DS.drop cursor_char_end seq_char_end) DS.empty DS.empty seq_seq_char_end in let left=typesetting_left typesetting number block_number in Just (0,Cursor_single 0 left 0 left,new_seq_seq_char)
+    seq_seq_char_start DS.:|> (seq_char_start,number_start,_,_)->case DS.drop cursor_row_end seq_seq_char of
+        DS.Empty->let new_cursor_block_start=cursor_block_start-typesetting_left typesetting number_start block_number in let (number,new_seq_seq_char)=to_seq_seq_char_b True Nothing new_cursor_block_start cursor_char_start block_number DS.empty (DS.take cursor_char_start seq_char_start) seq_seq_char_start DS.empty in let cursor_block=new_cursor_block_start+typesetting_left typesetting number block_number in Just (cursor_row_start,Cursor_single cursor_row_start cursor_block cursor_char_start cursor_block,new_seq_seq_char)
+        (seq_char_end,_,_,end_end) DS.:<| seq_seq_char_end->let new_cursor_block_start=cursor_block_start-typesetting_left typesetting number_start block_number in let (number,new_seq_seq_char)=to_seq_seq_char_b end_end Nothing new_cursor_block_start cursor_char_start block_number (DS.take cursor_char_start seq_char_start) (DS.drop cursor_char_end seq_char_end) seq_seq_char_start seq_seq_char_end in let cursor_block=new_cursor_block_start+typesetting_left typesetting number block_number in Just (cursor_row_start,Cursor_single cursor_row_start cursor_block cursor_char_start cursor_block,new_seq_seq_char)
 
 to_seq_seq_char::SRT.Renderer->Int->Int->Int->Int->Int->Int->Typesetting->FP.Ptr Color->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FP.Ptr SRF.Font->FCT.CInt->DS.Seq (DS.Seq Char)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (Int,Int,Int,DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool),Maybe (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
 to_seq_seq_char renderer row_start block_start char_start row_end char_end block_number typesetting text_color text_red text_green text_blue text_alpha font block_width this_seq_seq_char seq_seq_char intmap_texture=case DS.take (row_start+1) seq_seq_char of
