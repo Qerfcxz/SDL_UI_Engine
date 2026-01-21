@@ -104,35 +104,35 @@ cursor_paragraph_min::Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,I
 cursor_paragraph_min _ _ _ Cursor_none=Nothing
 cursor_paragraph_min block_number typesetting seq_seq_char (Cursor_single cursor_row _ cursor_char _)=case DS.lookup cursor_row seq_seq_char of
     Nothing->error "cursor_paragraph_min: error 1"
-    Just (_,number,_,_)->let (new_number,new_cursor_row)=find_paragraph_min (DS.take cursor_row seq_seq_char) number cursor_row in if cursor_row==new_cursor_row&&cursor_char==0 then Just (new_cursor_row,Nothing) else let new_cursor_block=typesetting_left typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block 0 new_cursor_block))
+    Just (_,number,_,_)->let (new_cursor_row,new_number)=find_paragraph_min (DS.take cursor_row seq_seq_char)cursor_row number in if cursor_row==new_cursor_row&&cursor_char==0 then Just (new_cursor_row,Nothing) else let new_cursor_block=typesetting_left typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block 0 new_cursor_block))
 cursor_paragraph_min block_number typesetting seq_seq_char (Cursor_double cursor_where cursor_row_start _ _ _ cursor_row_end _ _ _)=if cursor_where
     then case DS.lookup cursor_row_start seq_seq_char of
         Nothing->error "cursor_paragraph_min: error 2"
-        Just (_,number,_,_)->let (new_number,new_cursor_row)=find_paragraph_min (DS.take cursor_row_start seq_seq_char) number cursor_row_start in let new_cursor_block=typesetting_left typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block 0 new_cursor_block))
+        Just (_,number,_,_)->let (new_cursor_row,new_number)=find_paragraph_min (DS.take cursor_row_start seq_seq_char) cursor_row_start number in let new_cursor_block=typesetting_left typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block 0 new_cursor_block))
     else case DS.lookup cursor_row_end seq_seq_char of
         Nothing->error "cursor_paragraph_min: error 3"
-        Just (_,number,_,_)->let (new_number,new_cursor_row)=find_paragraph_min (DS.take cursor_row_end seq_seq_char) number cursor_row_end in let new_cursor_block=typesetting_left typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block 0 new_cursor_block))
+        Just (_,number,_,_)->let (new_cursor_row,new_number)=find_paragraph_min (DS.take cursor_row_end seq_seq_char) cursor_row_end number in let new_cursor_block=typesetting_left typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block 0 new_cursor_block))
 
 find_paragraph_min::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Int->Int->(Int,Int)
-find_paragraph_min DS.Empty number _=(number,0)
-find_paragraph_min (seq_seq_char DS.:|> (_,new_number,_,end)) number row=if end then (number,row) else find_paragraph_min seq_seq_char new_number (row-1)
+find_paragraph_min DS.Empty _ number=(0,number)
+find_paragraph_min (seq_seq_char DS.:|> (_,new_number,_,end)) row number=if end then (row,number) else find_paragraph_min seq_seq_char (row-1) new_number
 
 cursor_paragraph_max::Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe (Int,Maybe Cursor)
 cursor_paragraph_max _ _ _ Cursor_none=Nothing
 cursor_paragraph_max block_number typesetting seq_seq_char (Cursor_single cursor_row _ cursor_char _)=case DS.lookup cursor_row seq_seq_char of
     Nothing->error "cursor_paragraph_max: error 1"
-    Just (_,number,char_number,end)->if end then if cursor_char==char_number then Just (cursor_row,Nothing) else let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block char_number new_cursor_block)) else let (new_number,new_char_number,new_cursor_row)=find_paragraph_max (DS.drop (cursor_row+1) seq_seq_char) cursor_row in let new_cursor_block=typesetting_right typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block new_char_number new_cursor_block))
+    Just (_,number,char_number,end)->if end then if cursor_char==char_number then Just (cursor_row,Nothing) else let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block char_number new_cursor_block)) else let (new_cursor_row,new_number,new_char_number)=find_paragraph_max (DS.drop (cursor_row+1) seq_seq_char) cursor_row in let new_cursor_block=typesetting_right typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block new_char_number new_cursor_block))
 cursor_paragraph_max block_number typesetting seq_seq_char (Cursor_double cursor_where cursor_row_start _ _ _ cursor_row_end _ _ _)=if cursor_where
     then case DS.lookup cursor_row_start seq_seq_char of
         Nothing->error "cursor_paragraph_max: error 2"
-        Just (_,number,char_number,end)->if end then let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_start,Just (Cursor_single cursor_row_start new_cursor_block char_number new_cursor_block)) else let (new_number,new_char_number,new_cursor_row)=find_paragraph_max (DS.drop (cursor_row_start+1) seq_seq_char) cursor_row_start in let new_cursor_block=typesetting_right typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block new_char_number new_cursor_block))
+        Just (_,number,char_number,end)->if end then let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_start,Just (Cursor_single cursor_row_start new_cursor_block char_number new_cursor_block)) else let (new_cursor_row,new_number,new_char_number)=find_paragraph_max (DS.drop (cursor_row_start+1) seq_seq_char) cursor_row_start in let new_cursor_block=typesetting_right typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block new_char_number new_cursor_block))
     else case DS.lookup cursor_row_end seq_seq_char of
         Nothing->error "cursor_paragraph_max: error 3"
-        Just (_,number,char_number,end)->if end then let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block char_number new_cursor_block)) else let (new_number,new_char_number,new_cursor_row)=find_paragraph_max (DS.drop (cursor_row_end+1) seq_seq_char) cursor_row_end in let new_cursor_block=typesetting_right typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block new_char_number new_cursor_block))
+        Just (_,number,char_number,end)->if end then let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block char_number new_cursor_block)) else let (new_cursor_row,new_number,new_char_number)=find_paragraph_max (DS.drop (cursor_row_end+1) seq_seq_char) cursor_row_end in let new_cursor_block=typesetting_right typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block new_char_number new_cursor_block))
 
 find_paragraph_max::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Int->(Int,Int,Int)
 find_paragraph_max DS.Empty _=error "find_paragraph_max: error 1"
-find_paragraph_max ((_,number,char_number,end) DS.:<| seq_seq_char) row=if end then (number,char_number,row+1) else find_paragraph_max seq_seq_char (row+1)
+find_paragraph_max ((_,number,char_number,end) DS.:<| seq_seq_char) row=if end then (row+1,number,char_number) else find_paragraph_max seq_seq_char (row+1)
 
 cursor_row_min::Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe (Int,Maybe Cursor)
 cursor_row_min _ _ _ Cursor_none=Nothing
