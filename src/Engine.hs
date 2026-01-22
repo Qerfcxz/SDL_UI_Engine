@@ -11,10 +11,13 @@ import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
+import qualified Foreign.Marshal.Alloc as FMA
+import qualified Foreign.Ptr as FP
 import qualified SDL.Raw.Basic as SRB
 import qualified SDL.Raw.Enum as SRE
 import qualified SDL.Raw.Event as SRE
 import qualified SDL.Raw.Font as SRF
+import qualified SDL.Raw.Types as SRT
 
 init_engine::IO ()
 init_engine=do
@@ -33,28 +36,28 @@ create_engine start_id=Engine (DIS.singleton start_id DIS.empty) DIS.empty DIS.e
 run_engine::Data a=>Maybe DW.Word32->Engine a->IO ()
 run_engine timer_setting engine=do
     case timer_setting of 
-        Nothing->loop_engine engine
+        Nothing->FMA.alloca (`loop_engine` engine)
         Just time->do
             time_event_type<-SRE.registerEvents 1
             timer<-add_timer time_event_type time
-            loop_engine_time time_event_type engine
+            FMA.alloca (\event->loop_engine_time time_event_type event engine)
             remove_timer timer
 
-loop_engine_time::Data a=>DW.Word32->Engine a->IO()
-loop_engine_time time_event_type engine=do
+loop_engine_time::Data a=>DW.Word32->FP.Ptr SRT.Event->Engine a->IO()
+loop_engine_time time_event_type event engine=do
     new_engine@(Engine _ _ new_window_map _ _ new_start_id new_main_id)<-run_request engine
-    event<-get_event new_window_map (Just time_event_type)
-    case event of
+    this_event<-get_event event new_window_map (Just time_event_type)
+    case this_event of
         Quit->clean_engine new_engine
-        _->loop_engine_time time_event_type (run_event new_start_id new_main_id (DS.singleton new_main_id) event new_engine)
+        _->loop_engine_time time_event_type event (run_event new_start_id new_main_id (DS.singleton new_main_id) this_event new_engine)
 
-loop_engine::Data a=>Engine a->IO()
-loop_engine engine=do
+loop_engine::Data a=>FP.Ptr SRT.Event->Engine a->IO()
+loop_engine event engine=do
     new_engine@(Engine _ _ new_window_map _ _ new_start_id new_main_id)<-run_request engine
-    event<-get_event new_window_map Nothing
-    case event of
+    this_event<-get_event event new_window_map Nothing
+    case this_event of
         Quit->clean_engine new_engine
-        _->loop_engine (run_event new_start_id new_main_id (DS.singleton new_main_id) event new_engine)
+        _->loop_engine event (run_event new_start_id new_main_id (DS.singleton new_main_id) this_event new_engine)
 
 run_request::Data a=>Engine a->IO (Engine a)
 run_request (Engine widget window window_map request count_id start_id main_id)=case request of

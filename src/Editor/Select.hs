@@ -193,3 +193,8 @@ select_down seq_seq_char typesetting block_number max_row (Cursor_double cursor_
             Nothing->error "select_down: error 3"
             Just (_,number,char_number,_)->if cursor_char_end==char_number then Just (max_row,Nothing) else let new_cursor_block=typesetting_right typesetting number block_number in Just (max_row,Just (Cursor_double False cursor_row_start cursor_block_start cursor_char_start cursor_click_start max_row new_cursor_block char_number new_cursor_block))
         else let new_cursor_row=cursor_row_end+1 in let (new_cursor_block,new_cursor_char)=click_select seq_seq_char typesetting block_number new_cursor_row cursor_click_end in Just (new_cursor_row,Just (Cursor_double False cursor_row_start cursor_block_start cursor_char_start cursor_click_start new_cursor_row new_cursor_block new_cursor_char cursor_click_end))
+
+select_swap::Cursor->Maybe (Int,Maybe Cursor)
+select_swap Cursor_none=Nothing
+select_swap (Cursor_single cursor_row _ _ _)=Just (cursor_row,Nothing)
+select_swap (Cursor_double cursor_where cursor_row_start cursor_block_start cursor_char_start cursor_click_start cursor_row_end cursor_block_end cursor_char_end cursor_click_end)=Just (if cursor_where then cursor_row_end else cursor_row_start,Just (Cursor_double (not cursor_where) cursor_row_start cursor_block_start cursor_char_start cursor_click_start cursor_row_end cursor_block_end cursor_char_end cursor_click_end))

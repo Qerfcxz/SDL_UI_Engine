@@ -9,7 +9,6 @@ import qualified Data.IntMap.Strict as DIS
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
-import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
@@ -20,11 +19,11 @@ import qualified SDL.Raw.Types as SRT
 push_event::DW.Word32->DW.Word32->DW.Word32->DI.Int32->FP.Ptr ()->FP.Ptr ()->IO ()
 push_event event_type time window_id event_code data_one data_two=FMU.with (SRT.UserEvent event_type time window_id event_code data_one data_two) (catch_error "push_event: error 1" 1 . SRE.pushEvent)
 
-get_event::DIS.IntMap Int->Maybe DW.Word32->IO Event
-get_event window_map maybe_event_type=FMA.alloca $ \pointer->do
-    catch_error "get_event: error 1" 1 (SRE.waitEvent pointer)
-    event<-FS.peek pointer
-    case event of
+get_event::FP.Ptr SRT.Event->DIS.IntMap Int->Maybe DW.Word32->IO Event
+get_event event window_map maybe_event_type=do
+    catch_error "get_event: error 1" 1 (SRE.waitEvent event)
+    this_event<-FS.peek event
+    case this_event of
         SRT.UserEvent event_type _ _ _ _ _->case maybe_event_type of
             Nothing->return Unknown
             Just time_event_type->if event_type==time_event_type then return Time else return Unknown
