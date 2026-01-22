@@ -67,24 +67,24 @@ render_select_a::Bool->SRT.Renderer->FP.Ptr SRT.Rect->Int->Typesetting->DW.Word8
 render_select_a _ _ _ _ _ _ _ _ _ _ _ _ _ _ DS.Empty=return ()
 render_select_a render renderer rect block_number typesetting select_red select_green select_blue select_alpha block_width x y font_height height ((_,number,_,_) DS.:<| seq_seq_char)
     |render=let left=typesetting_left typesetting number block_number in let right=typesetting_right typesetting number block_number in if left==right then render_select_a True renderer rect block_number typesetting select_red select_green select_blue select_alpha block_width x (y+height) font_height height seq_seq_char else do
-        FS.poke rect (SRT.Rect(x+fromIntegral left*block_width) y (fromIntegral (right-left)*block_width) font_height)
+        FS.poke rect (SRT.Rect (x+fromIntegral left*block_width) y (fromIntegral (right-left)*block_width) font_height)
         catch_error "render_select_a: error 1" 0 (SRV.renderFillRect renderer rect)
         render_select_a True renderer rect block_number typesetting select_red select_green select_blue select_alpha block_width x (y+height) font_height height seq_seq_char
     |otherwise=let left=typesetting_left typesetting number block_number in let right=typesetting_right typesetting number block_number in if left==right then render_select_a False renderer rect block_number typesetting select_red select_green select_blue select_alpha block_width x (y+height) font_height height seq_seq_char else do
         catch_error "render_select_a: error 2" 0 (SRV.setRenderDrawColor renderer select_red select_green select_blue select_alpha)
-        FS.poke rect (SRT.Rect(x+fromIntegral left*block_width) y (fromIntegral (right-left)*block_width) font_height)
+        FS.poke rect (SRT.Rect (x+fromIntegral left*block_width) y (fromIntegral (right-left)*block_width) font_height)
         catch_error "render_select_a: error 3" 0 (SRV.renderFillRect renderer rect)
         render_select_a True renderer rect block_number typesetting select_red select_green select_blue select_alpha block_width x (y+height) font_height height seq_seq_char
 
 render_row::Bool->SRT.Renderer->FP.Ptr SRT.Rect->Int->Int->Int->Int->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->IO Bool
 render_row render renderer rect number_start number_end this_row row red green blue alpha block_width delta_height x y font_height
     |render=if number_start==number_end then return True else do
-        FS.poke rect (SRT.Rect(x+fromIntegral number_start*block_width) (y+fromIntegral (this_row-row)*(font_height+delta_height)) (fromIntegral (number_end-number_start)*block_width) font_height)
+        FS.poke rect (SRT.Rect (x+fromIntegral number_start*block_width) (y+fromIntegral (this_row-row)*(font_height+delta_height)) (fromIntegral (number_end-number_start)*block_width) font_height)
         catch_error "render_row: error 1" 0 (SRV.renderFillRect renderer rect)
         return True
     |otherwise=if number_start==number_end then return False else do
         catch_error "render_row: error 2" 0 (SRV.setRenderDrawColor renderer red green blue alpha)
-        FS.poke rect (SRT.Rect(x+fromIntegral number_start*block_width) (y+fromIntegral (this_row-row)*(font_height+delta_height)) (fromIntegral (number_end-number_start)*block_width) font_height)
+        FS.poke rect (SRT.Rect (x+fromIntegral number_start*block_width) (y+fromIntegral (this_row-row)*(font_height+delta_height)) (fromIntegral (number_end-number_start)*block_width) font_height)
         catch_error "render_row: error 3" 0 (SRV.renderFillRect renderer rect)
         return True
 
