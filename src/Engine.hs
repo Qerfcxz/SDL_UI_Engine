@@ -10,6 +10,7 @@ import Type
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Word as DW
+import qualified Foreign.C.String as FCS
 import qualified SDL.Raw.Basic as SRB
 import qualified SDL.Raw.Enum as SRE
 import qualified SDL.Raw.Event as SRE
@@ -19,6 +20,7 @@ init_engine::IO ()
 init_engine=do
     catch_error "init_engine: error 1" 0 (SRB.init SRE.SDL_INIT_EVERYTHING)
     catch_error "init_engine: error 2" 0 SRF.init
+    catch_error "init_engine: error 3" True (FCS.withCString "SDL_IME_SHOW_UI" (FCS.withCString "1" . SRB.setHint))
 
 quit_engine::IO ()
 quit_engine=do

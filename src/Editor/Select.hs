@@ -99,3 +99,59 @@ select_row_end::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Typesetting->I
 select_row_end _ _ _ Cursor_none=Nothing
 select_row_end seq_seq_char typesetting block_number (Cursor_single cursor_row cursor_block cursor_char cursor_click)=let (number_block,number_char)=end_select_row seq_seq_char typesetting block_number cursor_row in if cursor_char==number_char then Just (cursor_row,Nothing) else Just (cursor_row,Just (Cursor_double False cursor_row cursor_block cursor_char cursor_click cursor_row number_block number_char number_block))
 select_row_end seq_seq_char typesetting block_number (Cursor_double cursor_where cursor_row_start cursor_block_start cursor_char_start cursor_click_start cursor_row_end cursor_block_end cursor_char_end cursor_click_end)=if cursor_where then let (number_block,number_char)=end_select_row seq_seq_char typesetting block_number cursor_row_start in if cursor_char_start==number_char then Just (cursor_row_start,Nothing) else if (cursor_row_end,cursor_char_end)<(cursor_row_start,number_char) then Just (cursor_row_start,Just (Cursor_double False cursor_row_end cursor_block_end cursor_char_end cursor_click_end cursor_row_start number_block number_char number_block)) else Just (cursor_row_start,Just (Cursor_double True cursor_row_start number_block number_char number_block cursor_row_end cursor_block_end cursor_char_end cursor_click_end)) else let (number_block,number_char)=end_select_row seq_seq_char typesetting block_number cursor_row_end in if cursor_char_end==number_char then Just (cursor_row_end,Nothing) else Just (cursor_row_end,Just (Cursor_double False cursor_row_start cursor_block_start cursor_char_start cursor_click_start cursor_row_end number_block number_char number_block))
+
+left_select::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Int->Int->Int->Int
+left_select seq_seq_char cursor_row cursor_block cursor_char=case DS.lookup cursor_row seq_seq_char of
+    Nothing->error "left_select: error 1"
+    Just (seq_char,_,_,_)->case DS.lookup cursor_char seq_char of
+        Nothing->error "left_select: error 2"
+        Just (_,block,_)->cursor_block-block
+
+left_select_start::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Typesetting->Int->Int->(Int,Int)
+left_select_start seq_seq_char typesetting block_number cursor_row=case DS.lookup cursor_row seq_seq_char of
+    Nothing->error "left_select_start: error 1"
+    Just (_,number,char_number,_)->(typesetting_right typesetting number block_number,char_number)
+
+select_left::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Typesetting->Int->Cursor->Maybe (Int,Maybe Cursor)
+select_left _ _ _ Cursor_none=Nothing
+select_left seq_seq_char typesetting block_number (Cursor_single cursor_row cursor_block cursor_char cursor_click)
+    |cursor_row==0=if cursor_char==0 then Just (0,Nothing) else let new_cursor_char=cursor_char-1 in let new_cursor_block=left_select seq_seq_char cursor_row cursor_block new_cursor_char in Just (0,Just (Cursor_double True 0 new_cursor_block new_cursor_char new_cursor_block cursor_row cursor_block cursor_char cursor_click))
+    |otherwise=if cursor_char==0 then let new_cursor_row=cursor_row-1 in let (new_cursor_block,new_cursor_char)=left_select_start seq_seq_char typesetting block_number new_cursor_row in Just (new_cursor_row,Just (Cursor_double True new_cursor_row new_cursor_block new_cursor_char new_cursor_block cursor_row cursor_block cursor_char cursor_click)) else let new_cursor_char=cursor_char-1 in let new_cursor_block=left_select seq_seq_char cursor_row cursor_block new_cursor_char in Just (cursor_row,Just (Cursor_double True cursor_row new_cursor_block new_cursor_char new_cursor_block cursor_row cursor_block cursor_char cursor_click))
+select_left seq_seq_char typesetting block_number (Cursor_double cursor_where cursor_row_start cursor_block_start cursor_char_start cursor_click_start cursor_row_end cursor_block_end cursor_char_end cursor_click_end)
+    |cursor_where=if cursor_row_start==0 then if cursor_char_start==0 then Just (0,Nothing) else let new_cursor_char=cursor_char_start-1 in let new_cursor_block=left_select seq_seq_char cursor_row_start cursor_block_start new_cursor_char in Just (0,Just (Cursor_double True 0 new_cursor_block new_cursor_char new_cursor_block cursor_row_end cursor_block_end cursor_char_end cursor_click_end)) else if cursor_char_start==0 then let new_cursor_row=cursor_row_start-1 in let (new_cursor_block,new_cursor_char)=left_select_start seq_seq_char typesetting block_number new_cursor_row in Just (new_cursor_row,Just (Cursor_double True new_cursor_row new_cursor_block new_cursor_char new_cursor_block cursor_row_end cursor_block_end cursor_char_end cursor_click_end)) else let new_cursor_char=cursor_char_start-1 in let new_cursor_block=left_select seq_seq_char cursor_row_start cursor_block_start new_cursor_char in Just (cursor_row_start,Just (Cursor_double True cursor_row_start new_cursor_block new_cursor_char new_cursor_block cursor_row_end cursor_block_end cursor_char_end cursor_click_end))
+    |otherwise=if cursor_row_end==0 then if cursor_char_start+1==cursor_char_end then Just (0,Just (Cursor_single 0 cursor_block_start cursor_char_start cursor_click_start)) else let new_cursor_char=cursor_char_end-1 in let new_cursor_block=left_select seq_seq_char cursor_row_end cursor_block_end new_cursor_char in Just (0,Just (Cursor_double False 0 cursor_block_start cursor_char_start cursor_click_start 0 new_cursor_block new_cursor_char new_cursor_block)) else if cursor_char_end==0 then let new_cursor_row=cursor_row_end-1 in let (new_cursor_block,new_cursor_char)=left_select_start seq_seq_char typesetting block_number new_cursor_row in if cursor_row_start==new_cursor_row&&cursor_char_start==new_cursor_char then Just (cursor_row_start,Just (Cursor_single cursor_row_start cursor_block_start cursor_char_start cursor_click_start)) else Just (new_cursor_row,Just (Cursor_double False cursor_row_start cursor_block_start cursor_char_start cursor_click_start new_cursor_row new_cursor_block new_cursor_char new_cursor_block)) else if cursor_row_start==cursor_row_end&&cursor_char_start+1==cursor_char_end then Just (cursor_row_start,Just (Cursor_single cursor_row_start cursor_block_start cursor_char_start cursor_click_start)) else let new_cursor_char=cursor_char_end-1 in let new_cursor_block=left_select seq_seq_char cursor_row_end cursor_block_end new_cursor_char in Just (cursor_row_end,Just (Cursor_double False cursor_row_start cursor_block_start cursor_char_start cursor_click_start cursor_row_end new_cursor_block new_cursor_char new_cursor_block))
+
+right_select::DS.Seq (Char,Int,FCT.CInt)->Int->Int->Int
+right_select seq_char cursor_block cursor_char=case DS.lookup cursor_char seq_char of
+        Nothing->error "right_select: error 1"
+        Just (_,block,_)->cursor_block+block
+
+right_select_end::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Typesetting->Int->Int->Int
+right_select_end seq_seq_char typesetting block_number cursor_row=case DS.lookup cursor_row seq_seq_char of
+    Nothing->error "right_select_end: error 1"
+    Just (_,number,_,_)->typesetting_left typesetting number block_number
+
+select_right::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Typesetting->Int->Int->Cursor->Maybe (Int,Maybe Cursor)
+select_right _ _ _ _ Cursor_none=Nothing
+select_right seq_seq_char typesetting block_number max_row (Cursor_single cursor_row cursor_block cursor_char cursor_click)
+    |cursor_row==max_row=case DS.lookup max_row seq_seq_char of
+        Nothing->error "select_right: error 1"
+        Just (seq_char,_,char_number,_)->if cursor_char==char_number then Just (max_row,Nothing) else let new_cursor_block=right_select seq_char cursor_block cursor_char in Just (max_row,Just (Cursor_double False max_row cursor_block cursor_char cursor_click max_row new_cursor_block (cursor_char+1) new_cursor_block))
+    |otherwise=case DS.lookup cursor_row seq_seq_char of
+        Nothing->error "select_right: error 2"
+        Just (seq_char,_,char_number,_)->if cursor_char==char_number then let new_cursor_row=cursor_row+1 in let new_cursor_block=right_select_end seq_seq_char typesetting block_number new_cursor_row in Just (new_cursor_row,Just (Cursor_double False cursor_row cursor_block cursor_char cursor_click new_cursor_row new_cursor_block 0 new_cursor_block)) else let new_cursor_block=right_select seq_char cursor_block cursor_char in Just (cursor_row,Just (Cursor_double False cursor_row cursor_block cursor_char cursor_click cursor_row new_cursor_block (cursor_char+1) new_cursor_block))
+select_right seq_seq_char typesetting block_number max_row (Cursor_double cursor_where cursor_row_start cursor_block_start cursor_char_start cursor_click_start cursor_row_end cursor_block_end cursor_char_end cursor_click_end)
+    |cursor_where=if cursor_row_start==max_row
+        then case DS.lookup max_row seq_seq_char of
+            Nothing->error "select_right: error 3"
+            Just (seq_char,_,_,_)->if cursor_char_start+1==cursor_char_end then Just (cursor_row_end,Just (Cursor_single cursor_row_end cursor_block_end cursor_char_end cursor_click_end)) else let new_cursor_block=right_select seq_char cursor_block_start cursor_char_start in Just (max_row,Just (Cursor_double True max_row new_cursor_block (cursor_char_start+1) new_cursor_block cursor_row_end cursor_block_end cursor_char_end cursor_click_end))
+        else case DS.lookup cursor_row_start seq_seq_char of
+            Nothing->error "select_right: error 4"
+            Just (seq_char,_,char_number,_)->if cursor_char_start==char_number then if cursor_row_start+1==cursor_row_end&&cursor_char_end==0 then Just (cursor_row_end,Just (Cursor_single cursor_row_end cursor_block_end cursor_char_end cursor_click_end)) else let new_cursor_row=cursor_row_start+1 in let new_cursor_block=right_select_end seq_seq_char typesetting block_number new_cursor_row in Just (new_cursor_row,Just (Cursor_double True new_cursor_row new_cursor_block 0 new_cursor_block cursor_row_end cursor_block_end cursor_char_end cursor_click_end)) else if cursor_row_end==cursor_row_start&&cursor_char_start+1==cursor_char_end then Just (cursor_row_end,Just (Cursor_single cursor_row_end cursor_block_end cursor_char_end cursor_click_end)) else let new_cursor_block=right_select seq_char cursor_block_start cursor_char_start in Just (cursor_row_start,Just (Cursor_double True cursor_row_start new_cursor_block (cursor_char_start+1) new_cursor_block cursor_row_end cursor_block_end cursor_char_end cursor_click_end))
+    |otherwise=if cursor_row_end==max_row
+        then case DS.lookup max_row seq_seq_char of
+            Nothing->error "select_right: error 5"
+            Just (seq_char,_,char_number,_)->if cursor_char_end==char_number then Just (max_row,Nothing) else let new_cursor_block=right_select seq_char cursor_block_end cursor_char_end in Just (max_row,Just (Cursor_double False cursor_row_start cursor_block_start cursor_char_start cursor_click_start max_row new_cursor_block (cursor_char_end+1) new_cursor_block))
+        else case DS.lookup cursor_row_end seq_seq_char of
+            Nothing->error "select_right: error 6"
+            Just (seq_char,_,char_number,_)->if cursor_char_end==char_number then let new_cursor_row=cursor_row_end+1 in let new_cursor_block=right_select_end seq_seq_char typesetting block_number new_cursor_row in Just (new_cursor_row,Just (Cursor_double False cursor_row_start cursor_block_start cursor_char_start cursor_click_start new_cursor_row new_cursor_block 0 new_cursor_block)) else let new_cursor_block=right_select seq_char cursor_block_end cursor_char_end in Just (cursor_row_end,Just (Cursor_double False cursor_row_start cursor_block_start cursor_char_start cursor_click_start cursor_row_end new_cursor_block (cursor_char_end+1) new_cursor_block))

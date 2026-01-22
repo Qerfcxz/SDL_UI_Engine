@@ -28,9 +28,9 @@ cursor_left block_number typesetting seq_seq_char (Cursor_single cursor_row curs
         Just (_,number,char_number,_)->let new_cursor_block=typesetting_right typesetting number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block char_number new_cursor_block))
     else case DS.lookup cursor_row seq_seq_char of
         Nothing->error "cursor_left: error 2"
-        Just (seq_char,number,_,_)->let new_cursor_char=cursor_char-1 in case DS.lookup new_cursor_char seq_char of
+        Just (seq_char,_,_,_)->let new_cursor_char=cursor_char-1 in case DS.lookup new_cursor_char seq_char of
             Nothing->error "cursor_left: error 3"
-            Just (_,block,_)->let new_cursor_block=cursor_block-block in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block new_cursor_char (fromIntegral (typesetting_left typesetting number block_number+new_cursor_block))))
+            Just (_,block,_)->let new_cursor_block=cursor_block-block in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block new_cursor_char new_cursor_block))
 cursor_left _ _ _ (Cursor_double _ cursor_row_start cursor_block_start cursor_char_start cursor_click_start _ _ _ _)=Just (cursor_row_start,Just (Cursor_single cursor_row_start cursor_block_start cursor_char_start cursor_click_start))
 
 cursor_right::Int->Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe (Int,Maybe Cursor)
@@ -38,10 +38,10 @@ cursor_right _ _ _ _ Cursor_none=Nothing
 cursor_right max_row block_number typesetting seq_seq_char (Cursor_single cursor_row cursor_block cursor_char _)=case DS.lookup cursor_row seq_seq_char of
     Nothing->error "cursor_right: error 1"
     Just (seq_char,number,char_number,_)->if cursor_char==char_number
-        then if cursor_row==max_row then Just (max_row,Nothing) else let new_cursor_row=cursor_row+1 in let new_cursor_block=typesetting_left typesetting number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block 0 (fromIntegral new_cursor_block)))
+        then if cursor_row==max_row then Just (max_row,Nothing) else let new_cursor_row=cursor_row+1 in let new_cursor_block=typesetting_left typesetting number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block 0 new_cursor_block))
         else case DS.lookup cursor_char seq_char of 
             Nothing->error "cursor_right: error 2"
-            Just (_,block,_)->let new_cursor_block=cursor_block+block in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block (cursor_char+1) (fromIntegral (typesetting_left typesetting number block_number+new_cursor_block))))
+            Just (_,block,_)->let new_cursor_block=cursor_block+block in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block (cursor_char+1) new_cursor_block))
 cursor_right _ _ _ _ (Cursor_double _ _ _ _ _ cursor_row_end cursor_block_end cursor_char_end cursor_click_end)=Just (cursor_row_end,Just (Cursor_single cursor_row_end cursor_block_end cursor_char_end cursor_click_end))
 
 cursor_up::Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe (Int,Maybe Cursor)
