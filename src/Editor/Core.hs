@@ -91,6 +91,25 @@ cut block_number typesetting (Cursor_double _ cursor_row_start cursor_block_star
         DS.Empty->let new_cursor_block_start=cursor_block_start-typesetting_left typesetting number_start block_number in let (number,new_seq_seq_char)=to_seq_seq_char_b True Nothing new_cursor_block_start cursor_char_start block_number DS.empty (DS.take cursor_char_start seq_char_start) seq_seq_char_start DS.empty in let cursor_block=new_cursor_block_start+typesetting_left typesetting number block_number in Just (cursor_row_start,Cursor_single cursor_row_start cursor_block cursor_char_start cursor_block,new_seq_seq_char)
         (seq_char_end,_,_,end_end) DS.:<| seq_seq_char_end->let new_cursor_block_start=cursor_block_start-typesetting_left typesetting number_start block_number in let (number,new_seq_seq_char)=to_seq_seq_char_b end_end Nothing new_cursor_block_start cursor_char_start block_number (DS.take cursor_char_start seq_char_start) (DS.drop cursor_char_end seq_char_end) seq_seq_char_start seq_seq_char_end in let cursor_block=new_cursor_block_start+typesetting_left typesetting number block_number in Just (cursor_row_start,Cursor_single cursor_row_start cursor_block cursor_char_start cursor_block,new_seq_seq_char)
 
+backspace::Int->Typesetting->Cursor->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Maybe (Int,Maybe (Cursor,DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)))
+backspace _ _ Cursor_none _=Nothing
+backspace block_number typesetting (Cursor_single cursor_row cursor_block cursor_char _) seq_seq_char=if cursor_char==0
+    then if cursor_row==0 then Just (0,Nothing) else let (seq_seq_char_start,seq_seq_char_end)=DS.splitAt cursor_row seq_seq_char in case seq_seq_char_start of
+        DS.Empty->error "backspace: error 1"
+        new_seq_seq_char_start DS.:|> (seq_char_start,number,char_number,end)->if end then let (new_number,new_seq_seq_char)=to_seq_seq_char_b False Nothing number char_number block_number seq_char_start DS.empty new_seq_seq_char_start seq_seq_char_end in let new_cursor_row=cursor_row-1 in let new_cursor_block=number+typesetting_left typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block char_number new_cursor_block,new_seq_seq_char)) else case seq_char_start of
+            DS.Empty->error "backspace: error 2"
+            new_seq_char_start DS.:|> (_,block,_)->let number_block=number-block in let number_char=char_number-1 in let (new_number,new_seq_seq_char)=to_seq_seq_char_b False Nothing number_block number_char block_number new_seq_char_start DS.empty new_seq_seq_char_start seq_seq_char_end in let new_cursor_row=cursor_row-1 in let new_cursor_block=number_block+typesetting_left typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block number_char new_cursor_block,new_seq_seq_char))
+    else let (seq_seq_char_start,seq_seq_char_end)=DS.splitAt (cursor_row+1) seq_seq_char in case seq_seq_char_start of
+        DS.Empty->error "backspace: error 3"
+        new_seq_seq_char_start DS.:|> (seq_char,number,_,end)->let (seq_char_start,seq_char_end)=DS.splitAt cursor_char seq_char in case seq_char_start of
+            DS.Empty->error "backspace: error 4"
+            new_seq_char_start DS.:|> (_,block,_)->let number_block=cursor_block-block-typesetting_left typesetting number block_number in let number_char=cursor_char-1 in let (new_number,new_seq_seq_char)=to_seq_seq_char_b end Nothing number_block number_char block_number new_seq_char_start seq_char_end new_seq_seq_char_start seq_seq_char_end in let new_cursor_block=number_block+typesetting_left typesetting new_number block_number in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block number_char new_cursor_block,new_seq_seq_char))
+backspace block_number typesetting cursor seq_seq_char=case cut block_number typesetting cursor seq_seq_char of
+    Nothing->error "backspace: error 5"
+    Just (cursor_row,new_cursor,new_seq_seq_char)->Just (cursor_row,Just (new_cursor,new_seq_seq_char))
+
+
+
 to_seq_seq_char::SRT.Renderer->Int->Int->Int->Int->Int->Int->Typesetting->FP.Ptr Color->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FP.Ptr SRF.Font->FCT.CInt->DS.Seq (DS.Seq Char)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (Int,Int,Int,DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool),Maybe (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
 to_seq_seq_char renderer row_start block_start char_start row_end char_end block_number typesetting text_color text_red text_green text_blue text_alpha font block_width this_seq_seq_char seq_seq_char intmap_texture=case DS.take (row_start+1) seq_seq_char of
     DS.Empty->error "to_seq_seq_char: error 1"
