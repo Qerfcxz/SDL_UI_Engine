@@ -108,6 +108,24 @@ backspace block_number typesetting cursor seq_seq_char=case cut block_number typ
     Nothing->error "backspace: error 5"
     Just (cursor_row,new_cursor,new_seq_seq_char)->Just (cursor_row,Just (new_cursor,new_seq_seq_char))
 
+delete::Int->Int->Typesetting->Cursor->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Maybe (Int,Maybe (Cursor,DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)))
+delete _ _ _ Cursor_none _=Nothing
+delete block_number max_row typesetting (Cursor_single cursor_row cursor_block cursor_char _) seq_seq_char=let (seq_seq_char_start,seq_seq_char_end)=DS.splitAt (cursor_row+1) seq_seq_char in case seq_seq_char_start of
+    DS.Empty->error "delete: error 1"
+    new_seq_seq_char_start DS.:|> (seq_char,number,char_number,end)->if cursor_char==char_number
+        then if cursor_row==max_row then Just (max_row,Nothing) else if end then let (new_number,new_seq_seq_char)=to_seq_seq_char_b False Nothing number char_number block_number seq_char DS.empty new_seq_seq_char_start seq_seq_char_end in let new_cursor_block=number+typesetting_left typesetting new_number block_number in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block cursor_char new_cursor_block,new_seq_seq_char)) else case seq_seq_char_end of
+            DS.Empty->error "delete: error 2"
+            (seq_char_end,_,_,new_end) DS.:<| new_seq_seq_char_end->case seq_char_end of
+                DS.Empty->error "delete: error 3"
+                _ DS.:<| new_seq_char_end->let (new_number,new_seq_seq_char)=to_seq_seq_char_b new_end Nothing number char_number block_number seq_char new_seq_char_end new_seq_seq_char_start new_seq_seq_char_end in let new_cursor_block=number+typesetting_left typesetting new_number block_number in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block cursor_char new_cursor_block,new_seq_seq_char))
+        else let (seq_char_start,seq_char_end)=DS.splitAt cursor_char seq_char in case seq_char_end of
+            DS.Empty->error "delete: error 4"
+            _ DS.:<| new_seq_char_end->let number_block=cursor_block-typesetting_left typesetting number block_number in let (new_number,new_seq_seq_char)=to_seq_seq_char_b end Nothing number_block cursor_char block_number seq_char_start new_seq_char_end new_seq_seq_char_start seq_seq_char_end in let new_cursor_block=number_block+typesetting_left typesetting new_number block_number in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block cursor_char new_cursor_block,new_seq_seq_char))
+delete block_number _ typesetting cursor seq_seq_char=case cut block_number typesetting cursor seq_seq_char of
+    Nothing->error "delete: error 5"
+    Just (cursor_row,new_cursor,new_seq_seq_char)->Just (cursor_row,Just (new_cursor,new_seq_seq_char))
+
+
 
 
 to_seq_seq_char::SRT.Renderer->Int->Int->Int->Int->Int->Int->Typesetting->FP.Ptr Color->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FP.Ptr SRF.Font->FCT.CInt->DS.Seq (DS.Seq Char)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (Int,Int,Int,DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool),Maybe (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
