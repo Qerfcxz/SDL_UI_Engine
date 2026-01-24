@@ -42,11 +42,11 @@ data Row=Row (DS.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)) FCT.CInt
 
 data Find=Equal|Near
 
-data Block_find=Block_equal|Block_near
+data Block_find=Block_equal|Block_near|Block_small|Block_great
 
 data Event=Unknown|Quit|Time|At Int Action|Resize Int FCT.CInt FCT.CInt
 
-data Action=Close|Wheel Int|Press Press Key|Click Click Mouse FCT.CInt FCT.CInt|Input DT.Text
+data Action=Close|Input DT.Text|Wheel Int|Press Press Key|Click Click Mouse FCT.CInt FCT.CInt
 
 data Press=Press_up|Press_down
 
@@ -54,7 +54,7 @@ data Click=Click_up|Click_down
 
 data Mouse=Mouse_left|Mouse_right
 
-data Key=Key_a|Key_b|Key_c|Key_d|Key_e|Key_f|Key_g|Key_h|Key_i|Key_j|Key_k|Key_l|Key_m|Key_n|Key_o|Key_p|Key_q|Key_r|Key_s|Key_t|Key_u|Key_v|Key_w|Key_x|Key_y|Key_z|Key_left|Key_right|Key_up|Key_down|Key_backspace|Key_delete|Key_enter|Key_escape|Key_tab|Key_left_shift|Key_right_shift|Key_left_ctrl|Key_right_ctrl|Key_numpad_0|Key_numpad_1|Key_numpad_2|Key_numpad_3|Key_numpad_4|Key_numpad_5|Key_numpad_6|Key_numpad_7|Key_numpad_8|Key_numpad_9|Key_f1|Key_f2|Key_f3|Key_f4|Key_f5|Key_f6|Key_f7|Key_f8|Key_f9|Key_f10|Key_f11|Key_f12|Key_unknown
+data Key=Key_a|Key_b|Key_c|Key_d|Key_e|Key_f|Key_g|Key_h|Key_i|Key_j|Key_k|Key_l|Key_m|Key_n|Key_o|Key_p|Key_q|Key_r|Key_s|Key_t|Key_u|Key_v|Key_w|Key_x|Key_y|Key_z|Key_left|Key_right|Key_up|Key_down|Key_backspace|Key_delete|Key_enter|Key_esc|Key_tab|Key_left_shift|Key_right_shift|Key_left_ctrl|Key_right_ctrl|Key_numpad_0|Key_numpad_1|Key_numpad_2|Key_numpad_3|Key_numpad_4|Key_numpad_5|Key_numpad_6|Key_numpad_7|Key_numpad_8|Key_numpad_9|Key_f1|Key_f2|Key_f3|Key_f4|Key_f5|Key_f6|Key_f7|Key_f8|Key_f9|Key_f10|Key_f11|Key_f12|Key_unknown
 
 type Color=SRT.Color
 
@@ -114,7 +114,7 @@ instance Eq Key where
     Key_backspace==Key_backspace=True
     Key_delete==Key_delete=True
     Key_enter==Key_enter=True
-    Key_escape==Key_escape=True
+    Key_esc==Key_esc=True
     Key_tab==Key_tab=True
     Key_left_shift==Key_left_shift=True
     Key_right_shift==Key_right_shift=True

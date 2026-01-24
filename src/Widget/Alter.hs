@@ -88,14 +88,11 @@ alter_single_widget start_id window widget (Text_request window_id row find delt
             let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max new_seq_row new_up new_down in return (Text window_id (max 0 (min max_row row)) max_row False False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row)
     _->error "alter_single_widget: error 13"
 alter_single_widget start_id window widget (Editor_request window_id block_number font_size path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_text) this_widget=case this_widget of
-    Editor {}->let (window_x,window_y,design_size,size)=get_transform_window window_id window in let (this_window_id,new_font_size,_,font_height,intmap_texture)=find_block_font find widget design_size size path start_id font_size in if window_id==this_window_id
-        then FMA.alloca $ \text_color->do
-            FS.poke text_color (color text_red text_green text_blue text_alpha)
-            let new_block_width=div (block_width*size) design_size
-            let new_delta_height=div (delta_height*size) design_size
-            let new_height=div ((height+delta_height)*size) design_size
-            let half_width=div (fromIntegral block_number*new_block_width) 2
-            let half_height=div (div (height*size) design_size) 2
-            return (Editor window_id block_number (fromIntegral (div new_height (font_height+new_delta_height))) 0 font_size new_font_size False path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height block_width delta_height x y extra_width extra_height font_height new_block_width new_delta_height (window_x+div (x*size) design_size-div (fromIntegral block_number*new_block_width) 2) (window_y+div (y*size) design_size-div new_height 2) (window_x+div ((x-extra_width)*size) design_size-half_width) (window_x+div ((x+extra_width)*size) design_size+half_width) (window_y+div ((y-extra_height)*size) design_size-half_height) (window_y+div ((y+extra_height)*size) design_size+half_height) Cursor_none (from_seq_seq_char intmap_texture block_number new_block_width seq_text DS.empty))
-        else error "alter_single_widget: error 14"
-    _->error "alter_single_widget: error 15"
+    Editor {}->let (window_x,window_y,design_size,size)=get_transform_window window_id window in let new_block_width=div (block_width*size) design_size in let (new_font_size,_,font_height,intmap_texture)=find_block_font find widget block_width new_block_width design_size size path start_id font_size in FMA.alloca $ \text_color->do
+        FS.poke text_color (color text_red text_green text_blue text_alpha)
+        let new_delta_height=div (delta_height*size) design_size
+        let new_height=div ((height+delta_height)*size) design_size
+        let half_width=div (fromIntegral block_number*new_block_width) 2
+        let half_height=div (div (height*size) design_size) 2
+        return (Editor window_id block_number (fromIntegral (div new_height (font_height+new_delta_height))) 0 font_size new_font_size False path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height block_width delta_height x y extra_width extra_height font_height new_block_width new_delta_height (window_x+div (x*size) design_size-div (fromIntegral block_number*new_block_width) 2) (window_y+div (y*size) design_size-div new_height 2) (window_x+div ((x-extra_width)*size) design_size-half_width) (window_x+div ((x+extra_width)*size) design_size+half_width) (window_y+div ((y-extra_height)*size) design_size-half_height) (window_y+div ((y+extra_height)*size) design_size+half_height) Cursor_none (from_seq_seq_char intmap_texture block_number new_block_width seq_text DS.empty))
+    _->error "alter_single_widget: error 14"
