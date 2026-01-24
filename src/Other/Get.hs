@@ -5,9 +5,20 @@ import Type
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Foreign.C.Types as FCT
-import qualified Foreign.Ptr as FP
 import qualified SDL.Raw.Types as SRT
-import qualified SDL.Raw.Font as SRF
+
+get_engine_main_id::Engine a->Int
+get_engine_main_id (Engine _ _ _ _ _ _ main_id)=main_id
+
+get_main_id::DS.Seq Int->Engine a->Int
+get_main_id seq_id engine=case get_widget seq_id engine of
+    Node_widget _ main_id _->main_id
+    _->error "get_main_id: error 1"
+
+get_next_id::DS.Seq Int->Engine a->(Event->Engine a->Id)
+get_next_id seq_id engine=case get_widget seq_id engine of
+    Leaf_widget next_id _->next_id
+    Node_widget next_id _ _->next_id
 
 get_renderer::Int->Engine a->SRT.Renderer
 get_renderer window_id (Engine _ window _ _ _ _ _)=case DIS.lookup window_id window of
@@ -34,27 +45,22 @@ get_renderer_with_transform_window window_id window=case DIS.lookup window_id wi
     Nothing->error "get_renderer_with_transform_window: error 1"
     Just (Window _ _ renderer _ _ x y design_size size)->(renderer,x,y,design_size,size)
 
-get_next_id::Combined_widget a->(Event->Engine a->Id)
-get_next_id (Leaf_widget next_single_id _)=next_single_id
-get_next_id (Node_widget next_single_id _ _)=next_single_id
-
-get_font::DS.Seq Int->Engine a->DIS.IntMap (FP.Ptr SRF.Font)
-get_font seq_single_id engine=case get_widget seq_single_id engine of
-    Leaf_widget _ (Font font)->font
-    _->error "get_font: error 1"
-
-get_widget_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
-get_widget_widget seq_single_id start_id widget=case seq_single_id of
-    DS.Empty->error "get_widget_widget: error 1"
-    single_id DS.:<| other_seq_single_id->get_widget_a start_id single_id other_seq_single_id widget
+get_next_id_combined_widget::Combined_widget a->(Event->Engine a->Id)
+get_next_id_combined_widget (Leaf_widget next_single_id _)=next_single_id
+get_next_id_combined_widget (Node_widget next_single_id _ _)=next_single_id
 
 get_widget::DS.Seq Int->Engine a->Combined_widget a
 get_widget seq_single_id (Engine widget _ _ _ _ start_id _)=case seq_single_id of
     DS.Empty->error "get_widget: error 1"
-    (single_id DS.:<| other_seq_single_id)->get_widget_a start_id single_id other_seq_single_id widget
+    (single_id DS.:<| other_seq_single_id)->get_widget_widget_a start_id single_id other_seq_single_id widget
 
-get_widget_a::Int->Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
-get_widget_a combined_id single_id seq_single_id widget=case DIS.lookup combined_id widget of
+get_widget_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
+get_widget_widget seq_single_id start_id widget=case seq_single_id of
+    DS.Empty->error "get_widget_widget: error 1"
+    single_id DS.:<| other_seq_single_id->get_widget_widget_a start_id single_id other_seq_single_id widget
+
+get_widget_widget_a::Int->Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a
+get_widget_widget_a combined_id single_id seq_single_id widget=case DIS.lookup combined_id widget of
     Nothing->error "get_widget_a: error 1"
     Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
         Nothing->error "get_widget_a: error 2"
@@ -62,7 +68,7 @@ get_widget_a combined_id single_id seq_single_id widget=case DIS.lookup combined
             DS.Empty->combined_widget
             (new_single_id DS.:<| other_seq_single_id)->case combined_widget of
                 Leaf_widget _ _->error "get_widget_a: error 3"
-                Node_widget _ _ new_combined_id->get_widget_a new_combined_id new_single_id other_seq_single_id widget
+                Node_widget _ _ new_combined_id->get_widget_widget_a new_combined_id new_single_id other_seq_single_id widget
 
 get_widget_id_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
 get_widget_id_widget seq_single_id start_id widget=case seq_single_id of
