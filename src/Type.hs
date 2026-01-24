@@ -77,26 +77,24 @@ instance Predefined_data Int where
     read_data _ _=Nothing
 
 instance Predefined_data a=>Predefined_data [a] where
-    write_data list=let request=write_list list 1 DIS.empty in Node_widget_request (\_ _->End) 0 (DIS.insert 0 (Leaf_widget_request (\_ _->End) (Label_data_request List_label)) request)
+    write_data list=let request=write_list list (length list) DIS.empty in Node_widget_request (\_ _->End) 0 (DIS.insert 0 (Leaf_widget_request (\_ _->End) (Label_data_request List_label)) request)
     read_data widget (Node_widget _ _ combined_id)=case DIS.lookup combined_id widget of
         Nothing->Nothing
         Just intmap_widget->case DIS.lookup 0 intmap_widget of
-            Just (Leaf_widget _ (Label_data List_label))->read_list widget intmap_widget 1
+            Just (Leaf_widget _ (Label_data List_label))->read_list widget intmap_widget 1 []
             _->Nothing
     read_data _ _=Nothing
 
 write_list::Predefined_data a=>[a]->Int->DIS.IntMap (Combined_widget_request b)->DIS.IntMap (Combined_widget_request b)
 write_list [] _ request=request
-write_list (value:other_value) number request=write_list other_value (number+1) (DIS.insert number (write_data value) request)
+write_list (value:other_value) number request=write_list other_value (number-1) (DIS.insert number (write_data value) request)
 
-read_list::Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->DIS.IntMap (Combined_widget b)->Int->Maybe [a]
-read_list widget intmap_widget single_id=case DIS.lookup single_id intmap_widget of
-    Nothing->Just []
+read_list::Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->DIS.IntMap (Combined_widget b)->Int->[a]->Maybe [a]
+read_list widget intmap_widget single_id list=case DIS.lookup single_id intmap_widget of
+    Nothing->Just list
     Just combined_widget->case read_data widget combined_widget of
         Nothing->Nothing
-        Just value->case read_list widget intmap_widget (single_id+1) of
-            Nothing->Nothing
-            Just other_value->Just (value:other_value)
+        Just value->read_list widget intmap_widget (single_id+1) (value:list)
 
 instance Eq Press where
     Press_up==Press_up=True
