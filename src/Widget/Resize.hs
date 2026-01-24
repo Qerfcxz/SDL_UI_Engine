@@ -31,10 +31,10 @@ create_window_trigger::(Event->Engine a->Id)->DS.Seq Int->DS.Seq Int->Engine a->
 create_window_trigger next_id seq_id seq_window_id=create_widget seq_id (Leaf_widget_request next_id (Trigger_request (create_window_trigger_a seq_window_id)))
 
 create_window_trigger_a::DS.Seq Int->Event->Engine a->Engine a
-create_window_trigger_a seq_window_id event engine@(Engine widget window window_map request count_id start_id main_id)=case event of
+create_window_trigger_a seq_window_id event engine@(Engine widget window window_map request key count_id start_id main_id)=case event of
     Resize window_id width height->case DS.elemIndexL window_id seq_window_id of
         Nothing->engine
-        Just _->Engine widget (error_update "create_window_trigger_a: error 1" window_id (\(Window this_window_id this_window renderer design_width design_height _ _ _ _)->let (x,y,design_size,size)=adaptive_window design_width design_height width height in Window this_window_id this_window renderer design_width design_height x y design_size size) window) window_map request count_id start_id main_id
+        Just _->Engine widget (error_update "create_window_trigger_a: error 1" window_id (\(Window this_window_id this_window renderer design_width design_height _ _ _ _)->let (x,y,design_size,size)=adaptive_window design_width design_height width height in Window this_window_id this_window renderer design_width design_height x y design_size size) window) window_map request key count_id start_id main_id
     _->engine
 
 create_widget_trigger::(Event->Engine a->Id)->DS.Seq Int->DIS.IntMap (DS.Seq (DS.Seq Int))->Engine a->IO (Engine a)
@@ -48,9 +48,9 @@ create_widget_trigger_a id_map event engine=case event of
     _->return engine
 
 update_widget::DS.Seq Int->Engine a->IO (Engine a)
-update_widget seq_id (Engine widget window window_map request count_id start_id main_id)=do
+update_widget seq_id (Engine widget window window_map request key count_id start_id main_id)=do
     new_widget<-update_widget_a seq_id start_id window widget
-    return (Engine new_widget window window_map request count_id start_id main_id)
+    return (Engine new_widget window window_map request key count_id start_id main_id)
 
 update_widget_a::DS.Seq Int->Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (DIS.IntMap (DIS.IntMap (Combined_widget a)))
 update_widget_a seq_id start_id window widget=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in case DIS.lookup combined_id widget of

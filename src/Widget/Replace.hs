@@ -8,11 +8,11 @@ import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 
 replace_widget::Data a=>DS.Seq Int->Combined_widget_request a->Engine a->IO (Engine a)
-replace_widget seq_single_id combined_widget_request (Engine widget window window_map request count_id start_id main_id)=case seq_single_id of
+replace_widget seq_single_id combined_widget_request (Engine widget window window_map request key count_id start_id main_id)=case seq_single_id of
     DS.Empty->error "replace_widget: error 1"
     (single_id DS.:<| other_seq_single_id)->do
         (new_count_id,new_widget)<-replace_widget_a other_seq_single_id count_id start_id single_id start_id window combined_widget_request widget
-        return (Engine new_widget window window_map request new_count_id start_id main_id)
+        return (Engine new_widget window window_map request key new_count_id start_id main_id)
 
 replace_widget_a::Data a=>DS.Seq Int->Int->Int->Int->Int->DIS.IntMap Window->Combined_widget_request a->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (Int,DIS.IntMap (DIS.IntMap (Combined_widget a)))
 replace_widget_a seq_single_id count_id combined_id single_id start_id window combined_widget_request widget=case seq_single_id of

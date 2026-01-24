@@ -8,11 +8,6 @@ import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified SDL.Raw.Types as SRT
 
-belong::Eq a=>a->DS.Seq a->Bool
-belong value seq_value=case DS.elemIndexL value seq_value of
-    Nothing->False
-    Just _->True
-
 maybe_get::Maybe a->a->a
 maybe_get Nothing value=value
 maybe_get (Just value) _=value

@@ -8,7 +8,7 @@ import qualified Foreign.C.Types as FCT
 import qualified SDL.Raw.Types as SRT
 
 get_engine_main_id::Engine a->Int
-get_engine_main_id (Engine _ _ _ _ _ _ main_id)=main_id
+get_engine_main_id (Engine _ _ _ _ _ _ _ main_id)=main_id
 
 get_main_id::DS.Seq Int->Engine a->Int
 get_main_id seq_id engine=case get_widget seq_id engine of
@@ -21,7 +21,7 @@ get_next_id seq_id engine=case get_widget seq_id engine of
     Node_widget next_id _ _->next_id
 
 get_renderer::Int->Engine a->SRT.Renderer
-get_renderer window_id (Engine _ window _ _ _ _ _)=case DIS.lookup window_id window of
+get_renderer window_id (Engine _ window _ _ _ _ _ _)=case DIS.lookup window_id window of
     Nothing->error "get_renderer: error 1"
     Just (Window _ _ renderer _ _ _ _ _ _)->renderer
 
@@ -50,7 +50,7 @@ get_next_id_combined_widget (Leaf_widget next_single_id _)=next_single_id
 get_next_id_combined_widget (Node_widget next_single_id _ _)=next_single_id
 
 get_widget::DS.Seq Int->Engine a->Combined_widget a
-get_widget seq_single_id (Engine widget _ _ _ _ start_id _)=case seq_single_id of
+get_widget seq_single_id (Engine widget _ _ _ _ _ start_id _)=case seq_single_id of
     DS.Empty->error "get_widget: error 1"
     (single_id DS.:<| other_seq_single_id)->get_widget_widget_a start_id single_id other_seq_single_id widget
 

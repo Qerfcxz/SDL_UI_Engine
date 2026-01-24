@@ -41,11 +41,11 @@ clean_block_font (font,_,intmap_texture)=do
     SRF.closeFont font
 
 remove_widget::Data a=>DS.Seq Int->Engine a->IO (Engine a)
-remove_widget seq_single_id (Engine widget window window_map request count_id start_id main_id)=case seq_single_id of
+remove_widget seq_single_id (Engine widget window window_map request key count_id start_id main_id)=case seq_single_id of
     DS.Empty->error "remove_widget: error 1"
     (single_id DS.:<| other_seq_single_id)->do
         (_,new_widget)<-remove_widget_a other_seq_single_id start_id start_id single_id widget
-        return (Engine new_widget window window_map request count_id start_id main_id)
+        return (Engine new_widget window window_map request key count_id start_id main_id)
 
 remove_widget_a::Data a=>DS.Seq Int->Int->Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (Bool,DIS.IntMap (DIS.IntMap (Combined_widget a)))
 remove_widget_a seq_single_id start_id combined_id single_id widget=case seq_single_id of

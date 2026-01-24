@@ -83,11 +83,11 @@ create_block_font path (size DS.:<| other_size)=do
     return (DIS.insert size (new_font,ascent-descent,DIS.empty) font)
 
 create_widget::DS.Seq Int->Combined_widget_request a->Engine a->IO (Engine a)
-create_widget seq_single_id combined_widget_request (Engine widget window window_map request count_id start_id main_id)=case seq_single_id of
+create_widget seq_single_id combined_widget_request (Engine widget window window_map request key count_id start_id main_id)=case seq_single_id of
     DS.Empty->error "create_widget: error 1"
     (single_id DS.:<| other_seq_single_id)->do
         (new_count_id,new_widget)<-create_widget_a other_seq_single_id count_id start_id single_id start_id window combined_widget_request widget
-        return (Engine new_widget window window_map request new_count_id start_id main_id)
+        return (Engine new_widget window window_map request key new_count_id start_id main_id)
 
 create_widget_a::DS.Seq Int->Int->Int->Int->Int->DIS.IntMap Window->Combined_widget_request a->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (Int,DIS.IntMap (DIS.IntMap (Combined_widget a)))
 create_widget_a seq_single_id count_id combined_id single_id start_id window combined_widget_request widget=case seq_single_id of
