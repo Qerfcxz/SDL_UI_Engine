@@ -1,6 +1,5 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
-{-# LANGUAGE InstanceSigs #-}
 module Type where
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
@@ -18,7 +17,9 @@ data Engine a=Engine (DIS.IntMap (DIS.IntMap (Combined_widget a))) (DIS.IntMap W
 data Combined_widget a=Leaf_widget (Event->Engine a->Id) (Single_widget a)|Node_widget (Event->Engine a->Id) Int Int
 --Node_widget:后继函数，该组合控件的主控件id，跳转id（到它的组合控件id）
 
-data Single_widget a=Data a|Trigger (Event->Engine a->Engine a)|Io_trigger (Event->Engine a->IO (Engine a))|Font (DIS.IntMap (FP.Ptr SRF.Font))|Block_font Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))|Rectangle Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture Int SRT.Texture FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text Int Int Int Bool Bool Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq Paragraph) (DS.Seq Row)|Editor Int Int Int Int Int Int Bool (DS.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt Cursor (DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool))
+data Single_widget a=Label_data Label|Bool_data Bool|Int_data Int|Data a|Trigger (Event->Engine a->Engine a)|Io_trigger (Event->Engine a->IO (Engine a))|Font (DIS.IntMap (FP.Ptr SRF.Font))|Block_font Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))|Rectangle Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture Int SRT.Texture FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text Int Int Int Bool Bool Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq Paragraph) (DS.Seq Row)|Editor Int Int Int Int Int Int Bool (DS.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt Cursor (DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool))
+
+data Label=List_label|Tuple_label
 
 data Cursor=Cursor_none|Cursor_single Int Int Int Int|Cursor_double Bool Int Int Int Int Int Int Int Int
 
@@ -31,7 +32,7 @@ data Request a=Create_widget (DS.Seq Int) (Combined_widget_request a)|Remove_wid
 data Combined_widget_request a=Leaf_widget_request (Event->Engine a->Id) (Single_widget_request a)|Node_widget_request (Event->Engine a->Id) Int (DIS.IntMap (Combined_widget_request a))
 --Node_widget_requestInt：其主控件id::Int
 
-data Single_widget_request a=Data_request a|Trigger_request (Event->Engine a->Engine a)|Io_trigger_request (Event->Engine a->IO (Engine a))|Font_request DT.Text (DS.Seq Int)|Block_font_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 DT.Text (DS.Seq Int)|Rectangle_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture_request Int DT.Text FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text_request Int Int Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq Paragraph)|Editor_request Int Int Int (DS.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq (DS.Seq Char))
+data Single_widget_request a=Label_data_request Label|Bool_data_request Bool|Int_data_request Int|Data_request a|Trigger_request (Event->Engine a->Engine a)|Io_trigger_request (Event->Engine a->IO (Engine a))|Font_request DT.Text (DS.Seq Int)|Block_font_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 DT.Text (DS.Seq Int)|Rectangle_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture_request Int DT.Text FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text_request Int Int Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq Paragraph)|Editor_request Int Int Int (DS.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DS.Seq (DS.Seq Char))
 
 data Paragraph=Paragraph (DS.Seq (DT.Text,Color,DS.Seq Int,Int)) Typesetting|Paragraph_blank (DS.Seq Int) Int
 
@@ -61,26 +62,58 @@ type Color=SRT.Color
 class Data a where
     clean_data::a->IO ()
 
+class Predefined_data b where
+    write_data::b->Combined_widget_request a
+    read_data::DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->Maybe b
+
+instance Predefined_data Bool where
+    write_data bool=Leaf_widget_request (\_ _->End) (Bool_data_request bool)
+    read_data _ (Leaf_widget _ (Bool_data bool))=Just bool
+    read_data _ _=Nothing
+
+instance Predefined_data Int where
+    write_data int=Leaf_widget_request (\_ _->End) (Int_data_request int)
+    read_data _ (Leaf_widget _ (Int_data int))=Just int
+    read_data _ _=Nothing
+
+instance Predefined_data a=>Predefined_data [a] where
+    write_data list=let request=write_list list 1 DIS.empty in Node_widget_request (\_ _->End) 0 (DIS.insert 0 (Leaf_widget_request (\_ _->End) (Label_data_request List_label)) request)
+    read_data widget (Node_widget _ _ combined_id)=case DIS.lookup combined_id widget of
+        Nothing->Nothing
+        Just intmap_widget->case DIS.lookup 0 intmap_widget of
+            Just (Leaf_widget _ (Label_data List_label))->read_list widget intmap_widget 1
+            _->Nothing
+    read_data _ _=Nothing
+
+write_list::Predefined_data a=>[a]->Int->DIS.IntMap (Combined_widget_request b)->DIS.IntMap (Combined_widget_request b)
+write_list [] _ request=request
+write_list (value:other_value) number request=write_list other_value (number+1) (DIS.insert number (write_data value) request)
+
+read_list::Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->DIS.IntMap (Combined_widget b)->Int->Maybe [a]
+read_list widget intmap_widget single_id=case DIS.lookup single_id intmap_widget of
+    Nothing->Just []
+    Just combined_widget->case read_data widget combined_widget of
+        Nothing->Nothing
+        Just value->case read_list widget intmap_widget (single_id+1) of
+            Nothing->Nothing
+            Just other_value->Just (value:other_value)
+
 instance Eq Press where
-    (==)::Press->Press->Bool
     Press_up==Press_up=True
     Press_down==Press_down=True
     _==_=False
 
 instance Eq Click where
-    (==)::Click->Click->Bool
     Click_up==Click_up=True
     Click_down==Click_down=True
     _==_=False
 
 instance Eq Mouse where
-    (==)::Mouse->Mouse->Bool
     Mouse_left==Mouse_left=True
     Mouse_right==Mouse_right=True
     _==_=False
 
 instance Eq Key where
-    (==)::Key->Key->Bool
     Key_a==Key_a=True
     Key_b==Key_b=True
     Key_c==Key_c=True

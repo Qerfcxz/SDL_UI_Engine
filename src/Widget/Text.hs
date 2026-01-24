@@ -9,7 +9,6 @@ import qualified Data.Foldable as DF
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 
-
 create_text_trigger::Bool->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Press,Key)->DS.Seq (Click,Mouse)->(Event->Engine a->Id)->DS.Seq Int->DS.Seq (DS.Seq Int)->Engine a->IO (Engine a)
 create_text_trigger wheel up_press down_press min_press max_press down_click next_id seq_id seq_seq_id=create_widget seq_id (Leaf_widget_request next_id (Trigger_request (\event (Engine widget window window_map request count_id start_id main_id)->let new_widget=DF.foldl' (\this_widget this_seq_id->create_text_trigger_a wheel up_press down_press min_press max_press down_click this_seq_id start_id event this_widget) widget seq_seq_id in Engine new_widget window window_map request count_id start_id main_id)))
 

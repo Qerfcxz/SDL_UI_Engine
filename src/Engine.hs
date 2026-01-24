@@ -3,10 +3,12 @@
 module Engine where
 import Other.Error
 import Other.Get
+import Widget.Remove
 import Event
 import Request
 import Timer
 import Type
+import qualified Data.Foldable as DF
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Word as DW
@@ -18,6 +20,7 @@ import qualified SDL.Raw.Enum as SRE
 import qualified SDL.Raw.Event as SRE
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
+import qualified SDL.Raw.Video as SRV
 
 init_engine::IO ()
 init_engine=do
@@ -89,9 +92,12 @@ run_event_b (Leaf_widget _ widget) event engine=run_widget event widget engine
 run_event_b (Node_widget _ main_single_id combined_id) event engine=run_event combined_id main_single_id (DS.singleton main_single_id) event engine
 
 run_widget::Data a=>Event->Single_widget a->Engine a->Engine a
+run_widget _ (Label_data _) engine=engine
+run_widget _ (Bool_data _) engine=engine
+run_widget _ (Int_data _) engine=engine
+run_widget _ (Data _) engine=engine
 run_widget event (Trigger handle) engine=handle event engine
 run_widget event (Io_trigger handle) engine=create_request (Io_request (handle event)) engine
-run_widget _ (Data _) engine=engine
 run_widget _ (Font _) engine=engine
 run_widget _ (Block_font {}) engine=engine
 run_widget _ (Rectangle {}) engine=engine
@@ -99,5 +105,16 @@ run_widget _ (Picture {}) engine=engine
 run_widget _ (Text {}) engine=engine
 run_widget _ (Editor {}) engine=engine
 
-clean_engine::Engine a->IO ()
-clean_engine engine=return()--未完待续
+clean_engine::Data a=>Engine a->IO ()
+clean_engine (Engine widget window _ _ _ _ _)=do
+    DF.mapM_ (DF.mapM_ clean_widget) widget
+    DF.mapM_ clean_window window
+
+clean_widget::Data a=>Combined_widget a->IO ()
+clean_widget (Leaf_widget _ single_widget)=remove_single_widget single_widget
+clean_widget (Node_widget {})=return ()
+
+clean_window::Window->IO ()
+clean_window (Window _ window renderer _ _ _ _ _ _)=do
+    SRV.destroyRenderer renderer
+    SRV.destroyWindow window
