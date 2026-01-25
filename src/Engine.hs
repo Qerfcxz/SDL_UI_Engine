@@ -100,6 +100,7 @@ run_widget::Data a=>Event->Single_widget a->Engine a->Engine a
 run_widget _ (Label_data _) engine=engine
 run_widget _ (Bool_data _) engine=engine
 run_widget _ (Int_data _) engine=engine
+run_widget _ (Char_data _) engine=engine
 run_widget _ (Data _) engine=engine
 run_widget event (Trigger handle) engine=handle event engine
 run_widget event (Io_trigger handle) engine=create_request (Io_request (handle event)) engine

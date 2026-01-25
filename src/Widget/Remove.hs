@@ -17,6 +17,7 @@ remove_single_widget::Data a=>Single_widget a->IO ()
 remove_single_widget (Label_data {})=return ()
 remove_single_widget (Bool_data {})=return ()
 remove_single_widget (Int_data {})=return ()
+remove_single_widget (Char_data {})=return ()
 remove_single_widget (Data content)=clean_data content
 remove_single_widget (Trigger _)=return ()
 remove_single_widget (Io_trigger _)=return ()

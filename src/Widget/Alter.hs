@@ -52,6 +52,11 @@ alter_single_widget _ _ _ (Int_data_request int) this_widget=case this_widget of
         clean_data this_content
         return (Int_data int)
     _->error "alter_single_widget: error 3"
+alter_single_widget _ _ _ (Char_data_request char) this_widget=case this_widget of
+    Data this_content->do
+        clean_data this_content
+        return (Char_data char)
+    _->error "alter_single_widget: error 3"
 alter_single_widget _ _ _ (Data_request content) this_widget=case this_widget of
     Data this_content->do
         clean_data this_content
