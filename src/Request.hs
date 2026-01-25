@@ -25,6 +25,7 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 import qualified SDL.Raw.Enum as SRE
+import qualified SDL.Raw.Image as SRI
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Video as SRV
 
@@ -70,14 +71,14 @@ do_request (Render_rectangle window_id red green blue alpha left right up down) 
         FS.poke rect (SRT.Rect left up (right-left) (down-up))
         catch_error "do_request: error 12" 0 (SRV.renderFillRect renderer rect)
     return engine
-do_request (Render_picture window_id path x y width_multiply width_divide height_multiply height_divide) engine=let renderer=get_renderer window_id engine in do
-    surface<-DB.useAsCString (DTE.encodeUtf8 path) SRV.loadBMP
+do_request (Render_picture window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide) engine=let renderer=get_renderer window_id engine in do
+    surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load
     CM.when (surface==FP.nullPtr) $ error "do_request: error 13"
     SRT.Surface _ width height _ _ _ _<-FS.peek surface
     texture<-SRV.createTextureFromSurface renderer surface
     SRV.freeSurface surface
     CM.when (texture==FP.nullPtr) $ error "do_request: error 14"
-    let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in catch_error "do_request: error 15" 0 (FMU.with (SRT.Rect (x-div new_width 2) (y-div new_height 2) new_width new_height) (SRV.renderCopy renderer texture FP.nullPtr))
+    let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in catch_error "do_request: error 15" 0 (FMU.with (SRT.Rect (x-div new_width 2) (y-div new_height 2) new_width new_height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect angle FP.nullPtr (from_flip render_flip)))
     SRV.destroyTexture texture
     return engine
 do_request (Render_rectangle_widget seq_id) engine=case get_widget seq_id engine of
@@ -90,9 +91,9 @@ do_request (Render_rectangle_widget seq_id) engine=case get_widget seq_id engine
         return engine
     _->error "do_request: error 18"
 do_request (Render_picture_widget seq_id) engine=case get_widget seq_id engine of
-    Leaf_widget _ (Picture window_id texture _ _ _ _ _ _ _ _ x y width height)->do
+    Leaf_widget _ (Picture window_id texture render_flip angle _ _ _ _ _ _ _ _ x y width height)->do
         let renderer=get_renderer window_id engine
-        catch_error "do_request: error 19" 0 (FMU.with (SRT.Rect x y width height) (SRV.renderCopy renderer texture FP.nullPtr))
+        catch_error "do_request: error 19" 0 (FMU.with (SRT.Rect x y width height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect angle FP.nullPtr (from_flip render_flip)))
         return engine
     _->error "do_request: error 20"
 do_request (Render_text_widget seq_id) (Engine widget window window_map request key count_id start_id main_id)=do

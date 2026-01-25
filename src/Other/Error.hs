@@ -31,24 +31,6 @@ error_insert error_message key value intmap=let (maybe_value,new_intmap)=DIS.ins
     Just _->error error_message
     Nothing->new_intmap
 
-alter_io::[Char]->Int->a->(a->IO ())->DIS.IntMap a->IO (DIS.IntMap a)
-alter_io error_message key value act=DIS.alterF (alter_io_a error_message value act) key
-
-alter_io_a::[Char]->a->(a->IO ())->Maybe a->IO (Maybe a)
-alter_io_a error_message _ _ Nothing=error error_message
-alter_io_a _ new_value act (Just value)=do
-    act value
-    return (Just new_value)
-
-delete_io::[Char]->Int->(a->IO ())->DIS.IntMap a->IO (DIS.IntMap a)
-delete_io error_message key act=DIS.alterF (delete_io_a error_message act) key
-
-delete_io_a::[Char]->(a->IO ())->Maybe a->IO (Maybe a)
-delete_io_a error_message _ Nothing=error error_message
-delete_io_a _ act (Just value)=do
-    act value
-    return Nothing
-
 error_insert_insert::[Char]->[Char]->Int->Int->a->DIS.IntMap (DIS.IntMap a)->DIS.IntMap (DIS.IntMap a)
 error_insert_insert first_error_message second_error_message first_key second_key value=DIS.alter (error_insert_insert_a first_error_message second_error_message second_key value) first_key
 

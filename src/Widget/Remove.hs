@@ -18,9 +18,11 @@ remove_single_widget (Label_data {})=return ()
 remove_single_widget (Bool_data {})=return ()
 remove_single_widget (Int_data {})=return ()
 remove_single_widget (Char_data {})=return ()
+remove_single_widget (List_char_data {})=return ()
 remove_single_widget (Data content)=clean_data content
-remove_single_widget (Trigger _)=return ()
-remove_single_widget (Io_trigger _)=return ()
+remove_single_widget (Trigger {})=return ()
+remove_single_widget (Io_trigger {})=return ()
+remove_single_widget (Collector {})=return ()
 remove_single_widget (Font intmap_font)=do
     _<-DIS.traverseWithKey (\_ font->SRF.closeFont font) intmap_font
     return ()
@@ -28,7 +30,7 @@ remove_single_widget (Block_font _ _ _ _ _ font)=do
     _<-DIS.traverseWithKey (\_ this_font->clean_block_font this_font) font
     return ()
 remove_single_widget (Rectangle {})=return ()
-remove_single_widget (Picture _ texture _ _ _ _ _ _ _ _ _ _ _ _)=SRV.destroyTexture texture
+remove_single_widget (Picture _ texture _ _ _ _ _ _ _ _ _ _ _ _ _ _)=SRV.destroyTexture texture
 remove_single_widget (Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row)=DF.mapM_ clean_row seq_row
 remove_single_widget (Editor {})=return ()
 

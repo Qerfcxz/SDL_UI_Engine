@@ -30,9 +30,11 @@ create_single_widget _ _ (Label_data_request label) _=return (Label_data label)
 create_single_widget _ _ (Bool_data_request bool) _=return (Bool_data bool)
 create_single_widget _ _ (Int_data_request int) _=return (Int_data int)
 create_single_widget _ _ (Char_data_request int) _=return (Char_data int)
+create_single_widget _ _ (List_char_data_request list_char) _=return (List_char_data list_char)
 create_single_widget _ _ (Data_request content) _=return (Data content)
 create_single_widget _ _ (Trigger_request handle) _=return (Trigger handle)
 create_single_widget _ _ (Io_trigger_request handle) _=return (Io_trigger handle)
+create_single_widget _ _ (Collector_request request) _=return (Collector request)
 create_single_widget _ _ (Font_request path size) _=do
     font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_font` size)
     return (Font font)
@@ -42,7 +44,7 @@ create_single_widget _ _ (Block_font_request window_id red green blue alpha path
 create_single_widget _ window (Rectangle_request window_id red green blue alpha left right up down) _=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: error 1"
     Just (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
-create_single_widget _ window (Picture_request window_id path x y width_multiply width_divide height_multiply height_divide) _=case DIS.lookup window_id window of
+create_single_widget _ window (Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide) _=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: error 2"
     Just (Window _ _ renderer _ _ window_x window_y design_size size)->do
         surface<-DB.useAsCString (DTE.encodeUtf8 path) SRV.loadBMP
@@ -51,7 +53,7 @@ create_single_widget _ window (Picture_request window_id path x y width_multiply
         texture<-SRV.createTextureFromSurface renderer surface
         SRV.freeSurface surface
         CM.when (texture==FP.nullPtr) $ error "create_single_widget: error 4"
-        let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id texture x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
+        let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id texture render_flip angle x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
 create_single_widget start_id window (Text_request window_id row find delta_height left right up down seq_paragraph) widget=case DIS.lookup window_id window of
     Nothing->error "create_single_widget: error 5"
     Just (Window _ _ renderer _ _ x y design_size size)->let new_delta_height=div (delta_height*size) design_size in do
