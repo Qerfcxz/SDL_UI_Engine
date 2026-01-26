@@ -26,9 +26,9 @@ import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Video as SRV
 
 alter_widget::Data a=>DS.Seq Int->Combined_widget_request a->Engine a->IO (Engine a)
-alter_widget seq_single_id combined_widget_request (Engine widget window window_map request key count_id start_id main_id)=let (combined_id,single_id)=get_widget_id_widget seq_single_id start_id widget in do
+alter_widget seq_single_id combined_widget_request (Engine widget window window_map request key main_id start_id count_id time)=let (combined_id,single_id)=get_widget_id_widget seq_single_id start_id widget in do
     new_widget<-error_update_update_io "alter_widget: error 1" "alter_widget: error 2" combined_id single_id (alter_widget_a start_id window widget combined_widget_request) widget
-    return (Engine new_widget window window_map request key count_id start_id main_id)
+    return (Engine new_widget window window_map request key main_id start_id count_id time)
 
 alter_widget_a::Data a=>Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget_request a->Combined_widget a->IO (Combined_widget a)
 alter_widget_a start_id window widget (Leaf_widget_request next_id single_widget_request) (Leaf_widget _ single_widget)=do
