@@ -33,10 +33,10 @@ create_request::Data a=>Request a->Engine a->Engine a
 create_request new_request (Engine widget window window_map request key main_id start_id count_id time)=Engine widget window window_map (request DS.|> new_request) key main_id start_id count_id time
 
 do_request::Data a=>Request a->Engine a->IO (Engine a)
-do_request (Create_widget seq_single_id combined_widget_request) engine=create_widget seq_single_id combined_widget_request engine
-do_request (Remove_widget seq_single_id) engine=remove_widget seq_single_id engine
-do_request (Replace_widget seq_single_id combined_widget_request) engine=replace_widget seq_single_id combined_widget_request engine
-do_request (Alter_widget seq_single_id combined_widget_request) engine=alter_widget seq_single_id combined_widget_request engine
+do_request (Create_widget seq_id combined_widget_request) engine=create_widget seq_id combined_widget_request engine
+do_request (Remove_widget seq_id) engine=remove_widget seq_id engine
+do_request (Replace_widget seq_id combined_widget_request) engine=replace_widget seq_id combined_widget_request engine
+do_request (Alter_widget seq_id combined_widget_request) engine=alter_widget seq_id combined_widget_request engine
 do_request (Create_window window_id window_name left right up down) (Engine widget window window_map request key main_id start_id count_id time)=DB.useAsCString (DTE.encodeUtf8 window_name) $ \name->let width=right-left in let height=down-up in do
     new_window<-SRV.createWindow name left up width height SRE.SDL_WINDOW_RESIZABLE
     CM.when (new_window==FP.nullPtr) (error "do_request: error 1")
@@ -50,7 +50,7 @@ do_request (Remove_window window_id) (Engine widget window window_map request ke
     (Just (Window sdl_window_id this_window renderer _ _ _ _ _ _),new_window)->do
         SRV.destroyRenderer renderer
         SRV.destroyWindow this_window
-        return (Engine widget new_window (simple_error_remove "do_request: error 7" sdl_window_id window_map) request key main_id start_id count_id time)
+        return (Engine widget new_window (error_remove_simple "do_request: error 7" sdl_window_id window_map) request key main_id start_id count_id time)
 do_request (Present_window window_id) engine=do
     SRV.renderPresent (get_renderer window_id engine)
     return engine

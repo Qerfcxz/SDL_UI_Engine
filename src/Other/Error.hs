@@ -9,8 +9,15 @@ catch_error error_message success result=do
     flag<-result
     CM.unless (flag==success) (error error_message)
 
-simple_error_remove::[Char]->Int->DIS.IntMap a->DIS.IntMap a
-simple_error_remove error_message key intmap=case DIS.updateLookupWithKey (\_ _->Nothing) key intmap of
+error_lookup_lookup::[Char]->[Char]->Int->Int->DIS.IntMap (DIS.IntMap a)->a
+error_lookup_lookup first_error_message second_error_message first_key second_key intmap_intmap=case DIS.lookup first_key intmap_intmap of
+    Nothing->error first_error_message
+    Just intmap->case DIS.lookup second_key intmap of
+        Nothing->error second_error_message
+        Just value->value
+
+error_remove_simple::[Char]->Int->DIS.IntMap a->DIS.IntMap a
+error_remove_simple error_message key intmap=case DIS.updateLookupWithKey (\_ _->Nothing) key intmap of
     (Nothing,_)->error error_message
     (Just _,new_intmap)->new_intmap
 

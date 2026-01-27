@@ -35,7 +35,7 @@ quit_engine=do
     SRF.quit
     SRB.quit
 
-create_engine::(Event->Engine a->Int)->Int->Maybe DW.Word32->Engine a
+create_engine::(Engine a->Event->Int)->Int->Maybe DW.Word32->Engine a
 create_engine main_id start_id=Engine (DIS.singleton start_id DIS.empty) DIS.empty DIS.empty DSeq.empty DSet.empty main_id start_id (start_id+1)
 
 run_engine::Data a=>Engine a->IO ()
@@ -55,8 +55,8 @@ loop_engine_time time_event_type event engine=do
     case this_event of
         Quit->clean_engine new_engine
         _->case maybe_key of
-            Nothing->let calculated_main_id=new_main_id this_event new_engine in loop_engine_time time_event_type event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event new_engine)
-            Just new_key->let calculated_main_id=new_main_id this_event new_engine in loop_engine_time time_event_type event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event (set_key new_key new_engine))
+            Nothing->let calculated_main_id=new_main_id new_engine this_event in loop_engine_time time_event_type event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event new_engine)
+            Just new_key->let calculated_main_id=new_main_id new_engine this_event in loop_engine_time time_event_type event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event (set_key new_key new_engine))
 
 loop_engine::Data a=>FP.Ptr SRT.Event->Engine a->IO()
 loop_engine event engine=do
@@ -65,8 +65,8 @@ loop_engine event engine=do
     case this_event of
         Quit->clean_engine new_engine
         _->case maybe_key of
-            Nothing->let calculated_main_id=new_main_id this_event new_engine in loop_engine event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event new_engine)
-            Just new_key->let calculated_main_id=new_main_id this_event new_engine in loop_engine event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event (set_key new_key new_engine))
+            Nothing->let calculated_main_id=new_main_id new_engine this_event in loop_engine event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event new_engine)
+            Just new_key->let calculated_main_id=new_main_id new_engine this_event in loop_engine event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event (set_key new_key new_engine))
 
 run_request::Data a=>Engine a->IO (Engine a)
 run_request (Engine widget window window_map request key main_id start_id count_id time)=case request of
@@ -87,14 +87,14 @@ run_event_a combined_id single_id single_id_history intmap_combined_widget event
         Nothing->error "run_event_a: error 2"
         Just new_intmap_combined_widget->case DIS.lookup single_id new_intmap_combined_widget of
             Nothing->error "run_event_a: error 3"
-            Just new_combined_widget->case get_next_id_combined_widget new_combined_widget event new_engine of
+            Just new_combined_widget->case get_next_id_combined_widget new_combined_widget new_engine event of
                 End->new_engine
                 Goto new_single_id->run_event_a combined_id new_single_id (single_id_history DSeq.|> new_single_id) new_intmap_combined_widget event new_engine
                 Back number->let max_index=DSeq.length single_id_history-1 in if number<0 || max_index<number then error "run_event_a: error 4" else let new_single_id=DSeq.index single_id_history (max_index-number) in run_event_a combined_id new_single_id (single_id_history DSeq.|> new_single_id) new_intmap_combined_widget event new_engine
 
 run_event_b::Data a=>Combined_widget a->Event->Engine a->Engine a
 run_event_b (Leaf_widget _ widget) event engine=run_widget event widget engine
-run_event_b (Node_widget _ main_single_id combined_id) event engine=let calculated_main_single_id=main_single_id event engine in run_event combined_id calculated_main_single_id (DSeq.singleton calculated_main_single_id) event engine
+run_event_b (Node_widget _ main_single_id event_transform _ combined_id) event engine=let calculated_main_single_id=main_single_id engine event in run_event combined_id calculated_main_single_id (DSeq.singleton calculated_main_single_id) (event_transform engine event) engine
 
 run_widget::Data a=>Event->Single_widget a->Engine a->Engine a
 run_widget _ (Label_data _) engine=engine

@@ -86,27 +86,24 @@ create_block_font path (size DS.:<| other_size)=do
     return (DIS.insert size (new_font,ascent-descent,DIS.empty) font)
 
 create_widget::DS.Seq Int->Combined_widget_request a->Engine a->IO (Engine a)
-create_widget seq_single_id combined_widget_request (Engine widget window window_map request key main_id start_id count_id time)=case seq_single_id of
+create_widget seq_id combined_widget_request (Engine widget window window_map request key main_id start_id count_id time)=case seq_id of
     DS.Empty->error "create_widget: error 1"
     (single_id DS.:<| other_seq_single_id)->do
         (new_count_id,new_widget)<-create_widget_a other_seq_single_id count_id start_id single_id start_id window combined_widget_request widget
         return (Engine new_widget window window_map request key main_id start_id new_count_id time)
 
 create_widget_a::DS.Seq Int->Int->Int->Int->Int->DIS.IntMap Window->Combined_widget_request a->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (Int,DIS.IntMap (DIS.IntMap (Combined_widget a)))
-create_widget_a seq_single_id count_id combined_id single_id start_id window combined_widget_request widget=case seq_single_id of
+create_widget_a seq_id count_id combined_id single_id start_id window combined_widget_request widget=case seq_id of
     DS.Empty->create_widget_top count_id combined_id single_id start_id window combined_widget_request widget
-    (new_single_id DS.:<| other_seq_single_id)->case DIS.lookup combined_id widget of
-        Nothing->error "create_widget_a: error 1"
-        Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
-            Nothing->error "create_widget_a: error 2"
-            Just (Leaf_widget _ _)->error "create_widget_a: error 3"
-            Just (Node_widget _ _ new_combined_id)->create_widget_a other_seq_single_id count_id new_combined_id new_single_id start_id window combined_widget_request widget
+    (new_single_id DS.:<| other_seq_single_id)->case error_lookup_lookup "create_widget_a: error 1" "create_widget_a: error 2" combined_id single_id widget of
+        Leaf_widget _ _->error "create_widget_a: error 3"
+        Node_widget _ _ _ _ new_combined_id->create_widget_a other_seq_single_id count_id new_combined_id new_single_id start_id window combined_widget_request widget
 
 create_widget_top::Int->Int->Int->Int->DIS.IntMap Window->Combined_widget_request a->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (Int,DIS.IntMap (DIS.IntMap (Combined_widget a)))
 create_widget_top count_id combined_id single_id start_id window (Leaf_widget_request next_id single_widget_request) widget=do
     new_single_widget<-create_single_widget start_id window single_widget_request widget
     return (count_id,error_insert_insert "create_widget_top: error 1" "create_widget_top: error 2" combined_id single_id (Leaf_widget next_id new_single_widget) widget)
-create_widget_top count_id combined_id single_id start_id window (Node_widget_request next_id main_single_id intmap_combined_widget_request) widget=DIS.foldlWithKey (\io this_single_id->create_widget_top_a count_id this_single_id start_id window io) (return (count_id+1,error_insert "create_widget_top: you changed something without proper design" count_id DIS.empty (error_insert_insert "create_widget_top: error 3" "create_widget_top: error 4" combined_id single_id (Node_widget next_id main_single_id count_id) widget))) intmap_combined_widget_request
+create_widget_top count_id combined_id single_id start_id window (Node_widget_request next_id main_single_id event_transform request_transform intmap_combined_widget_request) widget=DIS.foldlWithKey (\io this_single_id->create_widget_top_a count_id this_single_id start_id window io) (return (count_id+1,error_insert "create_widget_top: you changed something without proper design" count_id DIS.empty (error_insert_insert "create_widget_top: error 3" "create_widget_top: error 4" combined_id single_id (Node_widget next_id main_single_id event_transform request_transform count_id) widget))) intmap_combined_widget_request
 
 create_widget_top_a::Int->Int->Int->DIS.IntMap Window->IO (Int,DIS.IntMap (DIS.IntMap (Combined_widget a)))->Combined_widget_request a->IO (Int,DIS.IntMap (DIS.IntMap (Combined_widget a)))
 create_widget_top_a combined_id single_id start_id window io combined_widget_request=do

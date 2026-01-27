@@ -28,7 +28,7 @@ import qualified Foreign.Storable as FS
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
 
-create_window_trigger::(Event->Engine a->Id)->DS.Seq Int->DS.Seq Int->Engine a->IO (Engine a)
+create_window_trigger::(Engine a->Event->Id)->DS.Seq Int->DS.Seq Int->Engine a->IO (Engine a)
 create_window_trigger next_id seq_id seq_window_id=create_widget seq_id (Leaf_widget_request next_id (Trigger_request (create_window_trigger_a seq_window_id)))
 
 create_window_trigger_a::DS.Seq Int->Event->Engine a->Engine a
@@ -38,7 +38,7 @@ create_window_trigger_a seq_window_id event engine@(Engine widget window window_
         Just _->Engine widget (error_update "create_window_trigger_a: error 1" window_id (\(Window this_window_id this_window renderer design_width design_height _ _ _ _)->let (x,y,design_size,size)=adaptive_window design_width design_height width height in Window this_window_id this_window renderer design_width design_height x y design_size size) window) window_map request key main_id start_id count_id time
     _->engine
 
-create_widget_trigger::(Event->Engine a->Id)->DS.Seq Int->DIS.IntMap (DS.Seq (DS.Seq Int))->Engine a->IO (Engine a)
+create_widget_trigger::(Engine a->Event->Id)->DS.Seq Int->DIS.IntMap (DS.Seq (DS.Seq Int))->Engine a->IO (Engine a)
 create_widget_trigger next_id seq_id id_map=create_widget seq_id (Leaf_widget_request next_id (Io_trigger_request (create_widget_trigger_a id_map)))
 
 create_widget_trigger_a::DIS.IntMap (DS.Seq (DS.Seq Int))->Event->Engine a->IO (Engine a)
