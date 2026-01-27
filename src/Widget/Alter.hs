@@ -39,7 +39,7 @@ alter_widget_a::Data a=>Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined
 alter_widget_a start_id window widget (Leaf_widget_request next_id single_widget_request) (Leaf_widget _ single_widget)=do
     new_single_widget<-alter_single_widget start_id window widget single_widget_request single_widget
     return (Leaf_widget next_id new_single_widget)
-alter_widget_a _ _ _ _ _=error"alter_widget_a: error 1"--未完待续
+alter_widget_a _ _ _ _ _=error "alter_widget_a: error 1"--未完待续
 
 alter_single_widget::Data a=>Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Single_widget_request a->Single_widget a->IO (Single_widget a)
 alter_single_widget _ _ _ (Label_data_request label) this_widget=case this_widget of

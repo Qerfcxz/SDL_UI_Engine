@@ -64,7 +64,7 @@ get_widget_widget_a::Int->Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widg
 get_widget_widget_a combined_id single_id seq_id widget=let combined_widget=error_lookup_lookup "get_widget_widget_a: error 1" "get_widget_widget_a: error 2" combined_id single_id widget in case seq_id of
     DS.Empty->combined_widget
     (new_single_id DS.:<| other_seq_id)->case combined_widget of
-        Leaf_widget _ _->error "get_widget_a: error 3"
+        Leaf_widget _ _->error "get_widget_widget_a: error 3"
         Node_widget _ _ _ _ new_combined_id->get_widget_widget_a new_combined_id new_single_id other_seq_id widget
 
 get_widget_with_id_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int,Combined_widget a)

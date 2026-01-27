@@ -141,11 +141,11 @@ cursor_row_min block_number typesetting seq_seq_char (Cursor_single cursor_row _
     Just (_,number,_,_)->let new_cursor_block=typesetting_left typesetting number block_number in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block 0 new_cursor_block))
 cursor_row_min block_number typesetting seq_seq_char (Cursor_double cursor_where cursor_row_start _ _ _ cursor_row_end _ _ _)=if cursor_where
     then case DS.lookup cursor_row_start seq_seq_char of
-    Nothing->error "cursor_row_min: error 2"
-    Just (_,number,_,_)->let new_cursor_block=typesetting_left typesetting number block_number in Just (cursor_row_start,Just (Cursor_single cursor_row_start new_cursor_block 0 new_cursor_block))
+        Nothing->error "cursor_row_min: error 2"
+        Just (_,number,_,_)->let new_cursor_block=typesetting_left typesetting number block_number in Just (cursor_row_start,Just (Cursor_single cursor_row_start new_cursor_block 0 new_cursor_block))
     else case DS.lookup cursor_row_end seq_seq_char of
-    Nothing->error "cursor_row_min: error 3"
-    Just (_,number,_,_)->let new_cursor_block=typesetting_left typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block 0 new_cursor_block))
+        Nothing->error "cursor_row_min: error 3"
+        Just (_,number,_,_)->let new_cursor_block=typesetting_left typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block 0 new_cursor_block))
 
 cursor_row_max::Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe (Int,Maybe Cursor)
 cursor_row_max _ _ _ Cursor_none=Nothing
@@ -154,8 +154,8 @@ cursor_row_max block_number typesetting seq_seq_char (Cursor_single cursor_row _
     Just (_,number,char_number,_)->if cursor_char==char_number then Just (cursor_row,Nothing) else let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block char_number new_cursor_block))
 cursor_row_max block_number typesetting seq_seq_char (Cursor_double cursor_where cursor_row_start _ _ _ cursor_row_end _ _ _)=if cursor_where
     then case DS.lookup cursor_row_start seq_seq_char of
-    Nothing->error "cursor_row_max: error 2"
-    Just (_,number,char_number,_)->let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_start,Just (Cursor_single cursor_row_start new_cursor_block char_number new_cursor_block))
+        Nothing->error "cursor_row_max: error 2"
+        Just (_,number,char_number,_)->let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_start,Just (Cursor_single cursor_row_start new_cursor_block char_number new_cursor_block))
     else case DS.lookup cursor_row_end seq_seq_char of
-    Nothing->error "cursor_row_max: error 3"
-    Just (_,number,char_number,_)->let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block char_number new_cursor_block))
+        Nothing->error "cursor_row_max: error 3"
+        Just (_,number,char_number,_)->let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block char_number new_cursor_block))

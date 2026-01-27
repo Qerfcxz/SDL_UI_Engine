@@ -29,7 +29,7 @@ create_single_widget::Int->DIS.IntMap Window->Single_widget_request a->DIS.IntMa
 create_single_widget _ _ (Label_data_request label) _=return (Label_data label)
 create_single_widget _ _ (Bool_data_request bool) _=return (Bool_data bool)
 create_single_widget _ _ (Int_data_request int) _=return (Int_data int)
-create_single_widget _ _ (Char_data_request int) _=return (Char_data int)
+create_single_widget _ _ (Char_data_request char) _=return (Char_data char)
 create_single_widget _ _ (List_char_data_request list_char) _=return (List_char_data list_char)
 create_single_widget _ _ (Data_request content) _=return (Data content)
 create_single_widget _ _ (Trigger_request handle) _=return (Trigger handle)
