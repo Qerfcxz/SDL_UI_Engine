@@ -11,6 +11,7 @@ import Widget.Alter
 import Widget.Create
 import Widget.Remove
 import Widget.Replace
+import Instruction
 import Type
 import qualified Control.Monad as CM
 import qualified Data.ByteString as DB
@@ -89,14 +90,14 @@ do_request_widget seq_id (Create_widget combined_widget_request) engine=create_w
 do_request_widget seq_id Remove_widget engine=remove_widget seq_id engine
 do_request_widget seq_id (Replace_widget combined_widget_request) engine=replace_widget seq_id combined_widget_request engine
 do_request_widget seq_id (Alter_widget combined_widget_request) engine=alter_widget seq_id combined_widget_request engine
-do_request_widget seq_id (Render_rectangle_widget delta_x delta_y) engine=do_request_render_rectangle_widget delta_x delta_y (get_widget seq_id engine) engine
-do_request_widget seq_id (Render_picture_widget delta_x delta_y) engine=do_request_render_picture_widget delta_x delta_y (get_widget seq_id engine) engine
-do_request_widget seq_id (Render_text_widget delta_x delta_y) engine@(Engine widget _ _ _ _ _ start_id _ _)=do
+do_request_widget seq_id (Render_rectangle_widget seq_instruction) engine=do_request_render_rectangle_widget (DF.foldl' (flip (instruction_render_rectangle engine)) (get_widget seq_id engine) seq_instruction) engine
+do_request_widget seq_id (Render_picture_widget seq_instruction) engine=do_request_render_picture_widget (DF.foldl' (flip (instruction_render_picture engine)) (get_widget seq_id engine) seq_instruction) engine
+do_request_widget seq_id (Render_text_widget seq_instruction) engine@(Engine widget _ _ _ _ _ start_id _ _)=do
     ioref<-DI.newIORef (error "do_request_widget: error 1")
-    let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in do_request_render_text_widget delta_x delta_y ioref combined_id single_id engine
-do_request_widget seq_id (Render_editor_widget delta_x delta_y) engine@(Engine widget _ _ _ _ _ start_id _ _)=do
+    let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in do_request_render_text_widget (instruction_render_text engine) seq_instruction ioref combined_id single_id engine
+do_request_widget seq_id (Render_editor_widget seq_instruction) engine@(Engine widget _ _ _ _ _ start_id _ _)=do
     ioref<-DI.newIORef (error "do_request_widget: error 2")
-    let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in do_request_render_editor_widget delta_x delta_y ioref combined_id single_id engine
+    let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in do_request_render_editor_widget (instruction_render_editor engine) seq_instruction ioref combined_id single_id engine
 do_request_widget seq_id (Update_block_font_widget size block_width seq_char) (Engine widget window window_map request key main_id start_id count_id time)=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in do
     new_widget<-error_update_update_io "do_request_widget: error 3" "do_request_widget: error 4" combined_id single_id (update_block_font window size block_width seq_char) widget
     return (Engine new_widget window window_map request key main_id start_id count_id time)
@@ -106,57 +107,57 @@ do_request_widget_direct combined_id single_id (Create_widget combined_widget_re
 do_request_widget_direct combined_id single_id Remove_widget engine=direct_remove_widget combined_id single_id engine
 do_request_widget_direct combined_id single_id (Replace_widget combined_widget_request) engine=direct_replace_widget combined_id single_id combined_widget_request engine
 do_request_widget_direct combined_id single_id (Alter_widget combined_widget_request) engine=direct_alter_widget combined_id single_id combined_widget_request engine
-do_request_widget_direct combined_id single_id (Render_rectangle_widget delta_x delta_y) engine@(Engine widget _ _ _ _ _ _ _ _)=do_request_render_rectangle_widget delta_x delta_y (error_lookup_lookup "do_request_widget_direct: error 1" "do_request_widget_direct: error 2" combined_id single_id widget) engine
-do_request_widget_direct combined_id single_id (Render_picture_widget delta_x delta_y) engine@(Engine widget _ _ _ _ _ _ _ _)=do_request_render_picture_widget delta_x delta_y (error_lookup_lookup "do_request_widget_direct: error 3" "do_request_widget_direct: error 4" combined_id single_id widget) engine
-do_request_widget_direct combined_id single_id (Render_text_widget delta_x delta_y) engine=do
+do_request_widget_direct combined_id single_id (Render_rectangle_widget seq_instruction) engine@(Engine widget _ _ _ _ _ _ _ _)=do_request_render_rectangle_widget (DF.foldl' (flip (instruction_render_rectangle engine)) (error_lookup_lookup "do_request_widget_direct: error 1" "do_request_widget_direct: error 2" combined_id single_id widget) seq_instruction) engine
+do_request_widget_direct combined_id single_id (Render_picture_widget seq_instruction) engine@(Engine widget _ _ _ _ _ _ _ _)=do_request_render_picture_widget (DF.foldl' (flip (instruction_render_picture engine)) (error_lookup_lookup "do_request_widget_direct: error 3" "do_request_widget_direct: error 4" combined_id single_id widget) seq_instruction) engine
+do_request_widget_direct combined_id single_id (Render_text_widget seq_instruction) engine=do
     ioref<-DI.newIORef (error "do_request_widget_direct: error 5")
-    do_request_render_text_widget delta_x delta_y ioref combined_id single_id engine
-do_request_widget_direct combined_id single_id (Render_editor_widget delta_x delta_y) engine=do
+    do_request_render_text_widget (instruction_render_text engine) seq_instruction ioref combined_id single_id engine
+do_request_widget_direct combined_id single_id (Render_editor_widget seq_instruction) engine=do
     ioref<-DI.newIORef (error "do_request_widget_direct: error 6")
-    do_request_render_editor_widget delta_x delta_y ioref combined_id single_id engine
+    do_request_render_editor_widget (instruction_render_editor engine) seq_instruction ioref combined_id single_id engine
 do_request_widget_direct combined_id single_id (Update_block_font_widget size block_width seq_char) (Engine widget window window_map request key main_id start_id count_id time)=do
     new_widget<-error_update_update_io "do_request_widget_direct: error 7" "do_request_widget_direct: error 8" combined_id single_id (update_block_font window size block_width seq_char) widget
     return (Engine new_widget window window_map request key main_id start_id count_id time)
 
-do_request_render_rectangle_widget::FCT.CInt->FCT.CInt->Combined_widget a->Engine a->IO (Engine a)
-do_request_render_rectangle_widget delta_x delta_y (Leaf_widget _ (Rectangle window_id red green blue alpha _ _ _ _ x y width height)) engine=let renderer=get_renderer window_id engine in do
+do_request_render_rectangle_widget::Combined_widget a->Engine a->IO (Engine a)
+do_request_render_rectangle_widget (Leaf_widget _ (Rectangle window_id red green blue alpha _ _ _ _ x y width height)) engine=let renderer=get_renderer window_id engine in do
     catch_error "do_request_render_rectangle_widget: error 1" 0 (SRV.setRenderDrawColor renderer red green blue alpha)
     FMA.alloca $ \rect->do
-        FS.poke rect (SRT.Rect (x+delta_x) (y+delta_y) width height)
+        FS.poke rect (SRT.Rect x y width height)
         catch_error "do_request_render_rectangle_widget: error 2" 0 (SRV.renderFillRect renderer rect)
     return engine
-do_request_render_rectangle_widget _ _ _ _=error "do_request_render_rectangle_widget: error 3"
+do_request_render_rectangle_widget _ _=error "do_request_render_rectangle_widget: error 3"
 
-do_request_render_picture_widget::FCT.CInt->FCT.CInt->Combined_widget a->Engine a->IO (Engine a)
-do_request_render_picture_widget delta_x delta_y (Leaf_widget _ (Picture window_id texture render_flip angle _ _ _ _ _ _ _ _ x y width height)) engine=let renderer=get_renderer window_id engine in do
-    catch_error "do_request_render_picture_widget: error 1" 0 (FMU.with (SRT.Rect (x+delta_x) (y+delta_y) width height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect angle FP.nullPtr (from_flip render_flip)))
+do_request_render_picture_widget::Combined_widget a->Engine a->IO (Engine a)
+do_request_render_picture_widget (Leaf_widget _ (Picture window_id texture render_flip angle _ _ _ _ _ _ _ _ x y width height)) engine=let renderer=get_renderer window_id engine in do
+    catch_error "do_request_render_picture_widget: error 1" 0 (FMU.with (SRT.Rect x y width height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect angle FP.nullPtr (from_flip render_flip)))
     return engine
-do_request_render_picture_widget _ _ _ _=error "do_request_render_picture_widget: error 2"
+do_request_render_picture_widget _ _=error "do_request_render_picture_widget: error 2"
 
-do_request_render_text_widget::FCT.CInt->FCT.CInt->DI.IORef (Combined_widget a)->Int->Int->Engine a->IO (Engine a)
-do_request_render_text_widget delta_x delta_y ioref combined_id single_id (Engine widget window window_map request key main_id start_id count_id time)=do
+do_request_render_text_widget::(Instruction_render_text->(Combined_widget a->Combined_widget a))->DS.Seq Instruction_render_text->DI.IORef (Combined_widget a)->Int->Int->Engine a->IO (Engine a)
+do_request_render_text_widget instruction seq_instruction ioref combined_id single_id (Engine widget window window_map request key main_id start_id count_id time)=do
     new_widget<-error_update_update_io "do_request_render_text_widget: error 1" "do_request_render_text_widget: error 2" combined_id single_id (update_widget_render ioref) widget
     combined_widget<-DI.readIORef ioref
-    case combined_widget of
-        Leaf_widget _ (Text window_id row _ _ _ _ _ _ _ _ _ _ left _ up down _ seq_row)->let this_left=left+delta_x in let this_up=up+delta_y in let this_down=down+delta_y in case DS.drop row seq_row of
+    case DF.foldl' (flip instruction) combined_widget seq_instruction of
+        Leaf_widget _ (Text window_id row _ _ _ _ _ _ _ _ _ _ left _ up down _ seq_row)->case DS.drop row seq_row of
             DS.Empty->return (Engine new_widget window window_map request key main_id start_id count_id time)
             (new_row DS.:<| other_seq_row)->let renderer=get_renderer_window window_id window in case new_row of
-                Row seq_texture y font_height->if this_down<this_up+font_height then return (Engine new_widget window window_map request key main_id start_id count_id time) else let new_up=this_up-y in FMA.alloca $ \rect->do
-                    render_seq_texture rect this_left new_up this_down renderer seq_texture
-                    render_seq_row rect this_left new_up this_down renderer other_seq_row
+                Row seq_texture y font_height->if down<up+font_height then return (Engine new_widget window window_map request key main_id start_id count_id time) else let new_up=up-y in FMA.alloca $ \rect->do
+                    render_seq_texture rect left new_up down renderer seq_texture
+                    render_seq_row rect left new_up down renderer other_seq_row
                     return (Engine new_widget window window_map request key main_id start_id count_id time)
-                Row_blank y font_height->if this_down<this_up+font_height then return (Engine new_widget window window_map request key main_id start_id count_id time) else let new_up=this_up-y in FMA.alloca $ \rect->do
-                    render_seq_row rect this_left new_up this_down renderer other_seq_row
+                Row_blank y font_height->if down<up+font_height then return (Engine new_widget window window_map request key main_id start_id count_id time) else let new_up=up-y in FMA.alloca $ \rect->do
+                    render_seq_row rect left new_up down renderer other_seq_row
                     return (Engine new_widget window window_map request key main_id start_id count_id time)
         _->error "do_request_render_text_widget: error 3"
 
-do_request_render_editor_widget::FCT.CInt->FCT.CInt->DI.IORef (Combined_widget a)->Int->Int->Engine a->IO (Engine a)
-do_request_render_editor_widget delta_x delta_y ioref combined_id single_id (Engine widget window window_map request key main_id start_id count_id time)=do
+do_request_render_editor_widget::(Instruction_render_editor->(Combined_widget a->Combined_widget a))->DS.Seq Instruction_render_editor->DI.IORef (Combined_widget a)->Int->Int->Engine a->IO (Engine a)
+do_request_render_editor_widget instruction seq_instruction ioref combined_id single_id (Engine widget window window_map request key main_id start_id count_id time)=do
     new_widget<-error_update_update_io "do_request_render_editor_widget: error 1" "do_request_render_editor_widget: error 2" combined_id single_id (update_widget_render ioref) widget
     combined_widget<-DI.readIORef ioref
-    case combined_widget of
+    case DF.foldl' (flip instruction) combined_widget seq_instruction of
         Leaf_widget _ (Editor window_id block_number row_number row _ font_size _ path _ typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha _ _ _ _ _ _ _ font_height block_width delta_height x y _ _ _ _ cursor seq_seq_char)->let (new_combined_id,new_single_id)=get_widget_id_widget path start_id new_widget in do
-            new_new_widget<-error_update_update_io "do_request_render_editor_widget: error 3" "do_request_render_editor_widget: error 4" new_combined_id new_single_id (from_render_editor (get_renderer_window window_id window) block_number row_number row font_size typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height (x+delta_x) (y+delta_y) cursor seq_seq_char) new_widget
+            new_new_widget<-error_update_update_io "do_request_render_editor_widget: error 3" "do_request_render_editor_widget: error 4" new_combined_id new_single_id (from_render_editor (get_renderer_window window_id window) block_number row_number row font_size typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char) new_widget
             return (Engine new_new_widget window window_map request key main_id start_id count_id time)
         _->error "do_request_render_editor_widget: error 5"
 

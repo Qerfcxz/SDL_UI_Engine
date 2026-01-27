@@ -32,7 +32,15 @@ data Id=End|Goto Int|Back Int
 
 data Request a=Request_widget Bool (DSeq.Seq Int) (Request_widget a)|Create_window Int DTe.Text FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Remove_window Int|Present_window Int|Clear_window Int DW.Word8 DW.Word8 DW.Word8 DW.Word8|Resize_window Int FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Io_request (Engine a->IO (Engine a))|Render_rectangle Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Render_picture Int DTe.Text Flip FCT.CDouble FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt
 
-data Request_widget a=Create_widget (Combined_widget_request a)|Remove_widget|Replace_widget (Combined_widget_request a)|Alter_widget (Combined_widget_request a)|Render_rectangle_widget FCT.CInt FCT.CInt|Render_picture_widget FCT.CInt FCT.CInt|Render_text_widget FCT.CInt FCT.CInt|Render_editor_widget FCT.CInt FCT.CInt|Update_block_font_widget Int FCT.CInt (DSet.Set Char)
+data Request_widget a=Create_widget (Combined_widget_request a)|Remove_widget|Replace_widget (Combined_widget_request a)|Alter_widget (Combined_widget_request a)|Render_rectangle_widget (DSeq.Seq Instruction_render_rectangle)|Render_picture_widget (DSeq.Seq Instruction_render_picture)|Render_text_widget (DSeq.Seq Instruction_render_text)|Render_editor_widget (DSeq.Seq Instruction_render_editor)|Update_block_font_widget Int FCT.CInt (DSet.Set Char)
+
+data Instruction_render_rectangle=Move_render_rectangle FCT.CInt FCT.CInt
+
+data Instruction_render_picture=Move_render_picture FCT.CInt FCT.CInt
+
+data Instruction_render_text=Move_render_text FCT.CInt FCT.CInt
+
+data Instruction_render_editor=Move_render_editor FCT.CInt FCT.CInt
 
 data Combined_widget_request a=Leaf_widget_request (Engine a->Event->Id) (Single_widget_request a)|Node_widget_request (Engine a->Event->Id) (Engine a->Event->Int) (Engine a->Event->Maybe Event) (Engine a->Request_widget a->Maybe (Request_widget a)) (DIS.IntMap (Combined_widget_request a))
 --Node_widget_requestInt：其主控件id::Int
