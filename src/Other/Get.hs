@@ -74,6 +74,17 @@ get_widget_with_id_widget seq_id start_id widget=let (combined_id,single_id)=get
         Nothing->error "get_widget_with_id_widget: error 2"
         Just combined_widget->(combined_id,single_id,combined_widget)
 
+get_widget_id_with_transform::DS.Seq Int->Engine a->(Int,Int,DS.Seq (Engine a->Request_widget a->Request_widget a))
+get_widget_id_with_transform DS.Empty _=error "get_widget_id_with_transform: error 1"
+get_widget_id_with_transform (single_id DS.:<| seq_id) (Engine widget _ _ _ _ _ start_id _ _)=get_widget_id_with_transform_a start_id single_id seq_id widget DS.empty
+
+get_widget_id_with_transform_a::Int->Int->DS.Seq Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->DS.Seq (Engine a->Request_widget a->Request_widget a)->(Int,Int,DS.Seq (Engine a->Request_widget a->Request_widget a))
+get_widget_id_with_transform_a combined_id single_id seq_id widget transform=case error_lookup_lookup "get_widget_id_with_transform_a: error 1" "get_widget_id_with_transform_a: error 2" combined_id single_id widget of
+    Leaf_widget {}->if DS.null seq_id then (combined_id,single_id,transform) else error "get_widget_id_with_transform_a: error 3"
+    Node_widget _ _ _ new_transform new_combined_id->case seq_id of
+        DS.Empty->(combined_id,single_id,transform)
+        (new_single_id DS.:<| new_seq_id)->get_widget_id_with_transform_a new_combined_id new_single_id new_seq_id widget (transform DS.|> new_transform)
+
 get_widget_id_widget::DS.Seq Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->(Int,Int)
 get_widget_id_widget seq_id start_id widget=case seq_id of
     DS.Empty->error "get_widget_id_widget: error 1"

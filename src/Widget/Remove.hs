@@ -43,6 +43,11 @@ clean_block_font (font,_,intmap_texture)=do
     _<-DIS.traverseWithKey (\_ (texture,_,_,_,_,_,_)->SRV.destroyTexture texture) intmap_texture
     SRF.closeFont font
 
+direct_remove_widget::Data a=>Int->Int->Engine a->IO (Engine a)
+direct_remove_widget combined_id single_id (Engine widget window window_map request key main_id start_id count_id time)=do
+    (intmap_combined_widget,new_widget)<-remove_widget_top combined_id single_id widget
+    return (Engine (if DIS.null intmap_combined_widget&&(start_id/=combined_id) then new_widget else DIS.insert combined_id intmap_combined_widget new_widget) window window_map request key main_id start_id count_id time)
+
 remove_widget::Data a=>DS.Seq Int->Engine a->IO (Engine a)
 remove_widget seq_id (Engine widget window window_map request key main_id start_id count_id time)=case seq_id of
     DS.Empty->error "remove_widget: error 1"
