@@ -48,11 +48,32 @@ direct_remove_widget combined_id single_id (Engine widget window window_map requ
     (intmap_combined_widget,new_widget)<-remove_widget_top combined_id single_id widget
     return (Engine (if DIS.null intmap_combined_widget&&(start_id/=combined_id) then new_widget else DIS.insert combined_id intmap_combined_widget new_widget) window window_map request key main_id start_id count_id time)
 
+direct_remove_widget_simple::Data a=>Int->Int->Engine a->IO (Engine a)
+direct_remove_widget_simple combined_id single_id (Engine widget window window_map request key main_id start_id count_id time)=do
+    (_,new_widget)<-remove_widget_top combined_id single_id widget
+    return (Engine new_widget window window_map request key main_id start_id count_id time)
+
+remove_widget_simple::Data a=>DS.Seq Int->Engine a->IO (Engine a)
+remove_widget_simple seq_id (Engine widget window window_map request key main_id start_id count_id time)=case seq_id of
+    DS.Empty->error "remove_widget_simple: error 1"
+    single_id DS.:<| new_seq_id->do
+        new_widget<-remove_widget_simple_a new_seq_id start_id start_id single_id widget
+        return (Engine new_widget window window_map request key main_id start_id count_id time)
+
+remove_widget_simple_a::Data a=>DS.Seq Int->Int->Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (DIS.IntMap (DIS.IntMap (Combined_widget a)))
+remove_widget_simple_a seq_id start_id combined_id single_id widget=case seq_id of
+    DS.Empty->do
+        (_,new_widget)<-remove_widget_top combined_id single_id widget
+        return new_widget
+    (new_single_id DS.:<| new_seq_id)->case error_lookup_lookup "remove_widget_simple_a: error 1" "remove_widget_simple_a: error 2" combined_id single_id widget of
+        Leaf_widget {}->error "remove_widget_simple_a: error 3"
+        Node_widget _ _ _ _ new_combined_id->remove_widget_simple_a new_seq_id start_id new_combined_id new_single_id widget
+
 remove_widget::Data a=>DS.Seq Int->Engine a->IO (Engine a)
 remove_widget seq_id (Engine widget window window_map request key main_id start_id count_id time)=case seq_id of
     DS.Empty->error "remove_widget: error 1"
-    (single_id DS.:<| other_seq_single_id)->do
-        (_,new_widget)<-remove_widget_a other_seq_single_id start_id start_id single_id widget
+    (single_id DS.:<| other_seq_id)->do
+        (_,new_widget)<-remove_widget_a other_seq_id start_id start_id single_id widget
         return (Engine new_widget window window_map request key main_id start_id count_id time)
 
 remove_widget_a::Data a=>DS.Seq Int->Int->Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (Bool,DIS.IntMap (DIS.IntMap (Combined_widget a)))
@@ -60,13 +81,13 @@ remove_widget_a seq_id start_id combined_id single_id widget=case seq_id of
     DS.Empty->do
         (intmap_combined_widget,new_widget)<-remove_widget_top combined_id single_id widget
         if DIS.null intmap_combined_widget&&(start_id/=combined_id) then return (True,new_widget) else return (False,DIS.insert combined_id intmap_combined_widget new_widget)
-    (new_single_id DS.:<| other_seq_single_id)->case DIS.lookup combined_id widget of
+    (new_single_id DS.:<| other_seq_id)->case DIS.lookup combined_id widget of
         Nothing->error "remove_widget_a: error 1"
         Just intmap_combined_widget->case DIS.updateLookupWithKey (\_ _->Nothing) single_id intmap_combined_widget of
             (Nothing,_)->error "remove_widget_a: error 2"
             (Just (Leaf_widget _ _),_)->error "remove_widget_a: error 3"
             (Just (Node_widget _ _ _ _ new_combined_id),new_intmap_combined_widget)->do
-                (bool,new_widget)<-remove_widget_a other_seq_single_id start_id new_combined_id new_single_id widget
+                (bool,new_widget)<-remove_widget_a other_seq_id start_id new_combined_id new_single_id widget
                 if bool then if DIS.null new_intmap_combined_widget&&(start_id/=combined_id) then return (True,DIS.delete combined_id new_widget) else return (False,DIS.insert combined_id new_intmap_combined_widget new_widget) else return (False,new_widget)
 
 remove_widget_top::Data a=>Int->Int->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (DIS.IntMap (Combined_widget a),DIS.IntMap (DIS.IntMap (Combined_widget a)))

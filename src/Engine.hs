@@ -94,7 +94,9 @@ run_event_a combined_id single_id single_id_history intmap_combined_widget event
 
 run_event_b::Data a=>Combined_widget a->Event->Engine a->Engine a
 run_event_b (Leaf_widget _ widget) event engine=run_widget event widget engine
-run_event_b (Node_widget _ main_single_id event_transform _ combined_id) event engine=let calculated_main_single_id=main_single_id engine event in run_event combined_id calculated_main_single_id (DSeq.singleton calculated_main_single_id) (event_transform engine event) engine
+run_event_b (Node_widget _ main_single_id event_transform _ combined_id) event engine=case event_transform engine event of
+    Nothing->engine
+    Just new_event->let calculated_main_single_id=main_single_id engine event in run_event combined_id calculated_main_single_id (DSeq.singleton calculated_main_single_id) new_event engine
 
 run_widget::Data a=>Event->Single_widget a->Engine a->Engine a
 run_widget _ (Label_data _) engine=engine
