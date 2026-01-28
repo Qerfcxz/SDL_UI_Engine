@@ -29,7 +29,7 @@ import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
 
 create_window_trigger::(Engine a->Event->Id)->DS.Seq Int->DS.Seq Int->Engine a->IO (Engine a)
-create_window_trigger next_id seq_id seq_window_id=create_widget seq_id (Leaf_widget_request next_id (Trigger_request (create_window_trigger_a seq_window_id)))
+create_window_trigger next_id seq_id seq_window_id engine=let (combined_id,single_id)=get_widget_id seq_id engine in create_widget combined_id single_id (Leaf_widget_request next_id (Trigger_request (create_window_trigger_a seq_window_id))) engine
 
 create_window_trigger_a::DS.Seq Int->Event->Engine a->Engine a
 create_window_trigger_a seq_window_id event engine@(Engine widget window window_map request key main_id start_id count_id time)=case event of
@@ -39,11 +39,11 @@ create_window_trigger_a seq_window_id event engine@(Engine widget window window_
     _->engine
 
 create_widget_trigger::(Engine a->Event->Id)->DS.Seq Int->DIS.IntMap (DS.Seq (DS.Seq Int))->Engine a->IO (Engine a)
-create_widget_trigger next_id seq_id id_map=create_widget seq_id (Leaf_widget_request next_id (Io_trigger_request (create_widget_trigger_a id_map)))
+create_widget_trigger next_id seq_id intmap_seq_seq_id engine=let (combined_id,single_id)=get_widget_id seq_id engine in create_widget combined_id single_id (Leaf_widget_request next_id (Io_trigger_request (create_widget_trigger_a intmap_seq_seq_id))) engine
 
 create_widget_trigger_a::DIS.IntMap (DS.Seq (DS.Seq Int))->Event->Engine a->IO (Engine a)
-create_widget_trigger_a id_map event engine=case event of
-    Resize window_id _ _->case DIS.lookup window_id id_map of
+create_widget_trigger_a intmap_seq_seq_id event engine=case event of
+    Resize window_id _ _->case DIS.lookup window_id intmap_seq_seq_id of
         Nothing->return engine
         Just seq_seq_id->CM.foldM (flip update_widget) engine seq_seq_id
     _->return engine

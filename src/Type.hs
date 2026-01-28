@@ -15,7 +15,7 @@ import qualified SDL.Raw.Font as SRF
 data Engine a=Engine (DIS.IntMap (DIS.IntMap (Combined_widget a))) (DIS.IntMap Window) (DIS.IntMap Int) (DSeq.Seq (Request a)) (DSet.Set Key) (Engine a->Event->Int) Int Int (Maybe DW.Word32)
 --所有控件，所有窗口，窗口id映射（SDL到引擎），所有请求，组合控件预分配id（每创建一个组合控件就加一），整个引擎的组合控件id，整个引擎的主控件id
 
-data Combined_widget a=Leaf_widget (Engine a->Event->Id) (Single_widget a)|Node_widget (Engine a->Event->Id) (Engine a->Event->Int) (Engine a->Event->Maybe Event) (Engine a->Request_widget a->Maybe (Request_widget a)) Int
+data Combined_widget a=Leaf_widget (Engine a->Event->Id) (Single_widget a)|Node_widget (Engine a->Event->Id) (Engine a->Event->Int) (Engine a->Event->Maybe Event) (Engine a->Rough_request a->DSeq.Seq Instruction->Maybe (DSeq.Seq Instruction)) Int
 --Node_widget:后继函数，该组合控件的主控件id，跳转id（到它的组合控件id）
 
 data Single_widget a=Label_data Label|Bool_data Bool|Int_data Int|Char_data Char|List_char_data List_char|Data a|Trigger (Event->Engine a->Engine a)|Io_trigger (Event->Engine a->IO (Engine a))|Collector (DIS.IntMap (Request a))|Font (DIS.IntMap (FP.Ptr SRF.Font))|Block_font Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))|Rectangle Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture Int SRT.Texture Flip FCT.CDouble FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text Int Int Int Bool Bool Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DSeq.Seq Paragraph) (DSeq.Seq Row)|Editor Int Int Int Int Int Int Bool (DSeq.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt Cursor (DSeq.Seq (DSeq.Seq (Char,Int,FCT.CInt),Int,Int,Bool))
@@ -30,19 +30,15 @@ data Window=Window Int SRT.Window SRT.Renderer FCT.CInt FCT.CInt FCT.CInt FCT.CI
 
 data Id=End|Goto Int|Back Int
 
-data Request a=Request_widget Bool (DSeq.Seq Int) (Request_widget a)|Create_window Int DTe.Text FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Remove_window Int|Present_window Int|Clear_window Int DW.Word8 DW.Word8 DW.Word8 DW.Word8|Resize_window Int FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Io_request (Engine a->IO (Engine a))|Render_rectangle Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Render_picture Int DTe.Text Flip FCT.CDouble FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt
+data Request a=Request (Rough_request a) (DSeq.Seq Instruction)
 
-data Request_widget a=Create_widget (Combined_widget_request a)|Remove_widget|Replace_widget (Combined_widget_request a)|Alter_widget (Combined_widget_request a)|Render_rectangle_widget (DSeq.Seq Instruction_render_rectangle)|Render_picture_widget (DSeq.Seq Instruction_render_picture)|Render_text_widget (DSeq.Seq Instruction_render_text)|Render_editor_widget (DSeq.Seq Instruction_render_editor)|Update_block_font_widget Int FCT.CInt (DSet.Set Char)
+data Rough_request a=Create_widget (Combined_widget_request a) (DSeq.Seq Int)|Remove_widget Bool (DSeq.Seq Int)|Replace_widget (Combined_widget_request a) (DSeq.Seq Int)|Alter_widget (Combined_widget_request a) (DSeq.Seq Int)|Create_window Int DTe.Text FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Remove_window Int|Present_window Int|Clear_window Int DW.Word8 DW.Word8 DW.Word8 DW.Word8|Resize_window Int FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Io (Engine a->IO (Engine a))|Render_rectangle Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Render_picture Int DTe.Text Flip FCT.CDouble FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Render_rectangle_widget Bool (DSeq.Seq Int)|Render_picture_widget Bool (DSeq.Seq Int)|Render_text_widget Bool (DSeq.Seq Int)|Render_editor_widget Bool (DSeq.Seq Int)|Update_block_font_widget Bool Int FCT.CInt (DSet.Set Char) (DSeq.Seq Int)
 
-data Instruction_render_rectangle=Move_render_rectangle FCT.CInt FCT.CInt
+data Instruction=Move_render_rectangle FCT.CInt FCT.CInt|Move_render_picture FCT.CInt FCT.CInt|Move_render_text FCT.CInt FCT.CInt|Move_render_editor FCT.CInt FCT.CInt
 
-data Instruction_render_picture=Move_render_picture FCT.CInt FCT.CInt
+data Mix_create_window=Mix_create_window Int DTe.Text FCT.CInt FCT.CInt FCT.CInt FCT.CInt
 
-data Instruction_render_text=Move_render_text FCT.CInt FCT.CInt
-
-data Instruction_render_editor=Move_render_editor FCT.CInt FCT.CInt
-
-data Combined_widget_request a=Leaf_widget_request (Engine a->Event->Id) (Single_widget_request a)|Node_widget_request (Engine a->Event->Id) (Engine a->Event->Int) (Engine a->Event->Maybe Event) (Engine a->Request_widget a->Maybe (Request_widget a)) (DIS.IntMap (Combined_widget_request a))
+data Combined_widget_request a=Leaf_widget_request (Engine a->Event->Id) (Single_widget_request a)|Node_widget_request (Engine a->Event->Id) (Engine a->Event->Int) (Engine a->Event->Maybe Event) (Engine a->Rough_request a->DSeq.Seq Instruction->Maybe (DSeq.Seq Instruction)) (DIS.IntMap (Combined_widget_request a))
 --Node_widget_requestInt：其主控件id::Int
 
 data Single_widget_request a=Label_data_request Label|Bool_data_request Bool|Int_data_request Int|Char_data_request Char|List_char_data_request List_char|Data_request a|Trigger_request (Event->Engine a->Engine a)|Io_trigger_request (Event->Engine a->IO (Engine a))|Collector_request (DIS.IntMap (Request a))|Font_request DTe.Text (DSeq.Seq Int)|Block_font_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 DTe.Text (DSeq.Seq Int)|Rectangle_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture_request Int DTe.Text Flip FCT.CDouble FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text_request Int Int Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DSeq.Seq Paragraph)|Editor_request Int Int Int (DSeq.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DSeq.Seq (DSeq.Seq Char))
@@ -151,7 +147,7 @@ label_solo_data::Predefined_data a=>DTu.Solo a->Label
 label_solo_data (DTu.MkSolo solo)=label_data solo
 
 write_solo_data::Predefined_data a=>DTu.Solo a->Combined_widget_request b
-write_solo_data (DTu.MkSolo solo)=Node_widget_request (\_ _->End) (\_ _->0) (const Just) (const Just) (DIS.insert 1 (write_data solo) (DIS.singleton 0 (Leaf_widget_request (\_ _->End) (Label_data_request (Solo_label (label_data solo))))))
+write_solo_data (DTu.MkSolo solo)=Node_widget_request (\_ _->End) (\_ _->0) (const Just) (const (const Just)) (DIS.insert 1 (write_data solo) (DIS.singleton 0 (Leaf_widget_request (\_ _->End) (Label_data_request (Solo_label (label_data solo))))))
 
 read_solo_data::Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->Combined_widget b->DTu.Solo a
 read_solo_data widget (Node_widget _ _ _ _ combined_id)=case DIS.lookup combined_id widget of
@@ -170,7 +166,7 @@ label_tuple_data::(Predefined_data a,Predefined_data b)=>(a,b)->Label
 label_tuple_data (first,second)=Tuple_label (label_data first) (label_data second)
 
 write_tuple_data::(Predefined_data a,Predefined_data b)=>(a,b)->Combined_widget_request c
-write_tuple_data (first,second)=Node_widget_request (\_ _->End) (\_ _->0) (const Just) (const Just) (DIS.insert 2 (write_data second) (DIS.insert 1 (write_data first) (DIS.singleton 0 (Leaf_widget_request (\_ _->End) (Label_data_request (Tuple_label (label_data first) (label_data second)))))))
+write_tuple_data (first,second)=Node_widget_request (\_ _->End) (\_ _->0) (const Just) (const (const Just)) (DIS.insert 2 (write_data second) (DIS.insert 1 (write_data first) (DIS.singleton 0 (Leaf_widget_request (\_ _->End) (Label_data_request (Tuple_label (label_data first) (label_data second)))))))
 
 read_tuple_data::(Predefined_data a,Predefined_data b)=>DIS.IntMap (DIS.IntMap (Combined_widget c))->Combined_widget c->(a,b)
 read_tuple_data widget (Node_widget _ _ _ _ combined_id)=case DIS.lookup combined_id widget of
@@ -192,7 +188,7 @@ label_list_data []=Any_label
 label_list_data (first:_)=label_data first
 
 write_list_data::Predefined_data a=>[a]->Combined_widget_request b
-write_list_data list=let list_length=length list in let request=write_list_data_a list list_length DIS.empty in Node_widget_request (\_ _->End) (\_ _->0) (const Just) (const Just) (DIS.insert 0 (Leaf_widget_request (\_ _->End) (Label_data_request (List_label (label_list_data list) list_length))) request)
+write_list_data list=let list_length=length list in let request=write_list_data_a list list_length DIS.empty in Node_widget_request (\_ _->End) (\_ _->0) (const Just) (const (const Just)) (DIS.insert 0 (Leaf_widget_request (\_ _->End) (Label_data_request (List_label (label_list_data list) list_length))) request)
 
 write_list_data_a::Predefined_data a=>[a]->Int->DIS.IntMap (Combined_widget_request b)->DIS.IntMap (Combined_widget_request b)
 write_list_data_a [] _ request=request

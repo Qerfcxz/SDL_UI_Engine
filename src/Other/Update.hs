@@ -4,7 +4,17 @@ module Other.Update where
 import Other.Error
 import Other.Get
 import Type
+import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
+
+update_engine_widget::(DIS.IntMap (DIS.IntMap (Combined_widget a))->DIS.IntMap (DIS.IntMap (Combined_widget a)))->Engine a->Engine a
+update_engine_widget update (Engine widget window window_map request key main_id start_id count_id time)=Engine (update widget) window window_map request key main_id start_id count_id time
+
+update_engine_window::(DIS.IntMap Window->DIS.IntMap Window)->Engine a->Engine a
+update_engine_window update (Engine widget window window_map request key main_id start_id count_id time)=Engine widget (update window) window_map request key main_id start_id count_id time
+
+update_engine_window_map::(DIS.IntMap Int->DIS.IntMap Int)->Engine a->Engine a
+update_engine_window_map update (Engine widget window window_map request key main_id start_id count_id time)=Engine widget window (update window_map) request key main_id start_id count_id time
 
 update_engine_main_id::((Engine a->Event->Int)->Engine a->Event->Int)->Engine a->Engine a
 update_engine_main_id update (Engine widget window window_map request key main_id start_id count_id time)=Engine widget window window_map request key (update main_id) start_id count_id time
