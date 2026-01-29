@@ -28,7 +28,7 @@ deliver_b _ _=error "deliver_b: error 1"
 deliver_with_retain::DS.Seq Int->(Int->Request a->Bool)->Engine a->Engine a
 deliver_with_retain seq_id judge (Engine widget window window_map request key main_id start_id count_id time)=case get_widget_widget seq_id start_id widget of
     Leaf_widget _ (Collector intmap_request)->Engine widget window window_map (DIS.foldlWithKey' (\seq_request index this_request->if judge index this_request then seq_request DS.|> this_request else seq_request) request intmap_request) key main_id start_id count_id time
-    _->error "deliver_with_retain error 1"
+    _->error "deliver_with_retain: error 1"
 
 deliver_with_flush::DS.Seq Int->(Int->Request a->Bool)->Engine a->Engine a
 deliver_with_flush seq_id judge (Engine widget window window_map request key main_id start_id count_id time)=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in let (intmap_request,new_widget)=DIS.alterF (deliver_with_flush_a single_id) combined_id widget in Engine new_widget window window_map (DIS.foldlWithKey' (\seq_request index this_request->if judge index this_request then seq_request DS.|> this_request else seq_request) request intmap_request) key main_id start_id count_id time
@@ -38,4 +38,4 @@ deliver_with_flush_a single_id (Just intmap_combined_widget)=let (intmap_request
 
 deliver_with_flush_b::Maybe (Combined_widget a)->(DIS.IntMap (Request a),Maybe (Combined_widget a))
 deliver_with_flush_b (Just (Leaf_widget next_id (Collector intmap_request)))=(intmap_request,Just (Leaf_widget next_id (Collector DIS.empty)))
-deliver_with_flush_b _=error "deliver_with_flush_b:error 1"
+deliver_with_flush_b _=error "deliver_with_flush_b: error 1"

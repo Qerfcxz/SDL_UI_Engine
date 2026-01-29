@@ -56,7 +56,7 @@ loop_engine_time time_event_type event engine=do
         Quit->clean_engine new_engine
         _->case maybe_key of
             Nothing->let calculated_main_id=new_main_id new_engine this_event in loop_engine_time time_event_type event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event new_engine)
-            Just new_key->let calculated_main_id=new_main_id new_engine this_event in loop_engine_time time_event_type event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event (set_key new_key new_engine))
+            Just new_key->let calculated_main_id=new_main_id new_engine this_event in loop_engine_time time_event_type event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event (set_engine_key new_key new_engine))
 
 loop_engine::Data a=>FP.Ptr SRT.Event->Engine a->IO()
 loop_engine event engine=do
@@ -66,7 +66,7 @@ loop_engine event engine=do
         Quit->clean_engine new_engine
         _->case maybe_key of
             Nothing->let calculated_main_id=new_main_id new_engine this_event in loop_engine event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event new_engine)
-            Just new_key->let calculated_main_id=new_main_id new_engine this_event in loop_engine event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event (set_key new_key new_engine))
+            Just new_key->let calculated_main_id=new_main_id new_engine this_event in loop_engine event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event (set_engine_key new_key new_engine))
 
 run_request::Data a=>Engine a->IO (Engine a)
 run_request (Engine widget window window_map request key main_id start_id count_id time)=case request of

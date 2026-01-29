@@ -29,7 +29,7 @@ create_single_widget::Int->DIS.IntMap Window->Single_widget_request a->DIS.IntMa
 create_single_widget _ _ (Label_data_request label) _=return (Label_data label)
 create_single_widget _ _ (Bool_data_request bool) _=return (Bool_data bool)
 create_single_widget _ _ (Int_data_request int) _=return (Int_data int)
-create_single_widget _ _ (Char_data_request int) _=return (Char_data int)
+create_single_widget _ _ (Char_data_request char) _=return (Char_data char)
 create_single_widget _ _ (List_char_data_request list_char) _=return (List_char_data list_char)
 create_single_widget _ _ (Data_request content) _=return (Data content)
 create_single_widget _ _ (Trigger_request handle) _=return (Trigger handle)
@@ -86,9 +86,9 @@ create_block_font path (size DS.:<| other_size)=do
     return (DIS.insert size (new_font,ascent-descent,DIS.empty) font)
 
 create_widget::Int->Int->Combined_widget_request a->Engine a->IO (Engine a)
-create_widget combined_id single_id combined_widget_request (Engine widget window winodw_map request key main_id start_id count_id time)=do
+create_widget combined_id single_id combined_widget_request (Engine widget window window_map request key main_id start_id count_id time)=do
     (new_count_id,new_widget)<-create_widget_a count_id combined_id single_id start_id window combined_widget_request widget
-    return (Engine new_widget window winodw_map request key main_id start_id new_count_id time)
+    return (Engine new_widget window window_map request key main_id start_id new_count_id time)
 
 create_widget_a::Int->Int->Int->Int->DIS.IntMap Window->Combined_widget_request a->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (Int,DIS.IntMap (DIS.IntMap (Combined_widget a)))
 create_widget_a count_id combined_id single_id start_id window (Leaf_widget_request next_id single_widget_request) widget=do

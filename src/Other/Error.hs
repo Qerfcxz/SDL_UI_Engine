@@ -9,6 +9,11 @@ catch_error error_message success result=do
     flag<-result
     CM.unless (flag==success) (error error_message)
 
+error_lookup::[Char]->Int->DIS.IntMap a->a
+error_lookup error_message key intmap=case DIS.lookup key intmap of
+    Nothing->error error_message
+    Just value->value
+
 error_lookup_lookup::[Char]->[Char]->Int->Int->DIS.IntMap (DIS.IntMap a)->a
 error_lookup_lookup first_error_message second_error_message first_key second_key intmap_intmap=case DIS.lookup first_key intmap_intmap of
     Nothing->error first_error_message

@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 module Text.Font where
+import Other.Error
 import Other.Get
 import Type
 import qualified Data.IntMap.Strict as DIS
@@ -11,9 +12,7 @@ import qualified SDL.Raw.Font as SRF
 
 find_font::Find->DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->Int->Int->DS.Seq Int->FP.Ptr SRF.Font
 find_font Equal widget design_window_size window_size start_id size seq_id=case get_widget_widget seq_id start_id widget of
-    Leaf_widget _ (Font font)->case DIS.lookup (div (size*fromIntegral window_size) (fromIntegral design_window_size)) font of
-        Nothing->error "find_font: error 1"
-        Just new_font->new_font
+    Leaf_widget _ (Font font)->error_lookup "find_font: error 1" (div (size*fromIntegral window_size) (fromIntegral design_window_size)) font
     _->error "find_font: error 2"
 find_font Near widget design_window_size window_size start_id size seq_id=case get_widget_widget seq_id start_id widget of
     Leaf_widget _ (Font font)->let new_size=div (size*fromIntegral window_size) (fromIntegral design_window_size) in case DIS.lookupLE new_size font of

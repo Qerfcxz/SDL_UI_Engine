@@ -43,9 +43,9 @@ create_editor_trigger_b trace wheel up_press down_press start_press end_press mi
                                 Nothing->return widget
                                 Just new_combined_widget->return (error_replace_replace "create_editor_trigger_b: error 4" "create_editor_trigger_b: error 5" combined_id single_id new_combined_widget widget)
                             Just new_intmap_texture->case maybe_new_combined_widget of
-                                Nothing->let (font_combined_id,font_single_id)=get_widget_id_widget path start_id widget in error_update_update_io "update_combined_widget_a: error 6" "update_combined_widget_a: error 7" font_combined_id font_single_id (create_editor_trigger_d font_size new_intmap_texture) widget
+                                Nothing->let (font_combined_id,font_single_id)=get_widget_id_widget path start_id widget in error_update_update_io "create_editor_trigger_b: error 6" "create_editor_trigger_b: error 7" font_combined_id font_single_id (create_editor_trigger_d font_size new_intmap_texture) widget
                                 Just new_combined_widget->do
-                                    new_widget<-let (font_combined_id,font_single_id)=get_widget_id_widget path start_id widget in error_update_update_io "update_combined_widget_a: error 8" "update_combined_widget_a: error 9" font_combined_id font_single_id (create_editor_trigger_d font_size new_intmap_texture) widget
+                                    new_widget<-let (font_combined_id,font_single_id)=get_widget_id_widget path start_id widget in error_update_update_io "create_editor_trigger_b: error 8" "create_editor_trigger_b: error 9" font_combined_id font_single_id (create_editor_trigger_d font_size new_intmap_texture) widget
                                     return (error_replace_replace "create_editor_trigger_b: error 10" "create_editor_trigger_b: error 11" combined_id single_id new_combined_widget new_widget)
                 _->error "create_editor_trigger_b: error 12"
             _->error "create_editor_trigger_b: error 13"

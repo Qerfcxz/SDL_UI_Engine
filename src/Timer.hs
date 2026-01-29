@@ -14,7 +14,7 @@ add_timer event_type time=do
         push_event event_type 0 0 0 FP.nullPtr FP.nullPtr
         return time
     timer_id<-SRTi.addTimer time callback FP.nullPtr
-    return(timer_id,callback)
+    return (timer_id,callback)
 
 remove_timer::(SRTy.TimerID,SRTy.TimerCallback)->IO ()
 remove_timer (timer_id,callback)=do

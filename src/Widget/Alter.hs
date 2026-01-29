@@ -25,20 +25,21 @@ import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Video as SRV
 
-alter_widget::Data a=>(Combined_widget a->IO (Combined_widget a))->Int->Int->Combined_widget_request a->Engine a->IO (Engine a)
-alter_widget new_transform combined_id single_id combined_widget_request (Engine widget window window_map request key main_id start_id count_id time)=do
-    new_widget<-error_update_update_io "direct_alter_widget: error 1" "direct_alter_widget: error 2" combined_id single_id (alter_widget_a new_transform start_id window widget combined_widget_request) widget
+alter_widget::Data a=>((Combined_widget_request a,Combined_widget a)->IO (Combined_widget_request a,Combined_widget a))->Combined_widget_request a->Int->Int->Engine a->IO (Engine a)
+alter_widget new_transform combined_widget_request combined_id single_id (Engine widget window window_map request key main_id start_id count_id time)=do
+    new_widget<-error_update_update_io "alter_widget: error 1" "alter_widget: error 2" combined_id single_id (alter_widget_a new_transform combined_widget_request start_id window widget) widget
     return (Engine new_widget window window_map request key main_id start_id count_id time)
 
-alter_widget_a::Data a=>(Combined_widget a->IO (Combined_widget a))->Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget_request a->Combined_widget a->IO (Combined_widget a)
-alter_widget_a new_transform start_id window widget (Leaf_widget_request next_id single_widget_request) combined_widget=do
-    new_combined_widget<-new_transform combined_widget
-    case new_combined_widget of
-        (Leaf_widget _ single_widget)->do
-            new_single_widget<-alter_widget_b start_id window widget single_widget_request single_widget
-            return (Leaf_widget next_id new_single_widget)
-        _->error"alter_widget_a: error 1"
-alter_widget_a _ _ _ _ _ _=error"alter_widget_a: error 2"--未完待续
+alter_widget_a::Data a=>((Combined_widget_request a,Combined_widget a)->IO (Combined_widget_request a,Combined_widget a))->Combined_widget_request a->Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->IO (Combined_widget a)
+alter_widget_a new_transform combined_widget_request start_id window widget combined_widget=do
+    (new_combined_widget_request,new_combined_widget)<-new_transform (combined_widget_request,combined_widget)
+    case new_combined_widget_request of
+        Leaf_widget_request next_id single_widget_request->case new_combined_widget of
+            Leaf_widget _ single_widget->do
+                new_single_widget<-alter_widget_b start_id window widget single_widget_request single_widget
+                return (Leaf_widget next_id new_single_widget)
+            _->error "alter_widget_a: error 1"
+        _->error "alter_widget_a: error 2"
 
 alter_widget_b::Data a=>Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Single_widget_request a->Single_widget a->IO (Single_widget a)
 alter_widget_b _ _ _ (Label_data_request label) this_widget=case this_widget of
@@ -54,7 +55,7 @@ alter_widget_b _ _ _ (Char_data_request char) this_widget=case this_widget of
     Char_data {}->return (Char_data char)
     _->error "alter_widget_b: error 4"
 alter_widget_b _ _ _ (List_char_data_request list_char) this_widget=case this_widget of
-    Char_data {}->return (List_char_data list_char)
+    List_char_data {}->return (List_char_data list_char)
     _->error "alter_widget_b: error 5"
 alter_widget_b _ _ _ (Data_request content) this_widget=case this_widget of
     Data this_content->do
