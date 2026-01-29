@@ -59,6 +59,17 @@ error_update_a::[Char]->(a->a)->Maybe a->Maybe a
 error_update_a error_message _ Nothing=error error_message
 error_update_a _ update (Just value)=Just (update value)
 
+error_get_update_update::[Char]->[Char]->Int->Int->(a->a)->DIS.IntMap (DIS.IntMap a)->(a,DIS.IntMap (DIS.IntMap a))
+error_get_update_update first_error_message second_error_message first_key second_key update=DIS.alterF (error_get_update_update_a first_error_message second_error_message second_key update) first_key
+
+error_get_update_update_a::[Char]->[Char]->DIS.Key->(a->a)->Maybe (DIS.IntMap a)->(a,Maybe (DIS.IntMap a))
+error_get_update_update_a first_error_message _ _ _ Nothing=error first_error_message
+error_get_update_update_a _ second_error_message key update (Just intmap)=let (value,new_intmap)=DIS.alterF (error_get_update_update_b second_error_message update) key intmap in (value,Just new_intmap)
+
+error_get_update_update_b::[Char]->(a->a)->Maybe a->(a,Maybe a)
+error_get_update_update_b error_message _ Nothing=error error_message
+error_get_update_update_b _ update (Just value)=(value,Just (update value))
+
 error_update_update::[Char]->[Char]->Int->Int->(a->a)->DIS.IntMap (DIS.IntMap a)->DIS.IntMap (DIS.IntMap a)
 error_update_update first_error_message second_error_message first_key second_key update=DIS.alter (error_update_update_a first_error_message second_error_message second_key update) first_key
 
