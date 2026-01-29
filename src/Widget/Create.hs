@@ -41,12 +41,10 @@ create_single_widget _ _ (Font_request path size) _=do
 create_single_widget _ _ (Block_font_request window_id red green blue alpha path size) _=do
     font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_block_font` size)
     return (Block_font window_id red green blue alpha font)
-create_single_widget _ window (Rectangle_request window_id red green blue alpha left right up down) _=case DIS.lookup window_id window of
-    Nothing->error "create_single_widget: error 1"
-    Just (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
-create_single_widget _ window (Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide) _=case DIS.lookup window_id window of
-    Nothing->error "create_single_widget: error 2"
-    Just (Window _ _ renderer _ _ window_x window_y design_size size)->do
+create_single_widget _ window (Rectangle_request window_id red green blue alpha left right up down) _=case error_lookup "create_single_widget: error 1" window_id window of
+    (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
+create_single_widget _ window (Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide) _=case error_lookup "create_single_widget: error 2" window_id window of
+    (Window _ _ renderer _ _ window_x window_y design_size size)->do
         surface<-DB.useAsCString (DTE.encodeUtf8 path) SRV.loadBMP
         CM.when (surface==FP.nullPtr) $ error "create_single_widget: error 3"
         (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
@@ -54,9 +52,8 @@ create_single_widget _ window (Picture_request window_id path render_flip angle 
         SRV.freeSurface surface
         CM.when (texture==FP.nullPtr) $ error "create_single_widget: error 4"
         let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id texture render_flip angle x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
-create_single_widget start_id window (Text_request window_id row find delta_height left right up down seq_paragraph) widget=case DIS.lookup window_id window of
-    Nothing->error "create_single_widget: error 5"
-    Just (Window _ _ renderer _ _ x y design_size size)->let new_delta_height=div (delta_height*size) design_size in do
+create_single_widget start_id window (Text_request window_id row find delta_height left right up down seq_paragraph) widget=case error_lookup "create_single_widget: error 5" window_id window of
+    (Window _ _ renderer _ _ x y design_size size)->let new_delta_height=div (delta_height*size) design_size in do
         seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
         let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max seq_row new_up new_down in return (Text window_id (max 0 (min row max_row)) max_row False False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph seq_row)
 create_single_widget start_id window (Editor_request window_id block_number font_size path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_text) widget=let (window_x,window_y,design_size,size)=get_transform_window window_id window in let new_block_width=div (block_width*size) design_size in let (_,_,_,new_font_size,_,_,_,_,_,_,_,font_height,intmap_texture)=find_block_font find widget block_width new_block_width design_size size path start_id font_size in FMA.alloca $ \text_color->do

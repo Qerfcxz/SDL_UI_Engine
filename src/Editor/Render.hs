@@ -42,23 +42,19 @@ render_select renderer rect cursor_row_start cursor_number_start cursor_row_end 
             then do
                 _<-render_row False renderer rect cursor_number_start cursor_number_end cursor_row_start row select_red select_green select_blue select_alpha block_width delta_height x y font_height
                 return ()
-            else case DS.lookup min_row seq_seq_char of
-                Nothing->error "render_select: error 1"
-                Just (_,number_start,_,_)->case DS.lookup max_row seq_seq_char of
-                    Nothing->error "render_select: error 2"
-                    Just (_,number_end,_,_)->do
+            else case error_lookup_sequence "render_select: error 1" min_row seq_seq_char of
+                (_,number_start,_,_)->case error_lookup_sequence "render_select: error 2" max_row seq_seq_char of
+                    (_,number_end,_,_)->do
                         render_start<-render_row False renderer rect cursor_number_start (typesetting_right typesetting number_start block_number) cursor_row_start row select_red select_green select_blue select_alpha block_width delta_height x y font_height
                         render_end<-render_row render_start renderer rect (typesetting_left typesetting number_end block_number) cursor_number_end cursor_row_end row select_red select_green select_blue select_alpha block_width delta_height x y font_height
                         let new_height=font_height+delta_height in render_select_a render_end renderer rect block_number typesetting select_red select_green select_blue select_alpha block_width x (y+fromIntegral (cursor_row_start-row+1)*new_height) font_height new_height (DS.take (cursor_row_end-cursor_row_start-1) (DS.drop (cursor_row_start+1) seq_seq_char))
-        else case DS.lookup min_row seq_seq_char of
-            Nothing->error "render_select: error 3"
-            Just (_,number_start,_,_)->do
+        else case error_lookup_sequence "render_select: error 3" min_row seq_seq_char of
+            (_,number_start,_,_)->do
                 render_start<-render_row False renderer rect cursor_number_start (typesetting_right typesetting number_start block_number) cursor_row_start row select_red select_green select_blue select_alpha block_width delta_height x y font_height
                 let new_height=font_height+delta_height in render_select_a render_start renderer rect block_number typesetting select_red select_green select_blue select_alpha block_width x (y+fromIntegral (cursor_row_start-row+1)*new_height) font_height new_height (DS.take (row+row_number-cursor_row_start-1) (DS.drop (cursor_row_start+1) seq_seq_char))
     else if max_row==cursor_row_end
-        then case DS.lookup max_row seq_seq_char of
-            Nothing->error "render_select: error 4"
-            Just (_,number_end,_,_)->do
+        then case error_lookup_sequence "render_select: error 4" max_row seq_seq_char of
+            (_,number_end,_,_)->do
                 render_end<-render_row False renderer rect (typesetting_left typesetting number_end block_number) cursor_number_end cursor_row_end row select_red select_green select_blue select_alpha block_width delta_height x y font_height
                 render_select_a render_end renderer rect block_number typesetting select_red select_green select_blue select_alpha block_width x y font_height (font_height+delta_height) (DS.take (cursor_row_end-row) (DS.drop row seq_seq_char))
         else render_select_a False renderer rect block_number typesetting select_red select_green select_blue select_alpha block_width x y font_height (font_height+delta_height) (DS.take row_number (DS.drop row seq_seq_char))
@@ -96,9 +92,8 @@ render_seq_seq_char renderer rect block_number typesetting text_red text_green t
 
 render_seq_seq_char_a::SRT.Renderer->FP.Ptr SRT.Rect->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (Char,Int,FCT.CInt)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))
 render_seq_seq_char_a _ _ _ _ _ _ _ _ _ _ DS.Empty intmap_texture=return intmap_texture 
-render_seq_seq_char_a renderer rect text_red text_green text_blue text_alpha block_width x y font_height ((char,block,delta_x) DS.:<| seq_char) intmap_texture=let char_ord=DC.ord char in case DIS.lookup char_ord intmap_texture of
-    Nothing->error "render_seq_seq_char_a: error 1"
-    Just (texture,intmap_int,width,red,green,blue,alpha)->do
+render_seq_seq_char_a renderer rect text_red text_green text_blue text_alpha block_width x y font_height ((char,block,delta_x) DS.:<| seq_char) intmap_texture=let char_ord=DC.ord char in case error_lookup "render_seq_seq_char_a: error 1" char_ord intmap_texture of
+    (texture,intmap_int,width,red,green,blue,alpha)->do
         let first_check=text_red/=red||text_green/=green||text_blue/=blue
         let second_check=text_alpha/=alpha
         CM.when first_check (catch_error "render_seq_seq_char_a: error 2" 0 (SRV.setTextureColorMod texture text_red text_green text_blue))

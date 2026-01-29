@@ -4,7 +4,6 @@ module Data where
 import Other.Error
 import Other.Get
 import Type
-import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
 
 get_data::Data a=>DS.Seq Int->Engine a->a
@@ -28,9 +27,7 @@ update_data_a _ _=error "update_data_a: error 1"
 
 get_data_label::DS.Seq Int->Engine a->Label
 get_data_label seq_id (Engine widget _ _ _ _ _ start_id _ _)=case get_widget_widget seq_id start_id widget of
-    Node_widget _ _ _ _ combined_id->case DIS.lookup combined_id widget of
-        Nothing->error "get_data_label: error 1"
-        Just intmap_widget->case DIS.lookup 0 intmap_widget of
-            Just (Leaf_widget _ (Label_data label))->label
-            _->error "get_data_label: error 2"
+    Node_widget _ _ _ _ combined_id->let intmap_widget=error_lookup "get_data_label: error 1" combined_id widget in case error_lookup "get_data_label: error 2" 0 intmap_widget of
+        Leaf_widget _ (Label_data label)->label
+        _->error "get_data_label: error 2"
     _->error "get_data_label: error 3"

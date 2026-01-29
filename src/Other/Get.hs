@@ -8,6 +8,12 @@ import qualified Data.Sequence as DS
 import qualified Foreign.C.Types as FCT
 import qualified SDL.Raw.Types as SRT
 
+get_render::DS.Seq Int->Engine a->Bool
+get_render seq_id engine=case get_widget seq_id engine of
+    Leaf_widget _ (Text _ _ _ render _ _ _ _ _ _ _ _ _ _ _ _ _ _)->render
+    Leaf_widget _ (Editor _ _ _ _ _ _ render _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)->render
+    _->error "get_render: error 1"
+
 get_engine_widget::Engine a->DIS.IntMap (DIS.IntMap (Combined_widget a))
 get_engine_widget (Engine widget _ _ _ _ _ _ _ _)=widget
 

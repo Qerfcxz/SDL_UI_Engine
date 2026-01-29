@@ -30,9 +30,8 @@ copy::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->IO ()
 copy _ Cursor_none=return ()
 copy _ (Cursor_single {})=return ()
 copy seq_seq_char (Cursor_double _ cursor_row_start _ cursor_char_start _ cursor_row_end _ cursor_char_end _)=if cursor_row_start==cursor_row_end
-    then if cursor_char_start==cursor_char_end then return () else case DS.lookup cursor_row_start seq_seq_char of
-        Nothing->error "copy: error 1"
-        Just (seq_char_start,_,_,_)->catch_error "copy: error 2" 0 (DB.useAsCString (DTE.encodeUtf8 (to_text DS.Empty (DS.take (cursor_char_end-cursor_char_start) (DS.drop cursor_char_start seq_char_start)) DS.Empty False)) SRV.setClipboardText)
+    then if cursor_char_start==cursor_char_end then return () else case error_lookup_sequence "copy: error 1" cursor_row_start seq_seq_char of
+        (seq_char_start,_,_,_)->catch_error "copy: error 2" 0 (DB.useAsCString (DTE.encodeUtf8 (to_text DS.Empty (DS.take (cursor_char_end-cursor_char_start) (DS.drop cursor_char_start seq_char_start)) DS.Empty False)) SRV.setClipboardText)
     else case DS.take (cursor_row_end+1-cursor_row_start) (DS.drop cursor_row_start seq_seq_char) of
         DS.Empty->error "copy: error 3"
         ((seq_char_start,_,_,end_start) DS.:<| new_seq_seq_char)->case new_seq_seq_char of

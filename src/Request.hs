@@ -15,7 +15,6 @@ import Widget.Remove
 import Widget.Replace
 import Instruction
 import Type
-import Underlying
 import qualified Control.Monad as CM
 import qualified Data.ByteString as DB
 import qualified Data.Foldable as DF
@@ -139,19 +138,19 @@ do_request (Request raw_request instruction) engine=case raw_request of
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                let (combined_widget,new_widget)=error_get_update_update "do_request: error 25" "do_request: error 26" combined_id single_id set_render_false (get_engine_widget engine)
+                let (combined_widget,new_widget)=error_get_update_update "do_request: error 25" "do_request: error 26" combined_id single_id (set_render False) (get_engine_widget engine)
                 do_request_render_text_widget new_instruction combined_widget (set_engine_widget new_widget engine)
         else do
-            let (combined_widget,new_widget)=error_get_update_update "do_request: error 27" "do_request: error 28" combined_id single_id set_render_false (get_engine_widget engine)
+            let (combined_widget,new_widget)=error_get_update_update "do_request: error 27" "do_request: error 28" combined_id single_id (set_render False) (get_engine_widget engine)
             do_request_render_text_widget instruction combined_widget (set_engine_widget new_widget engine)
     Render_editor_widget direct seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if direct
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                let (combined_widget,new_widget)=error_get_update_update "do_request: error 29" "do_request: error 30" combined_id single_id set_render_false (get_engine_widget engine)
+                let (combined_widget,new_widget)=error_get_update_update "do_request: error 29" "do_request: error 30" combined_id single_id (set_render False) (get_engine_widget engine)
                 do_request_render_editor_widget new_instruction combined_widget (set_engine_widget new_widget engine)
         else do
-            let (combined_widget,new_widget)=error_get_update_update "do_request: error 31" "do_request: error 32" combined_id single_id set_render_false (get_engine_widget engine)
+            let (combined_widget,new_widget)=error_get_update_update "do_request: error 31" "do_request: error 32" combined_id single_id (set_render False) (get_engine_widget engine)
             do_request_render_editor_widget instruction combined_widget (set_engine_widget new_widget engine)
     Update_block_font_widget direct size block_width seq_char seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if direct
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
@@ -201,9 +200,8 @@ do_request_render_editor_widget instruction combined_widget engine=do
 
 from_render_editor::SRT.Renderer->Int->Int->Int->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Cursor->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Combined_widget a->IO (Combined_widget a)
 from_render_editor renderer block_number row_number row font_size typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char widget=case widget of
-    Leaf_widget next_id (Block_font window_id red green blue alpha font)->case DIS.lookup font_size font of
-        Nothing->error "from_render_editor: error 1"
-        Just (this_font,height,intmap_texture)->do
+    Leaf_widget next_id (Block_font window_id red green blue alpha font)->case error_lookup "from_render_editor: error 1" font_size font of
+        (this_font,height,intmap_texture)->do
             new_intmap_texture<-render_editor renderer block_number row_number row typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char intmap_texture
             return (Leaf_widget next_id (Block_font window_id red green blue alpha (DIS.insert font_size (this_font,height,new_intmap_texture) font)))
     _->error "from_render_editor: error 2"

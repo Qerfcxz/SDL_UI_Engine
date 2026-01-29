@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 module Type where
+import Other.Error
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DSeq
 import qualified Data.Set as DSet
@@ -150,11 +151,9 @@ write_solo_data::Predefined_data a=>DTu.Solo a->Combined_widget_request b
 write_solo_data (DTu.MkSolo solo)=Node_widget_request (\_ _->End) (\_ _->0) (const Just) (const (const Just)) (DIS.insert 1 (write_data solo) (DIS.singleton 0 (Leaf_widget_request (\_ _->End) (Label_data_request (Solo_label (label_data solo))))))
 
 read_solo_data::Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->Combined_widget b->DTu.Solo a
-read_solo_data widget (Node_widget _ _ _ _ combined_id)=case DIS.lookup combined_id widget of
-    Nothing->error "read_solo_data: error 1"
-    Just intmap_widget->case DIS.lookup 1 intmap_widget of
-        Nothing->error "read_solo_data: error 2"
-        Just combined_widget->DTu.MkSolo (read_data widget combined_widget)
+read_solo_data widget (Node_widget _ _ _ _ combined_id)=case error_lookup "read_solo_data: error 1" combined_id widget of
+    intmap_widget->case error_lookup "read_solo_data: error 2" 1 intmap_widget of
+        combined_widget->DTu.MkSolo (read_data widget combined_widget)
 read_solo_data _ _=error "read_solo_data: error 3"
 
 instance (Predefined_data a,Predefined_data b)=>Predefined_data (a,b) where
@@ -169,13 +168,10 @@ write_tuple_data::(Predefined_data a,Predefined_data b)=>(a,b)->Combined_widget_
 write_tuple_data (first,second)=Node_widget_request (\_ _->End) (\_ _->0) (const Just) (const (const Just)) (DIS.insert 2 (write_data second) (DIS.insert 1 (write_data first) (DIS.singleton 0 (Leaf_widget_request (\_ _->End) (Label_data_request (Tuple_label (label_data first) (label_data second)))))))
 
 read_tuple_data::(Predefined_data a,Predefined_data b)=>DIS.IntMap (DIS.IntMap (Combined_widget c))->Combined_widget c->(a,b)
-read_tuple_data widget (Node_widget _ _ _ _ combined_id)=case DIS.lookup combined_id widget of
-    Nothing->error "read_tuple_data: error 1"
-    Just intmap_widget->case DIS.lookup 1 intmap_widget of
-        Nothing->error "read_tuple_data: error 2"
-        Just first_combined_widget->case DIS.lookup 2 intmap_widget of
-            Nothing->error "read_tuple_data: error 3"
-            Just second_combined_widget->(read_data widget first_combined_widget,read_data widget second_combined_widget)
+read_tuple_data widget (Node_widget _ _ _ _ combined_id)=case error_lookup "read_tuple_data: error 1" combined_id widget of
+    intmap_widget->case error_lookup "read_tuple_data: error 2" 1 intmap_widget of
+        first_combined_widget->case error_lookup "read_tuple_data: error 3" 2 intmap_widget of
+            second_combined_widget->(read_data widget first_combined_widget,read_data widget second_combined_widget)
 read_tuple_data _ _=error "read_tuple_data: error 4"
 
 instance Predefined_data a=>Predefined_data [a] where
@@ -195,9 +191,8 @@ write_list_data_a [] _ request=request
 write_list_data_a (value:other_value) number request=write_list_data_a other_value (number-1) (DIS.insert number (write_data value) request)
 
 read_list_data::Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->Combined_widget b->[a]
-read_list_data widget (Node_widget _ _ _ _ combined_id)=case DIS.lookup combined_id widget of
-        Nothing->error "read_list_data: error 1"
-        Just intmap_widget->read_list_data_a widget intmap_widget 1 []
+read_list_data widget (Node_widget _ _ _ _ combined_id)=case error_lookup "read_list_data: error 1" combined_id widget of
+    intmap_widget->read_list_data_a widget intmap_widget 1 []
 read_list_data _ _=error "read_list_data: error 2"
 
 read_list_data_a::Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->DIS.IntMap (Combined_widget b)->Int->[a]->[a]

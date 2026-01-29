@@ -32,6 +32,7 @@ deliver_with_retain seq_id judge (Engine widget window window_map request key ma
 
 deliver_with_flush::DS.Seq Int->(Int->Request a->Bool)->Engine a->Engine a
 deliver_with_flush seq_id judge (Engine widget window window_map request key main_id start_id count_id time)=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in let (intmap_request,new_widget)=DIS.alterF (deliver_with_flush_a single_id) combined_id widget in Engine new_widget window window_map (DIS.foldlWithKey' (\seq_request index this_request->if judge index this_request then seq_request DS.|> this_request else seq_request) request intmap_request) key main_id start_id count_id time
+
 deliver_with_flush_a::Int->Maybe (DIS.IntMap (Combined_widget a))->(DIS.IntMap (Request a),Maybe (DIS.IntMap (Combined_widget a)))
 deliver_with_flush_a _ Nothing=error "deliver_with_flush_a: error 1"
 deliver_with_flush_a single_id (Just intmap_combined_widget)=let (intmap_request,new_intmap_combined_widget)=DIS.alterF deliver_with_flush_b single_id intmap_combined_widget in (intmap_request,Just new_intmap_combined_widget)

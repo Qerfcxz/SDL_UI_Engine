@@ -19,20 +19,17 @@ find_block_font Block_equal widget _ _ design_window_size window_size seq_id sta
     _->error "find_block_font: error 2"
 find_block_font Block_near widget _ _ design_window_size window_size seq_id start_id size=let (combined_id,single_id,combined_widget)=get_widget_with_id_widget seq_id start_id widget in case combined_widget of
     Leaf_widget next_id (Block_font window_id red green blue alpha font)->let new_size=div (size*fromIntegral window_size) (fromIntegral design_window_size) in case DIS.lookupLE new_size font of
-        Nothing->case DIS.lookupGE new_size font of
-            Nothing->error "find_block_font: error 3"
-            Just (great_size,(great_font,great_height,great_intmap_texture))->(next_id,combined_id,single_id,great_size,window_id,red,green,blue,alpha,font,great_font,great_height,great_intmap_texture)
+        Nothing->case error_lookup_great "find_block_font: error 3" new_size font of
+            (great_size,(great_font,great_height,great_intmap_texture))->(next_id,combined_id,single_id,great_size,window_id,red,green,blue,alpha,font,great_font,great_height,great_intmap_texture)
         Just (small_size,(small_font,small_height,small_intmap_texture))->case DIS.lookupGE new_size font of
             Nothing->(next_id,combined_id,single_id,small_size,window_id,red,green,blue,alpha,font,small_font,small_height,small_intmap_texture)
             Just (great_size,(great_font,great_height,great_intmap_texture))->if 2*new_size<small_size+great_size then (next_id,combined_id,single_id,small_size,window_id,red,green,blue,alpha,font,small_font,small_height,small_intmap_texture) else (next_id,combined_id,single_id,great_size,window_id,red,green,blue,alpha,font,great_font,great_height,great_intmap_texture)
     _->error "find_block_font: error 4"
 find_block_font Block_small widget design_block_width block_width _ _ seq_id start_id size=let (combined_id,single_id,combined_widget)=get_widget_with_id_widget seq_id start_id widget in case combined_widget of
-    Leaf_widget next_id (Block_font window_id red green blue alpha font)->let new_size=div (size*fromIntegral block_width) (fromIntegral design_block_width) in case DIS.lookupLE new_size font of
-        Nothing->error "find_block_font: error 5"
-        Just (small_size,(small_font,small_height,small_intmap_texture))->(next_id,combined_id,single_id,small_size,window_id,red,green,blue,alpha,font,small_font,small_height,small_intmap_texture)
+    Leaf_widget next_id (Block_font window_id red green blue alpha font)->let new_size=div (size*fromIntegral block_width) (fromIntegral design_block_width) in case error_lookup_small "find_block_font: error 5" new_size font of
+        (small_size,(small_font,small_height,small_intmap_texture))->(next_id,combined_id,single_id,small_size,window_id,red,green,blue,alpha,font,small_font,small_height,small_intmap_texture)
     _->error "find_block_font: error 6"
 find_block_font Block_great widget design_block_width block_width _ _ seq_id start_id size=let (combined_id,single_id,combined_widget)=get_widget_with_id_widget seq_id start_id widget in case combined_widget of
-    Leaf_widget next_id (Block_font window_id red green blue alpha font)->let new_size=div (size*fromIntegral block_width) (fromIntegral design_block_width) in case DIS.lookupGE new_size font of
-        Nothing->error "find_block_font: error 7"
-        Just (great_size,(great_font,great_height,great_intmap_texture))->(next_id,combined_id,single_id,great_size,window_id,red,green,blue,alpha,font,great_font,great_height,great_intmap_texture)
+    Leaf_widget next_id (Block_font window_id red green blue alpha font)->let new_size=div (size*fromIntegral block_width) (fromIntegral design_block_width) in case error_lookup_great "find_block_font: error 7" new_size font of
+        (great_size,(great_font,great_height,great_intmap_texture))->(next_id,combined_id,single_id,great_size,window_id,red,green,blue,alpha,font,great_font,great_height,great_intmap_texture)
     _->error "find_block_font: error 8"

@@ -3,23 +3,36 @@
 module Other.Error where
 import qualified Control.Monad as CM
 import qualified Data.IntMap.Strict as DIS
+import qualified Data.Sequence as DS
 
 catch_error::Eq a=>[Char]->a->IO a->IO ()
 catch_error error_message success result=do
     flag<-result
     CM.unless (flag==success) (error error_message)
 
+error_lookup_sequence::[Char]->Int->DS.Seq a->a
+error_lookup_sequence error_message key list=case DS.lookup key list of
+    Nothing->error error_message
+    Just value->value
+
 error_lookup::[Char]->Int->DIS.IntMap a->a
 error_lookup error_message key intmap=case DIS.lookup key intmap of
     Nothing->error error_message
     Just value->value
 
+error_lookup_small::[Char]->Int->DIS.IntMap a->(Int,a)
+error_lookup_small error_message key intmap=case DIS.lookupLE key intmap of
+    Nothing->error error_message
+    Just tuple->tuple
+
+error_lookup_great::[Char]->Int->DIS.IntMap a->(Int,a)
+error_lookup_great error_message key intmap=case DIS.lookupGE key intmap of
+    Nothing->error error_message
+    Just tuple->tuple
+
 error_lookup_lookup::[Char]->[Char]->Int->Int->DIS.IntMap (DIS.IntMap a)->a
-error_lookup_lookup first_error_message second_error_message first_key second_key intmap_intmap=case DIS.lookup first_key intmap_intmap of
-    Nothing->error first_error_message
-    Just intmap->case DIS.lookup second_key intmap of
-        Nothing->error second_error_message
-        Just value->value
+error_lookup_lookup first_error_message second_error_message first_key second_key intmap_intmap=case error_lookup first_error_message first_key intmap_intmap of
+    intmap->error_lookup second_error_message second_key intmap
 
 error_remove_simple::[Char]->Int->DIS.IntMap a->DIS.IntMap a
 error_remove_simple error_message key intmap=case DIS.updateLookupWithKey (\_ _->Nothing) key intmap of
@@ -40,8 +53,8 @@ error_remove_remove first_error_message second_error_message first_key second_ke
 
 error_insert::[Char]->Int->a->DIS.IntMap a->DIS.IntMap a
 error_insert error_message key value intmap=let (maybe_value,new_intmap)=DIS.insertLookupWithKey (\_ _ old_value->old_value) key value intmap in case maybe_value of
-    Just _->error error_message
     Nothing->new_intmap
+    Just _->error error_message
 
 error_insert_insert::[Char]->[Char]->Int->Int->a->DIS.IntMap (DIS.IntMap a)->DIS.IntMap (DIS.IntMap a)
 error_insert_insert first_error_message second_error_message first_key second_key value=DIS.alter (error_insert_insert_a first_error_message second_error_message second_key value) first_key

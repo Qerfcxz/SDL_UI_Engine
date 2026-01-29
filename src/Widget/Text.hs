@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 module Widget.Text where
+import Other.Error
 import Other.Get
 import Widget.Create
 import Type
@@ -13,13 +14,10 @@ create_text_trigger::Bool->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.S
 create_text_trigger wheel up_press down_press min_press max_press down_click next_id seq_id seq_seq_id engine=let (combined_id,single_id)=get_widget_id seq_id engine in create_widget combined_id single_id (Leaf_widget_request next_id (Trigger_request (\event (Engine widget window window_map request key main_id start_id count_id time)->let new_widget=DF.foldl' (\this_widget this_seq_id->create_text_trigger_a wheel up_press down_press min_press max_press down_click this_seq_id start_id event this_widget) widget seq_seq_id in Engine new_widget window window_map request key main_id start_id count_id time))) engine
 
 create_text_trigger_a::Bool->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Click,Mouse)->DSeq.Seq Int->Int->Event->DIS.IntMap (DIS.IntMap (Combined_widget a))->DIS.IntMap (DIS.IntMap (Combined_widget a))
-create_text_trigger_a wheel up_press down_press min_press max_press down_click seq_id start_id event widget=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in case DIS.lookup combined_id widget of
-    Nothing->error "create_text_trigger_a: error 1"
-    Just intmap_combined_widget->case DIS.lookup single_id intmap_combined_widget of
-        Nothing->error "create_text_trigger_a: error 2"
-        Just combined_widget->case create_text_trigger_b wheel up_press down_press min_press max_press down_click event combined_widget of
-            Nothing->widget
-            Just new_combined_widget->DIS.insert combined_id (DIS.insert single_id new_combined_widget intmap_combined_widget) widget
+create_text_trigger_a wheel up_press down_press min_press max_press down_click seq_id start_id event widget=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in let intmap_combined_widget=error_lookup "create_text_trigger_a: error 1" combined_id widget in case error_lookup "create_text_trigger_a: error 2" single_id intmap_combined_widget of
+    combined_widget->case create_text_trigger_b wheel up_press down_press min_press max_press down_click event combined_widget of
+        Nothing->widget
+        Just new_combined_widget->DIS.insert combined_id (DIS.insert single_id new_combined_widget intmap_combined_widget) widget
 
 create_text_trigger_b::Bool->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Click,Mouse)->Event->Combined_widget a->Maybe (Combined_widget a)
 create_text_trigger_b wheel up_press down_press min_press max_press down_click event (Leaf_widget next_id (Text window_id row max_row render select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row))=if select
