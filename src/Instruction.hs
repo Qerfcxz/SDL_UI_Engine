@@ -46,23 +46,23 @@ render_picture_instruction::Instruction->Engine a->(Int,DT.Text,Flip,FCT.CDouble
 render_picture_instruction _ _=return
 
 move_render_rectangle::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
-move_render_rectangle (Move_widget delta_x delta_y) engine=return.move_widget delta_x delta_y engine
-move_render_rectangle (Move_rectangle delta_x delta_y) engine=return.move_widget delta_x delta_y engine
+move_render_rectangle (Move_widget delta_x delta_y) engine=return.move_combined_widget_combined_widget delta_x delta_y engine
+move_render_rectangle (Move_rectangle delta_x delta_y) engine=return.move_combined_widget_combined_widget delta_x delta_y engine
 move_render_rectangle _ _=return
 
 move_render_picture::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
-move_render_picture (Move_widget delta_x delta_y) engine=return.move_widget delta_x delta_y engine
-move_render_picture (Move_picture delta_x delta_y) engine=return.move_widget delta_x delta_y engine
+move_render_picture (Move_widget delta_x delta_y) engine=return.move_combined_widget_combined_widget delta_x delta_y engine
+move_render_picture (Move_picture delta_x delta_y) engine=return.move_combined_widget_combined_widget delta_x delta_y engine
 move_render_picture _ _=return
 
 move_render_text::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
-move_render_text (Move_widget delta_x delta_y) engine=return.move_widget delta_x delta_y engine
-move_render_text (Move_text delta_x delta_y) engine=return.move_widget delta_x delta_y engine
+move_render_text (Move_widget delta_x delta_y) engine=return.move_combined_widget_combined_widget delta_x delta_y engine
+move_render_text (Move_text delta_x delta_y) engine=return.move_combined_widget_combined_widget delta_x delta_y engine
 move_render_text _ _=return
 
 move_render_editor::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
-move_render_editor (Move_widget delta_x delta_y) engine=return.move_widget delta_x delta_y engine
-move_render_editor (Move_editor delta_x delta_y) engine=return.move_widget delta_x delta_y engine
+move_render_editor (Move_widget delta_x delta_y) engine=return.move_combined_widget_combined_widget delta_x delta_y engine
+move_render_editor (Move_editor delta_x delta_y) engine=return.move_combined_widget_combined_widget delta_x delta_y engine
 move_render_editor _ _=return
 
 update_block_font_instruction::Instruction->Engine a->(Int,FCT.CInt,DSet.Set Char,Combined_widget a)->IO (Int,FCT.CInt,DSet.Set Char,Combined_widget a)
