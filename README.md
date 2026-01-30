@@ -62,8 +62,6 @@ Widgets are referenced by IDs stored in `IntMap`s, not by direct recursive data 
 
 This project is currently in the **Alpha / Prototype** stage. The API is subject to radical changes. It serves as a proof-of-concept for building high-performance, low-level UI systems in Haskell without relying on high-level FRP libraries.
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##
-
 # Hsue - 专为文字类 Roguelike 打造的 Haskell UI 引擎
 
 > **说明:** 这是一个由大四学生在单月内独立开发的原型引擎。它基于 Haskell 和 SDL2 Raw Bindings 从零构建，旨在支撑未来一款文字类回合制 Roguelike 游戏的开发。
