@@ -138,19 +138,19 @@ do_request (Request raw_request instruction) engine=case raw_request of
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                let (combined_widget,new_widget)=error_get_update_update "do_request: error 25" "do_request: error 26" combined_id single_id (set_render False) (get_engine_widget engine)
+                let (combined_widget,new_widget)=error_get_update_update "do_request: error 25" "do_request: error 26" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
                 do_request_render_text_widget new_instruction combined_widget (set_engine_widget new_widget engine)
         else do
-            let (combined_widget,new_widget)=error_get_update_update "do_request: error 27" "do_request: error 28" combined_id single_id (set_render False) (get_engine_widget engine)
+            let (combined_widget,new_widget)=error_get_update_update "do_request: error 27" "do_request: error 28" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
             do_request_render_text_widget instruction combined_widget (set_engine_widget new_widget engine)
     Render_editor_widget direct seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if direct
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                let (combined_widget,new_widget)=error_get_update_update "do_request: error 29" "do_request: error 30" combined_id single_id (set_render False) (get_engine_widget engine)
+                let (combined_widget,new_widget)=error_get_update_update "do_request: error 29" "do_request: error 30" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
                 do_request_render_editor_widget new_instruction combined_widget (set_engine_widget new_widget engine)
         else do
-            let (combined_widget,new_widget)=error_get_update_update "do_request: error 31" "do_request: error 32" combined_id single_id (set_render False) (get_engine_widget engine)
+            let (combined_widget,new_widget)=error_get_update_update "do_request: error 31" "do_request: error 32" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
             do_request_render_editor_widget instruction combined_widget (set_engine_widget new_widget engine)
     Update_block_font_widget direct size block_width seq_char seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if direct
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of

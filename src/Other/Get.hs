@@ -28,12 +28,16 @@ get_renderer_window::Int->DIS.IntMap Window->SRT.Renderer
 get_renderer_window window_id window=case error_lookup "get_renderer_window: error 1" window_id window of
     Window _ _ renderer _ _ _ _ _ _->renderer
 
-get_transform_window::Int->DIS.IntMap Window->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
-get_transform_window window_id window=case error_lookup "get_transform_window: error 1" window_id window of
+get_adaptive::Int->Engine a->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+get_adaptive window_id (Engine _ window _ _ _ _ _ _ _)=case error_lookup "get_window_size: error 1" window_id window of
     Window _ _ _ _ _ x y design_size size->(x,y,design_size,size)
 
-get_renderer_with_transform_window::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
-get_renderer_with_transform_window window_id window=case error_lookup "get_renderer_with_transform_window: error 1" window_id window of
+get_adaptive_window::Int->DIS.IntMap Window->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+get_adaptive_window window_id window=case error_lookup "get_adaptive_window: error 1" window_id window of
+    Window _ _ _ _ _ x y design_size size->(x,y,design_size,size)
+
+get_renderer_with_adaptive_window::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+get_renderer_with_adaptive_window window_id window=case error_lookup "get_renderer_with_adaptive_window: error 1" window_id window of
     (Window _ _ renderer _ _ x y design_size size)->(renderer,x,y,design_size,size)
 
 get_next_id_combined_widget::Combined_widget a->(Engine a->Event->Id)
