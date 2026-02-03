@@ -22,7 +22,7 @@ alter_widget_instruction::Instruction->Engine a->(Combined_widget_request a,Comb
 alter_widget_instruction _ _=return
 
 create_window_instruction::Instruction->Engine a->(Int,DT.Text,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO (Int,DT.Text,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
-create_window_instruction _ _ (window_id,window_name,left,right,up,down)=return (window_id,window_name,left,right,up,down)
+create_window_instruction _ _=return
 
 remove_window_instruction::Instruction->Engine a->Int->IO Int
 remove_window_instruction _ _=return
@@ -45,29 +45,25 @@ render_rectangle_instruction _ _=return
 render_picture_instruction::Instruction->Engine a->(Int,DT.Text,Flip,FCT.CDouble,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO (Int,DT.Text,Flip,FCT.CDouble,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
 render_picture_instruction _ _=return
 
-move_render_rectangle::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
-move_render_rectangle (Move_widget move_x move_y) engine=return.move_combined_widget_combined_widget move_x move_y engine
-move_render_rectangle (Move_rectangle move_x move_y) engine=return.move_combined_widget_combined_widget move_x move_y engine
-move_render_rectangle (Resize_widget resize_width resize_height) engine=return.resize_combined_widget_combined_widget resize_width resize_height engine
-move_render_rectangle (Resize_rectangle resize_width resize_height) engine=return.resize_combined_widget_combined_widget resize_width resize_height engine
-move_render_rectangle _ _=return
+render_rectangle_widget_instruction::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
+render_rectangle_widget_instruction (Move_widget move_x move_y) engine=return.move_rectangle_combined_widget move_x move_y engine
+render_rectangle_widget_instruction (Move_rectangle move_x move_y) engine=return.move_rectangle_combined_widget move_x move_y engine
+render_rectangle_widget_instruction _ _=return
 
-move_render_picture::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
-move_render_picture (Move_widget move_x move_y) engine=return.move_combined_widget_combined_widget move_x move_y engine
-move_render_picture (Move_picture move_x move_y) engine=return.move_combined_widget_combined_widget move_x move_y engine
-move_render_picture (Resize_widget resize_width resize_height) engine=return.resize_combined_widget_combined_widget resize_width resize_height engine
-move_render_picture (Resize_picture resize_width resize_height) engine=return.resize_combined_widget_combined_widget resize_width resize_height engine
-move_render_picture _ _=return
+render_picture_widget_instruction::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
+render_picture_widget_instruction (Move_widget move_x move_y) engine=return.move_picture_combined_widget move_x move_y engine
+render_picture_widget_instruction (Move_picture move_x move_y) engine=return.move_picture_combined_widget move_x move_y engine
+render_picture_widget_instruction _ _=return
 
-move_render_text::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
-move_render_text (Move_widget move_x move_y) engine=return.move_combined_widget_combined_widget move_x move_y engine
-move_render_text (Move_text move_x move_y) engine=return.move_combined_widget_combined_widget move_x move_y engine
-move_render_text _ _=return
+render_text_widget_instruction::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
+render_text_widget_instruction (Move_widget move_x move_y) engine=return.move_text_combined_widget move_x move_y engine
+render_text_widget_instruction (Move_text move_x move_y) engine=return.move_text_combined_widget move_x move_y engine
+render_text_widget_instruction _ _=return
 
-move_render_editor::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
-move_render_editor (Move_widget move_x move_y) engine=return.move_combined_widget_combined_widget move_x move_y engine
-move_render_editor (Move_editor move_x move_y) engine=return.move_combined_widget_combined_widget move_x move_y engine
-move_render_editor _ _=return
+render_editor_widget_instruction::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
+render_editor_widget_instruction (Move_widget move_x move_y) engine=return.move_editor_combined_widget move_x move_y engine
+render_editor_widget_instruction (Move_editor move_x move_y) engine=return.move_editor_combined_widget move_x move_y engine
+render_editor_widget_instruction _ _=return
 
 update_block_font_instruction::Instruction->Engine a->(Int,FCT.CInt,DSet.Set Char,Combined_widget a)->IO (Int,FCT.CInt,DSet.Set Char,Combined_widget a)
 update_block_font_instruction _ _=return

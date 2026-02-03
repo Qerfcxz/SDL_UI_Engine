@@ -120,19 +120,19 @@ do_request (Request raw_request instruction) engine=case raw_request of
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                combined_widget<-DF.foldlM (\mix this_instruction->move_render_rectangle this_instruction engine mix) (error_lookup_lookup "do_request: error 17" "do_request: error 18" combined_id single_id widget) new_instruction
+                combined_widget<-DF.foldlM (\mix this_instruction->render_rectangle_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 17" "do_request: error 18" combined_id single_id widget) new_instruction
                 do_request_render_rectangle_widget combined_widget engine
         else do
-            combined_widget<-DF.foldlM (\mix this_instruction->move_render_rectangle this_instruction engine mix) (error_lookup_lookup "do_request: error 19" "do_request: error 20" combined_id single_id widget) instruction
+            combined_widget<-DF.foldlM (\mix this_instruction->render_rectangle_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 19" "do_request: error 20" combined_id single_id widget) instruction
             do_request_render_rectangle_widget combined_widget engine
     Render_picture_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in let widget=get_engine_widget engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                combined_widget<-DF.foldlM (\mix this_instruction->move_render_picture this_instruction engine mix) (error_lookup_lookup "do_request: error 21" "do_request: error 22" combined_id single_id widget) new_instruction
+                combined_widget<-DF.foldlM (\mix this_instruction->render_picture_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 21" "do_request: error 22" combined_id single_id widget) new_instruction
                 do_request_render_picture_widget combined_widget engine
         else do
-            combined_widget<-DF.foldlM (\mix this_instruction->move_render_picture this_instruction engine mix) (error_lookup_lookup "do_request: error 23" "do_request: error 24" combined_id single_id widget) instruction
+            combined_widget<-DF.foldlM (\mix this_instruction->render_picture_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 23" "do_request: error 24" combined_id single_id widget) instruction
             do_request_render_picture_widget combined_widget engine
     Render_text_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
@@ -175,7 +175,7 @@ do_request_render_picture_widget _ _=error "do_request_render_picture_widget: er
 
 do_request_render_text_widget::DS.Seq Instruction->Combined_widget a->Engine a->IO (Engine a)
 do_request_render_text_widget instruction combined_widget engine=do
-    new_combined_widget<-DF.foldlM (\mix this_instruction->move_render_text this_instruction engine mix) combined_widget instruction
+    new_combined_widget<-DF.foldlM (\mix this_instruction->render_text_widget_instruction this_instruction engine mix) combined_widget instruction
     case new_combined_widget of
         Leaf_widget _ (Text window_id row _ _ _ _ _ _ _ _ _ _ left _ up down _ seq_row)->case DS.drop row seq_row of
             DS.Empty->return engine
@@ -191,7 +191,7 @@ do_request_render_text_widget instruction combined_widget engine=do
 
 do_request_render_editor_widget::DS.Seq Instruction->Combined_widget a->Engine a->IO (Engine a)
 do_request_render_editor_widget instruction combined_widget engine=do
-    new_combined_widget<-DF.foldlM (\mix this_instruction->move_render_editor this_instruction engine mix) combined_widget instruction
+    new_combined_widget<-DF.foldlM (\mix this_instruction->render_editor_widget_instruction this_instruction engine mix) combined_widget instruction
     let widget=get_engine_widget engine in case new_combined_widget of
         Leaf_widget _ (Editor window_id block_number row_number row _ font_size _ path _ typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha _ _ _ _ _ _ _ font_height block_width delta_height x y _ _ _ _ cursor seq_seq_char)->let (new_combined_id,new_single_id)=get_widget_id path engine in do
             new_widget<-error_update_update_io "do_request_render_editor_widget: error 1" "do_request_render_editor_widget: error 2" new_combined_id new_single_id (from_render_editor (get_renderer window_id engine) block_number row_number row font_size typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char) widget
