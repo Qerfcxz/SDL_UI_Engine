@@ -49,7 +49,7 @@ to_single_widget_record (Block_font window_id red green blue alpha block_font)=B
 to_single_widget_record (Rectangle window_id red green blue alpha left right up down x y width height)=Rectangle_record window_id red green blue alpha left right up down x y width height
 to_single_widget_record (Picture window_id texture render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide original_width original_height x y width height)=Picture_record window_id texture render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide original_width original_height x y width height
 to_single_widget_record (Text window_id row max_row render select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row)=Text_record window_id row max_row render select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row
-to_single_widget_record (Editor window_id block_number row_number row design_font_size font_size render font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha design_height design_block_width design_delta_height design_x design_y design_extra_width tdesign_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char)=Editor_record window_id block_number row_number row design_font_size font_size render font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha design_height design_block_width design_delta_height design_x design_y design_extra_width tdesign_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char
+to_single_widget_record (Editor window_id block_number row_number row design_font_size font_size render font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha design_height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char)=Editor_record window_id block_number row_number row design_font_size font_size render font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha design_height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char
 
 from_single_widget_record::Single_widget_record a->Single_widget a
 from_single_widget_record (Label_data_record label)=Label_data label
@@ -66,7 +66,7 @@ from_single_widget_record (Block_font_record window_id red green blue alpha bloc
 from_single_widget_record (Rectangle_record window_id red green blue alpha left right up down x y width height)=Rectangle window_id red green blue alpha left right up down x y width height
 from_single_widget_record (Picture_record window_id texture render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide original_width original_height x y width height)=Picture window_id texture render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide original_width original_height x y width height
 from_single_widget_record (Text_record window_id row max_row render select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row)=Text window_id row max_row render select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row
-from_single_widget_record (Editor_record window_id block_number row_number row design_font_size font_size render font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha design_height design_block_width design_delta_height design_x design_y design_extra_width tdesign_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char)=Editor window_id block_number row_number row design_font_size font_size render font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha design_height design_block_width design_delta_height design_x design_y design_extra_width tdesign_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char
+from_single_widget_record (Editor_record window_id block_number row_number row design_font_size font_size render font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha design_height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char)=Editor window_id block_number row_number row design_font_size font_size render font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha design_height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height font_height block_width delta_height x y left right up down cursor seq_seq_char
 
 instance Convert (Single_widget a) (Single_widget_record a) where
     convert=to_single_widget_record
@@ -74,11 +74,11 @@ instance Convert (Single_widget a) (Single_widget_record a) where
 instance Convert (Single_widget_record a) (Single_widget a) where
     convert=from_single_widget_record
 
-data Raw_request_record a=Create_widget_record {request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Remove_widget_record {transmit::Bool,simple::Bool,seq_id::DSeq.Seq Int}|Replace_widget_record {transmit::Bool,request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Alter_widget_record {transmit::Bool,request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Create_window_record {window_id::Int,text::DT.Text,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Remove_window_record {window_id::Int}|Present_window_record {window_id::Int}|Clear_window_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8}|Resize_window_record {window_id::Int,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Io_record {io::Engine a->IO (Engine a)}|Render_rectangle_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Render_picture_record {window_id::Int,path::DT.Text,render_flip::Flip,angle::FCT.CDouble,width_multiply::FCT.CInt,width_divide::FCT.CInt,x::FCT.CInt,y::FCT.CInt,height_multiply::FCT.CInt,height_divide::FCT.CInt}|Render_rectangle_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_picture_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_text_widget_record Bool (DSeq.Seq Int)|Render_editor_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Update_block_font_widget_record {transmit::Bool,size::Int,block_width::FCT.CInt,set_char::DSet.Set Char,seq_id::DSeq.Seq Int}
+data Raw_request_record a=Create_widget_record {request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Remove_widget_record {transmit::Bool,only::Bool,seq_id::DSeq.Seq Int}|Replace_widget_record {transmit::Bool,request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Alter_widget_record {transmit::Bool,request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Create_window_record {window_id::Int,text::DT.Text,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Remove_window_record {window_id::Int}|Present_window_record {window_id::Int}|Clear_window_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8}|Resize_window_record {window_id::Int,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Io_record {io::Engine a->IO (Engine a)}|Render_rectangle_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Render_picture_record {window_id::Int,path::DT.Text,render_flip::Flip,angle::FCT.CDouble,x::FCT.CInt,y::FCT.CInt,width_multiply::FCT.CInt,width_divide::FCT.CInt,height_multiply::FCT.CInt,height_divide::FCT.CInt}|Render_rectangle_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_picture_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_text_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_editor_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Update_block_font_widget_record {transmit::Bool,size::Int,block_width::FCT.CInt,set_char::DSet.Set Char,seq_id::DSeq.Seq Int}
 
 to_raw_request_record::Raw_request a->Raw_request_record a
 to_raw_request_record (Create_widget request seq_id)=Create_widget_record request seq_id
-to_raw_request_record (Remove_widget transmit simple seq_id)=Remove_widget_record transmit simple seq_id
+to_raw_request_record (Remove_widget transmit only seq_id)=Remove_widget_record transmit only seq_id
 to_raw_request_record (Replace_widget transmit request seq_id)=Replace_widget_record transmit request seq_id
 to_raw_request_record (Alter_widget transmit request seq_id)=Alter_widget_record transmit request seq_id
 to_raw_request_record (Create_window window_id text left right up down)=Create_window_record window_id text left right up down
@@ -86,8 +86,8 @@ to_raw_request_record (Remove_window window_id)=Remove_window_record window_id
 to_raw_request_record (Present_window window_id)=Present_window_record window_id
 to_raw_request_record (Clear_window window_id red green blue alpha)=Clear_window_record window_id red green blue alpha
 to_raw_request_record (Resize_window window_id left right up down)=Resize_window_record window_id left right up down
-to_raw_request_record (Render_rectangle window_id red green blue alpha left right up down)=Render_rectangle_record window_id red green blue alpha left right up down 
-to_raw_request_record (Render_picture window_id path render_flip angle width_multiply width_divide x y height_multiply height_divide)=Render_picture_record window_id path render_flip angle width_multiply width_divide x y height_multiply height_divide
+to_raw_request_record (Render_rectangle window_id red green blue alpha left right up down)=Render_rectangle_record window_id red green blue alpha left right up down
+to_raw_request_record (Render_picture window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide)=Render_picture_record window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide
 to_raw_request_record (Io io)=Io_record io
 to_raw_request_record (Render_rectangle_widget transmit seq_id)=Render_rectangle_widget_record transmit seq_id
 to_raw_request_record (Render_picture_widget transmit seq_id)=Render_picture_widget_record transmit seq_id
@@ -97,7 +97,7 @@ to_raw_request_record (Update_block_font_widget transmit size block_width set_ch
 
 from_raw_request_record::Raw_request_record a->Raw_request a
 from_raw_request_record (Create_widget_record request seq_id)=Create_widget request seq_id
-from_raw_request_record (Remove_widget_record transmit simple seq_id)=Remove_widget transmit simple seq_id
+from_raw_request_record (Remove_widget_record transmit only seq_id)=Remove_widget transmit only seq_id
 from_raw_request_record (Replace_widget_record transmit request seq_id)=Replace_widget transmit request seq_id
 from_raw_request_record (Alter_widget_record transmit request seq_id)=Alter_widget transmit request seq_id
 from_raw_request_record (Create_window_record window_id text left right up down)=Create_window window_id text left right up down
@@ -106,7 +106,7 @@ from_raw_request_record (Present_window_record window_id)=Present_window window_
 from_raw_request_record (Clear_window_record window_id red green blue alpha)=Clear_window window_id red green blue alpha
 from_raw_request_record (Resize_window_record window_id left right up down)=Resize_window window_id left right up down
 from_raw_request_record (Render_rectangle_record window_id red green blue alpha left right up down)=Render_rectangle window_id red green blue alpha left right up down
-from_raw_request_record (Render_picture_record window_id path render_flip angle width_multiply width_divide x y height_multiply height_divide)=Render_picture window_id path render_flip angle width_multiply width_divide x y height_multiply height_divide
+from_raw_request_record (Render_picture_record window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide)=Render_picture window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide
 from_raw_request_record (Io_record io)=Io io
 from_raw_request_record (Render_rectangle_widget_record transmit seq_id)=Render_rectangle_widget transmit seq_id
 from_raw_request_record (Render_picture_widget_record transmit seq_id)=Render_picture_widget transmit seq_id
@@ -122,36 +122,36 @@ instance Convert (Raw_request_record a) (Raw_request a) where
 
 data Single_widget_request_record a=Label_data_request_record {label::Label}|Bool_data_request_record {bool::Bool}|Int_data_request_record {int::Int}|Char_data_request_record {char::Char}|List_char_data_request_record {list_char::List_char}|Data_request_record {content::a}|Trigger_request_record {trigger::Event->Engine a->Engine a}|Io_trigger_request_record {io_trigger::Event->Engine a->IO (Engine a)}|Collector_request_record {request::DIS.IntMap (Request a)}|Font_request_record {path::DT.Text,size::DSeq.Seq Int}|Block_font_request_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8,path::DT.Text,size::DSeq.Seq Int}|Rectangle_request_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Picture_request_record {window_id::Int,path::DT.Text,render_flip::Flip,angle::FCT.CDouble,x::FCT.CInt,y::FCT.CInt,width_multiply::FCT.CInt,width_divide::FCT.CInt,height_multiply::FCT.CInt,height_divide::FCT.CInt}|Text_request_record {window_id::Int,find::Find,delta_height::FCT.CInt,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt,seq_paragraph::DSeq.Seq Paragraph}|Editor_request_record {window_id::Int,block_number::Int,font_size::Int,font_path::DSeq.Seq Int,block_find::Block_find,typesetting::Typesetting,text_red::DW.Word8,text_green::DW.Word8,text_blue::DW.Word8,text_alpha::DW.Word8,cursor_red::DW.Word8,cursor_green::DW.Word8,cursor_blue::DW.Word8,cursor_alpha::DW.Word8,select_red::DW.Word8,select_green::DW.Word8,select_blue::DW.Word8,select_alpha::DW.Word8,block_width::FCT.CInt,height::FCT.CInt,delta_height::FCT.CInt,x::FCT.CInt,y::FCT.CInt,extra_width::FCT.CInt,extra_height::FCT.CInt,seq_seq_char::DSeq.Seq (DSeq.Seq Char)}
 
-from_single_widget_request_record::Single_widget_request a->Single_widget_request_record a
-from_single_widget_request_record (Label_data_request label)=Label_data_request_record label
-from_single_widget_request_record (Bool_data_request bool)=Bool_data_request_record bool
-from_single_widget_request_record (Int_data_request int)=Int_data_request_record int
-from_single_widget_request_record (Char_data_request char)=Char_data_request_record char
-from_single_widget_request_record (List_char_data_request list_char)=List_char_data_request_record list_char
-from_single_widget_request_record (Data_request content)=Data_request_record content
-from_single_widget_request_record (Trigger_request trigger)=Trigger_request_record trigger
-from_single_widget_request_record (Io_trigger_request io_trigger)=Io_trigger_request_record io_trigger
-from_single_widget_request_record (Collector_request request)=Collector_request_record request
-from_single_widget_request_record (Font_request path size)=Font_request_record path size
-from_single_widget_request_record (Block_font_request window_id red green blue alpha path size)=Block_font_request_record window_id red green blue alpha path size
-from_single_widget_request_record (Rectangle_request window_id red green blue alpha left right up down)=Rectangle_request_record window_id red green blue alpha left right up down
-from_single_widget_request_record (Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide)=Picture_request_record window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide
-from_single_widget_request_record (Text_request window_id find delta_height left right up down seq_paragraph)=Text_request_record window_id find delta_height left right up down seq_paragraph
-from_single_widget_request_record (Editor_request window_id block_number font_size font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_seq_char)=Editor_request_record window_id block_number font_size font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_seq_char
+to_single_widget_request_record::Single_widget_request a->Single_widget_request_record a
+to_single_widget_request_record (Label_data_request label)=Label_data_request_record label
+to_single_widget_request_record (Bool_data_request bool)=Bool_data_request_record bool
+to_single_widget_request_record (Int_data_request int)=Int_data_request_record int
+to_single_widget_request_record (Char_data_request char)=Char_data_request_record char
+to_single_widget_request_record (List_char_data_request list_char)=List_char_data_request_record list_char
+to_single_widget_request_record (Data_request content)=Data_request_record content
+to_single_widget_request_record (Trigger_request trigger)=Trigger_request_record trigger
+to_single_widget_request_record (Io_trigger_request io_trigger)=Io_trigger_request_record io_trigger
+to_single_widget_request_record (Collector_request request)=Collector_request_record request
+to_single_widget_request_record (Font_request path size)=Font_request_record path size
+to_single_widget_request_record (Block_font_request window_id red green blue alpha path size)=Block_font_request_record window_id red green blue alpha path size
+to_single_widget_request_record (Rectangle_request window_id red green blue alpha left right up down)=Rectangle_request_record window_id red green blue alpha left right up down
+to_single_widget_request_record (Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide)=Picture_request_record window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide
+to_single_widget_request_record (Text_request window_id find delta_height left right up down seq_paragraph)=Text_request_record window_id find delta_height left right up down seq_paragraph
+to_single_widget_request_record (Editor_request window_id block_number font_size font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_seq_char)=Editor_request_record window_id block_number font_size font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_seq_char
 
-to_single_widget_request_record::Single_widget_request_record a->Single_widget_request a
-to_single_widget_request_record (Label_data_request_record label)=Label_data_request label
-to_single_widget_request_record (Bool_data_request_record bool)=Bool_data_request bool
-to_single_widget_request_record (Int_data_request_record int)=Int_data_request int
-to_single_widget_request_record (Char_data_request_record char)=Char_data_request char
-to_single_widget_request_record (List_char_data_request_record list_char)=List_char_data_request list_char
-to_single_widget_request_record (Data_request_record content)=Data_request content
-to_single_widget_request_record (Trigger_request_record trigger)=Trigger_request trigger
-to_single_widget_request_record (Io_trigger_request_record io_trigger)=Io_trigger_request io_trigger
-to_single_widget_request_record (Collector_request_record request)=Collector_request request
-to_single_widget_request_record (Font_request_record path size)=Font_request path size
-to_single_widget_request_record (Block_font_request_record window_id red green blue alpha path size)=Block_font_request window_id red green blue alpha path size
-to_single_widget_request_record (Rectangle_request_record window_id red green blue alpha left right up down)=Rectangle_request window_id red green blue alpha left right up down
-to_single_widget_request_record (Picture_request_record window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide)=Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide
-to_single_widget_request_record (Text_request_record window_id find delta_height left right up down seq_paragraph)=Text_request window_id find delta_height left right up down seq_paragraph
-to_single_widget_request_record (Editor_request_record window_id block_number font_size font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_seq_char)=Editor_request window_id block_number font_size font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_seq_char
+from_single_widget_request_record::Single_widget_request_record a->Single_widget_request a
+from_single_widget_request_record (Label_data_request_record label)=Label_data_request label
+from_single_widget_request_record (Bool_data_request_record bool)=Bool_data_request bool
+from_single_widget_request_record (Int_data_request_record int)=Int_data_request int
+from_single_widget_request_record (Char_data_request_record char)=Char_data_request char
+from_single_widget_request_record (List_char_data_request_record list_char)=List_char_data_request list_char
+from_single_widget_request_record (Data_request_record content)=Data_request content
+from_single_widget_request_record (Trigger_request_record trigger)=Trigger_request trigger
+from_single_widget_request_record (Io_trigger_request_record io_trigger)=Io_trigger_request io_trigger
+from_single_widget_request_record (Collector_request_record request)=Collector_request request
+from_single_widget_request_record (Font_request_record path size)=Font_request path size
+from_single_widget_request_record (Block_font_request_record window_id red green blue alpha path size)=Block_font_request window_id red green blue alpha path size
+from_single_widget_request_record (Rectangle_request_record window_id red green blue alpha left right up down)=Rectangle_request window_id red green blue alpha left right up down
+from_single_widget_request_record (Picture_request_record window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide)=Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide
+from_single_widget_request_record (Text_request_record window_id find delta_height left right up down seq_paragraph)=Text_request window_id find delta_height left right up down seq_paragraph
+from_single_widget_request_record (Editor_request_record window_id block_number font_size font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_seq_char)=Editor_request window_id block_number font_size font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height seq_seq_char
