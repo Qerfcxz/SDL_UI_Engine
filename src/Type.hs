@@ -14,10 +14,8 @@ import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Font as SRF
 
 data Engine a=Engine (DIS.IntMap (DIS.IntMap (Combined_widget a))) (DIS.IntMap Window) (DIS.IntMap Int) (DSeq.Seq (Request a)) (DSet.Set Key) (Engine a->Event->Int) Int Int (Maybe DW.Word32)
---所有控件，所有窗口，窗口id映射（SDL到引擎），所有请求，组合控件预分配id（每创建一个组合控件就加一），整个引擎的组合控件id，整个引擎的主控件id
 
 data Combined_widget a=Leaf_widget (Engine a->Event->Id) (Single_widget a)|Node_widget (Engine a->Event->Id) (Engine a->Event->Int) (Engine a->Event->Maybe Event) (Engine a->Raw_request a->DSeq.Seq Instruction->Maybe (DSeq.Seq Instruction)) Int
---Node_widget:后继函数，该组合控件的主控件id，跳转id（到它的组合控件id）
 
 data Single_widget a=Label_data Label|Bool_data Bool|Int_data Int|Char_data Char|List_char_data List_char|Data a|Trigger (Event->Engine a->Engine a)|Io_trigger (Event->Engine a->IO (Engine a))|Collector (DIS.IntMap (Request a))|Font (DIS.IntMap (FP.Ptr SRF.Font))|Block_font Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))|Rectangle Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture Int SRT.Texture Flip FCT.CDouble FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text Int Int Int Bool Bool Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DSeq.Seq Paragraph) (DSeq.Seq Row)|Editor Int Int Int Int Int Int Bool (DSeq.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt Cursor (DSeq.Seq (DSeq.Seq (Char,Int,FCT.CInt),Int,Int,Bool))
 
@@ -38,16 +36,14 @@ data Raw_request a=Create_widget (Combined_widget_request a) (DSeq.Seq Int)|Remo
 data Instruction=Move_widget FCT.CInt FCT.CInt|Move_rectangle FCT.CInt FCT.CInt|Move_picture FCT.CInt FCT.CInt|Move_text FCT.CInt FCT.CInt|Move_editor FCT.CInt FCT.CInt|Resize_widget FCT.CInt FCT.CInt|Resize_rectangle FCT.CInt FCT.CInt|Resize_picture FCT.CInt FCT.CInt
 
 data Combined_widget_request a=Leaf_widget_request (Engine a->Event->Id) (Single_widget_request a)|Node_widget_request (Engine a->Event->Id) (Engine a->Event->Int) (Engine a->Event->Maybe Event) (Engine a->Raw_request a->DSeq.Seq Instruction->Maybe (DSeq.Seq Instruction)) (DIS.IntMap (Combined_widget_request a))
---Node_widget_request Int：其主控件id::Int
 
-data Single_widget_request a=Label_data_request Label|Bool_data_request Bool|Int_data_request Int|Char_data_request Char|List_char_data_request List_char|Data_request a|Trigger_request (Event->Engine a->Engine a)|Io_trigger_request (Event->Engine a->IO (Engine a))|Collector_request (DIS.IntMap (Request a))|Font_request DTe.Text (DSeq.Seq Int)|Block_font_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 DTe.Text (DSeq.Seq Int)|Rectangle_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture_request Int DTe.Text Flip FCT.CDouble FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text_request Int Int Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DSeq.Seq Paragraph)|Editor_request Int Int Int (DSeq.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DSeq.Seq (DSeq.Seq Char))
+data Single_widget_request a=Label_data_request Label|Bool_data_request Bool|Int_data_request Int|Char_data_request Char|List_char_data_request List_char|Data_request a|Trigger_request (Event->Engine a->Engine a)|Io_trigger_request (Event->Engine a->IO (Engine a))|Collector_request (DIS.IntMap (Request a))|Font_request DTe.Text (DSeq.Seq Int)|Block_font_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 DTe.Text (DSeq.Seq Int)|Rectangle_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Picture_request Int DTe.Text Flip FCT.CDouble FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Text_request Int Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DSeq.Seq Paragraph)|Editor_request Int Int Int (DSeq.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DSeq.Seq (DSeq.Seq Char))
 
 data Paragraph=Paragraph (DSeq.Seq (DTe.Text,Color,DSeq.Seq Int,Int)) Typesetting|Paragraph_blank (DSeq.Seq Int) Int
 
 data Typesetting=Typesetting_left|Typesetting_right|Typesetting_center
 
 data Row=Row (DSeq.Seq (SRT.Texture,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)) FCT.CInt FCT.CInt|Row_blank FCT.CInt FCT.CInt
---Row_blank的参数为纵坐标和高度
 
 data Find=Equal|Near
 

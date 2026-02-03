@@ -40,17 +40,17 @@ do_request (Request raw_request instruction) engine=case raw_request of
     Create_widget combined_widget_request seq_id->do
         (new_combined_widget_request,new_seq_id)<-DF.foldlM (\this_combined_widget_request this_instruction->create_widget_instruction this_instruction engine this_combined_widget_request) (combined_widget_request,seq_id) instruction
         let (combined_id,single_id)=get_widget_id new_seq_id engine in create_widget combined_id single_id new_combined_widget_request engine
-    Remove_widget direct only seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if direct
+    Remove_widget transmit only seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->let new_transform tuple=DF.foldlM (\mix this_instruction->remove_widget_instruction this_instruction engine mix) tuple new_instruction in remove_widget new_transform only combined_id single_id engine
         else let new_transform combined_widget=DF.foldlM (\mix this_instruction->remove_widget_instruction this_instruction engine mix) combined_widget instruction in remove_widget new_transform only combined_id single_id engine
-    Replace_widget direct combined_widget_request seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if direct
+    Replace_widget transmit combined_widget_request seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->let new_transform tuple=DF.foldlM (\mix this_instruction->replace_widget_instruction this_instruction engine mix) tuple new_instruction in replace_widget new_transform combined_widget_request combined_id single_id engine
         else let new_transform combined_widget=DF.foldlM (\mix this_instruction->replace_widget_instruction this_instruction engine mix) combined_widget instruction in replace_widget new_transform combined_widget_request combined_id single_id engine
-    Alter_widget direct combined_widget_request seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if direct
+    Alter_widget transmit combined_widget_request seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->let new_transform tuple=DF.foldlM (\mix this_instruction->alter_widget_instruction this_instruction engine mix) tuple new_instruction in alter_widget new_transform combined_widget_request combined_id single_id engine
@@ -116,7 +116,7 @@ do_request (Request raw_request instruction) engine=case raw_request of
         let new_width=div (width*new_width_multiply) new_width_divide in let new_height=div (height*new_height_multiply) new_height_divide in catch_error "do_request: error 16" 0 (FMU.with (SRT.Rect (new_x-div new_width 2) (new_y-div new_height 2) new_width new_height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect new_angle FP.nullPtr (from_flip new_render_flip)))
         SRV.destroyTexture texture
         return engine
-    Render_rectangle_widget direct seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in let widget=get_engine_widget engine in if direct
+    Render_rectangle_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in let widget=get_engine_widget engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
@@ -125,7 +125,7 @@ do_request (Request raw_request instruction) engine=case raw_request of
         else do
             combined_widget<-DF.foldlM (\mix this_instruction->move_render_rectangle this_instruction engine mix) (error_lookup_lookup "do_request: error 19" "do_request: error 20" combined_id single_id widget) instruction
             do_request_render_rectangle_widget combined_widget engine
-    Render_picture_widget direct seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in let widget=get_engine_widget engine in if direct
+    Render_picture_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in let widget=get_engine_widget engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
@@ -134,7 +134,7 @@ do_request (Request raw_request instruction) engine=case raw_request of
         else do
             combined_widget<-DF.foldlM (\mix this_instruction->move_render_picture this_instruction engine mix) (error_lookup_lookup "do_request: error 23" "do_request: error 24" combined_id single_id widget) instruction
             do_request_render_picture_widget combined_widget engine
-    Render_text_widget direct seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if direct
+    Render_text_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
@@ -143,7 +143,7 @@ do_request (Request raw_request instruction) engine=case raw_request of
         else do
             let (combined_widget,new_widget)=error_get_update_update "do_request: error 27" "do_request: error 28" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
             do_request_render_text_widget instruction combined_widget (set_engine_widget new_widget engine)
-    Render_editor_widget direct seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if direct
+    Render_editor_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
@@ -152,11 +152,11 @@ do_request (Request raw_request instruction) engine=case raw_request of
         else do
             let (combined_widget,new_widget)=error_get_update_update "do_request: error 31" "do_request: error 32" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
             do_request_render_editor_widget instruction combined_widget (set_engine_widget new_widget engine)
-    Update_block_font_widget direct size block_width seq_char seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if direct
+    Update_block_font_widget transmit size block_width set_char seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
-            Just new_instruction->update_engine_widget_io (error_update_update_io "do_request: error 33" "do_request: error 34" combined_id single_id (update_block_font new_instruction engine size block_width seq_char)) engine
-        else update_engine_widget_io (error_update_update_io "do_request: error 35" "do_request: error 36" combined_id single_id (update_block_font instruction engine size block_width seq_char)) engine
+            Just new_instruction->update_engine_widget_io (error_update_update_io "do_request: error 33" "do_request: error 34" combined_id single_id (update_block_font new_instruction engine size block_width set_char)) engine
+        else update_engine_widget_io (error_update_update_io "do_request: error 35" "do_request: error 36" combined_id single_id (update_block_font instruction engine size block_width set_char)) engine
 
 do_request_render_rectangle_widget::Combined_widget a->Engine a->IO (Engine a)
 do_request_render_rectangle_widget (Leaf_widget _ (Rectangle window_id red green blue alpha _ _ _ _ x y width height)) engine=let renderer=get_renderer window_id engine in do
