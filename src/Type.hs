@@ -49,6 +49,10 @@ data Find=Equal|Near
 
 data Block_find=Block_equal|Block_near|Block_small|Block_great
 
+data Text_binding=Text_binding Bool (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Click,Mouse))
+
+data Editor_binding=Editor_binding Bool Bool (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Press,DSet.Set Key)) (DSet.Set (Click,Mouse)) (DSet.Set (Click,Mouse))
+
 data Event=Unknown|Quit|Time|At Int Action|Resize Int FCT.CInt FCT.CInt
 
 data Action=Close|Input DTe.Text|Wheel Int|Press Press Key (DSet.Set Key)|Click Click Mouse FCT.CInt FCT.CInt
