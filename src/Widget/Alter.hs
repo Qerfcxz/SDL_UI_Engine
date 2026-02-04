@@ -21,6 +21,7 @@ import qualified Data.Text.Encoding as DTE
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
+import qualified GHC.Stack as GS
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Video as SRV
@@ -30,7 +31,7 @@ alter_widget new_transform combined_widget_request combined_id single_id (Engine
     new_widget<-error_update_update_io "alter_widget: error 1" "alter_widget: error 2" combined_id single_id (alter_widget_a new_transform combined_widget_request start_id window widget) widget
     return (Engine new_widget window window_map request key main_id start_id count_id time)
 
-alter_widget_a::Data a=>((Combined_widget_request a,Combined_widget a)->IO (Combined_widget_request a,Combined_widget a))->Combined_widget_request a->Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->IO (Combined_widget a)
+alter_widget_a::GS.HasCallStack=>Data a=>((Combined_widget_request a,Combined_widget a)->IO (Combined_widget_request a,Combined_widget a))->Combined_widget_request a->Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->IO (Combined_widget a)
 alter_widget_a new_transform combined_widget_request start_id window widget combined_widget=do
     (new_combined_widget_request,new_combined_widget)<-new_transform (combined_widget_request,combined_widget)
     case new_combined_widget_request of
@@ -41,7 +42,7 @@ alter_widget_a new_transform combined_widget_request start_id window widget comb
             _->error "alter_widget_a: error 1"
         _->error "alter_widget_a: error 2"
 
-alter_widget_b::Data a=>Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Single_widget_request a->Single_widget a->IO (Single_widget a)
+alter_widget_b::GS.HasCallStack=>Data a=>Int->DIS.IntMap Window->DIS.IntMap (DIS.IntMap (Combined_widget a))->Single_widget_request a->Single_widget a->IO (Single_widget a)
 alter_widget_b _ _ _ (Label_data_request label) this_widget=case this_widget of
     Label_data {}->return (Label_data label)
     _->error "alter_widget_b: error 1"

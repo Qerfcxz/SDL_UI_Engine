@@ -7,12 +7,13 @@ import Other.Error
 import Type
 import qualified Data.Sequence as DS
 import qualified Foreign.C.Types as FCT
+import qualified GHC.Stack as GS
 
-start_select::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Typesetting->Int->Int
+start_select::GS.HasCallStack=>DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Typesetting->Int->Int
 start_select DS.Empty _ _=error "start_select: error 1"
 start_select ((_,number,_,_) DS.:<| _) typesetting block_number=typesetting_left typesetting number block_number
 
-end_select::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Typesetting->Int->(Int,Int)
+end_select::GS.HasCallStack=>DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Typesetting->Int->(Int,Int)
 end_select DS.Empty _ _=error "end_select: error 1"
 end_select (_ DS.:|> (_,number,char_number,_)) typesetting block_number=(typesetting_right typesetting number block_number,char_number)
 

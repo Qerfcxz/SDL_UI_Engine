@@ -9,10 +9,11 @@ import qualified Data.Sequence as DS
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
+import qualified GHC.Stack as GS
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
 
-find_block_font::Block_find->DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq Int->Int->Int->(Engine a->Event->Id,Int,Int,Int,Int,DW.Word8,DW.Word8,DW.Word8,DW.Word8,DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)),FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))
+find_block_font::GS.HasCallStack=>Block_find->DIS.IntMap (DIS.IntMap (Combined_widget a))->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq Int->Int->Int->(Engine a->Event->Id,Int,Int,Int,Int,DW.Word8,DW.Word8,DW.Word8,DW.Word8,DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)),FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))
 find_block_font Block_equal widget _ _ design_window_size window_size seq_id start_id size=let (combined_id,single_id,combined_widget)=get_widget_with_id_widget seq_id start_id widget in case combined_widget of
     Leaf_widget next_id (Block_font window_id red green blue alpha font)->let new_size=div (size*fromIntegral window_size) (fromIntegral design_window_size) in case error_lookup "find_block_font: error 1" new_size font of
         (this_font,font_height,intmap_texture)->(next_id,combined_id,single_id,new_size,window_id,red,green,blue,alpha,font,this_font,font_height,intmap_texture)

@@ -4,8 +4,9 @@ module Text.Max where
 import Type
 import qualified Data.Sequence as DS
 import qualified Foreign.C.Types as FCT
+import qualified GHC.Stack as GS
 
-find_max::DS.Seq Row->FCT.CInt->FCT.CInt->Int
+find_max::GS.HasCallStack=>DS.Seq Row->FCT.CInt->FCT.CInt->Int
 find_max DS.Empty _ _=0
 find_max (seq_row DS.:|> row) up down=case row of
     Row _ y height->if down<up+height then error "find_max: error 1" else DS.length seq_row-find_max_a seq_row up (y+height-down) 0

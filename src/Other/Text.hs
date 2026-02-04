@@ -12,6 +12,7 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 import qualified Foreign.Marshal.Alloc as FMA
+import qualified GHC.Stack as GS
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Video as SRV
@@ -31,7 +32,7 @@ cut_text_a left right last_width width font text=if left==right then let (left_t
     new_width<-get_width font left_text
     let new_new_width=width-new_width in if new_new_width==0 then return (middle,0,left_text,DT.drop middle text) else if 0<new_new_width then cut_text_a middle right new_new_width width font text else cut_text_a left (middle-1) last_width width font text
 
-to_texture::SRT.Renderer->FP.Ptr Color->FP.Ptr SRF.Font->FCS.CString->IO SRT.Texture
+to_texture::GS.HasCallStack=>SRT.Renderer->FP.Ptr Color->FP.Ptr SRF.Font->FCS.CString->IO SRT.Texture
 to_texture renderer text_color font text=do
     surface<-SRF.renderUTF8_Blended font text text_color
     CM.when (surface==FP.nullPtr) $ error "to_texture: error 1"
@@ -40,7 +41,7 @@ to_texture renderer text_color font text=do
     CM.when (texture==FP.nullPtr) $ error "to_texture: error 2"
     return texture
 
-to_texture_with_width::SRT.Renderer->FP.Ptr Color->FP.Ptr SRF.Font->FCS.CString->IO (SRT.Texture,FCT.CInt)
+to_texture_with_width::GS.HasCallStack=>SRT.Renderer->FP.Ptr Color->FP.Ptr SRF.Font->FCS.CString->IO (SRT.Texture,FCT.CInt)
 to_texture_with_width renderer text_color font text=do
     surface<-SRF.renderUTF8_Blended font text text_color
     CM.when (surface==FP.nullPtr) $ error "to_texture_with_width: error 1"

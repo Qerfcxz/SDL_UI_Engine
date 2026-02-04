@@ -5,8 +5,9 @@ import Other.Error
 import Other.Get
 import Type
 import qualified Data.Sequence as DS
+import qualified GHC.Stack as GS
 
-get_data::Data a=>DS.Seq Int->Engine a->a
+get_data::GS.HasCallStack=>Data a=>DS.Seq Int->Engine a->a
 get_data seq_id (Engine widget _ _ _ _ _ start_id _ _)=case get_widget_widget seq_id start_id widget of
     Leaf_widget _ (Data content)->content
     _->error "get_data: error 1"
@@ -14,20 +15,20 @@ get_data seq_id (Engine widget _ _ _ _ _ start_id _ _)=case get_widget_widget se
 set_data::Data a=>a->DS.Seq Int->Engine a->Engine a
 set_data content seq_id (Engine widget window window_map request key main_id start_id count_id time)=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in Engine (error_update_update "set_data: error 1" "set_data: error 2" combined_id single_id (set_data_a content) widget) window window_map request key main_id start_id count_id time
 
-set_data_a::a->Combined_widget a->Combined_widget a
+set_data_a::GS.HasCallStack=>a->Combined_widget a->Combined_widget a
 set_data_a content (Leaf_widget next_id (Data _))=Leaf_widget next_id (Data content)
 set_data_a _ _=error "set_data_a: error 1"
 
 update_data::Data a=>(a->a)->DS.Seq Int->Engine a->Engine a
 update_data update seq_id (Engine widget window window_map request key main_id start_id count_id time)=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in Engine (error_update_update "update_data: error 1" "update_data: error 2" combined_id single_id (update_data_a update) widget) window window_map request key main_id start_id count_id time
 
-update_data_a::(a->a)->Combined_widget a->Combined_widget a
+update_data_a::GS.HasCallStack=>(a->a)->Combined_widget a->Combined_widget a
 update_data_a update (Leaf_widget next_id (Data content))=Leaf_widget next_id (Data (update content))
 update_data_a _ _=error "update_data_a: error 1"
 
-get_data_label::DS.Seq Int->Engine a->Label
+get_data_label::GS.HasCallStack=>DS.Seq Int->Engine a->Label
 get_data_label seq_id (Engine widget _ _ _ _ _ start_id _ _)=case get_widget_widget seq_id start_id widget of
     Node_widget _ _ _ _ combined_id->let intmap_widget=error_lookup "get_data_label: error 1" combined_id widget in case error_lookup "get_data_label: error 2" 0 intmap_widget of
         Leaf_widget _ (Label_data label)->label
-        _->error "get_data_label: error 2"
-    _->error "get_data_label: error 3"
+        _->error "get_data_label: error 3"
+    _->error "get_data_label: error 4"

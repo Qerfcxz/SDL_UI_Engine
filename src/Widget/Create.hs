@@ -21,11 +21,12 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
+import qualified GHC.Stack as GS
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Video as SRV
 
-create_single_widget::Int->DIS.IntMap Window->Single_widget_request a->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (Single_widget a)
+create_single_widget::GS.HasCallStack=>Int->DIS.IntMap Window->Single_widget_request a->DIS.IntMap (DIS.IntMap (Combined_widget a))->IO (Single_widget a)
 create_single_widget _ _ (Label_data_request label) _=return (Label_data label)
 create_single_widget _ _ (Bool_data_request bool) _=return (Bool_data bool)
 create_single_widget _ _ (Int_data_request int) _=return (Int_data int)
@@ -63,7 +64,7 @@ create_single_widget start_id window (Editor_request window_id block_number font
     let half_height=div (div (height*size) design_size) 2
     return (Editor window_id block_number (fromIntegral (div (div ((height+delta_height)*size) design_size) (font_height+new_delta_height))) 0 font_size new_font_size False path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height block_width delta_height x y extra_width extra_height font_height new_block_width new_delta_height (window_x+div (x*size) design_size-div (fromIntegral block_number*new_block_width) 2) (window_y+div (y*size) design_size-half_height) (window_x+div ((x-extra_width)*size) design_size-half_width) (window_x+div ((x+extra_width)*size) design_size+half_width) (window_y+div ((y-extra_height)*size) design_size-half_height) (window_y+div ((y+extra_height)*size) design_size+half_height) Cursor_none (from_seq_seq_char intmap_texture block_number new_block_width seq_seq_char DS.empty))
 
-create_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font))
+create_font::GS.HasCallStack=>FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font))
 create_font _ DS.Empty=return DIS.empty
 create_font path (size DS.:<| other_size)=do
     font<-create_font path other_size
@@ -71,7 +72,7 @@ create_font path (size DS.:<| other_size)=do
     CM.when (new_font==FP.nullPtr) $ error "create_font: error 1"
     return (DIS.insert size new_font font)
 
-create_block_font::FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
+create_block_font::GS.HasCallStack=>FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
 create_block_font _ DS.Empty=return DIS.empty
 create_block_font path (size DS.:<| other_size)=do
     font<-create_block_font path other_size

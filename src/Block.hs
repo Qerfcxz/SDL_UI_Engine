@@ -19,10 +19,11 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
+import qualified GHC.Stack as GS
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
 
-update_block_font::DSeq.Seq Instruction->Engine a->Int->FCT.CInt->DSet.Set Char->Combined_widget a->IO (Combined_widget a)
+update_block_font::GS.HasCallStack=>DSeq.Seq Instruction->Engine a->Int->FCT.CInt->DSet.Set Char->Combined_widget a->IO (Combined_widget a)
 update_block_font instruction engine size block_width seq_char combined_widget=case combined_widget of
     (Leaf_widget next_id (Block_font window_id red green blue alpha _))->do
         (new_size,new_block_width,new_seq_char,new_combined_widget)<-DF.foldlM (\mix this_instruction->update_block_font_instruction this_instruction engine mix) (size,block_width,seq_char,combined_widget) instruction
@@ -33,7 +34,7 @@ update_block_font instruction engine size block_width seq_char combined_widget=c
             _->error "update_block_font: error 1"
     _->error "update_block_font: error 2"
 
-update_block_font_a::SRT.Renderer->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->DSet.Set Char->Maybe (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))->IO (Maybe (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
+update_block_font_a::GS.HasCallStack=>SRT.Renderer->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->DSet.Set Char->Maybe (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))->IO (Maybe (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
 update_block_font_a _ _ _ _ _ _ _ Nothing=error "update_block_font_a: error 1"
 update_block_font_a renderer red green blue alpha block_width seq_char (Just (font,font_height,intmap_texture))=FMA.alloca $ \font_color->do
     FS.poke font_color (color red green blue alpha)

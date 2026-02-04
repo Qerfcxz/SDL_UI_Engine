@@ -6,6 +6,7 @@ import Other.Error
 import Type
 import qualified Data.Sequence as DS
 import qualified Foreign.C.Types as FCT
+import qualified GHC.Stack as GS
 
 to_cursor::Int->Int->Int->Typesetting->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->(Int,Int,Int,Int)
 to_cursor block_number row_number row typesetting cursor_click cursor_y font_height block_width delta_height x y seq_seq_char=let cursor_row=row+max 0 (min (row_number-1) (fromIntegral (div (cursor_y+div delta_height 2-y) (font_height+delta_height)))) in case error_lookup_sequence "to_cursor: error 1" cursor_row seq_seq_char of
@@ -30,7 +31,7 @@ cursor_left block_number typesetting seq_seq_char (Cursor_single cursor_row curs
             (_,block,_)->let new_cursor_block=cursor_block-block in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block new_cursor_char new_cursor_block))
 cursor_left _ _ _ (Cursor_double _ cursor_row_start cursor_block_start cursor_char_start cursor_click_start _ _ _ _)=Just (cursor_row_start,Just (Cursor_single cursor_row_start cursor_block_start cursor_char_start cursor_click_start))
 
-cursor_right::Int->Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe (Int,Maybe Cursor)
+cursor_right::GS.HasCallStack=>Int->Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe (Int,Maybe Cursor)
 cursor_right _ _ _ _ Cursor_none=Nothing
 cursor_right max_row block_number typesetting seq_seq_char (Cursor_single cursor_row cursor_block cursor_char _)=case DS.lookup cursor_row seq_seq_char of
     Nothing->error "cursor_right: error 1"
@@ -70,7 +71,7 @@ from_cursor_click::DS.Seq (Char,Int,FCT.CInt)->Int->Int->Int->(Int,Int)
 from_cursor_click DS.Empty _ number_block number_char=(number_block,number_char)
 from_cursor_click ((_,block,_) DS.:<| seq_char) cursor_click number_block number_char=let new_number_block=number_block+block in if cursor_click<new_number_block then if cursor_click+div block 2<new_number_block then (number_block,number_char) else (new_number_block,number_char+1) else from_cursor_click seq_char cursor_click new_number_block (number_char+1)
 
-cursor_min::Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe Cursor
+cursor_min::GS.HasCallStack=>Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe Cursor
 cursor_min _ _ _ Cursor_none=Nothing
 cursor_min block_number typesetting seq_seq_char (Cursor_single cursor_row _ cursor_char _)=if cursor_row==0&&cursor_char==0 then Nothing else case seq_seq_char of
     DS.Empty->error "cursor_min: error 1"
@@ -79,7 +80,7 @@ cursor_min block_number typesetting seq_seq_char (Cursor_double {})=case seq_seq
     DS.Empty->error "cursor_min: error 2"
     (_,number,_,_) DS.:<| _->let new_cursor_block=typesetting_left typesetting number block_number in Just (Cursor_single 0 new_cursor_block 0 new_cursor_block)
 
-cursor_max::Int->Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe Cursor
+cursor_max::GS.HasCallStack=>Int->Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe Cursor
 cursor_max _ _ _ _ Cursor_none=Nothing
 cursor_max max_row block_number typesetting seq_seq_char (Cursor_single cursor_row _ cursor_char _)=case seq_seq_char of
     DS.Empty->error "cursor_max: error 1"
@@ -112,7 +113,7 @@ cursor_paragraph_max block_number typesetting seq_seq_char (Cursor_double cursor
     else case error_lookup_sequence "cursor_paragraph_max: error 3" cursor_row_end seq_seq_char of
         (_,number,char_number,end)->if end then let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block char_number new_cursor_block)) else let (new_cursor_row,new_number,new_char_number)=find_paragraph_max (DS.drop (cursor_row_end+1) seq_seq_char) cursor_row_end in let new_cursor_block=typesetting_right typesetting new_number block_number in Just (new_cursor_row,Just (Cursor_single new_cursor_row new_cursor_block new_char_number new_cursor_block))
 
-find_paragraph_max::DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Int->(Int,Int,Int)
+find_paragraph_max::GS.HasCallStack=>DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Int->(Int,Int,Int)
 find_paragraph_max DS.Empty _=error "find_paragraph_max: error 1"
 find_paragraph_max ((_,number,char_number,end) DS.:<| seq_seq_char) row=if end then (row+1,number,char_number) else find_paragraph_max seq_seq_char (row+1)
 
@@ -122,9 +123,9 @@ cursor_row_min block_number typesetting seq_seq_char (Cursor_single cursor_row _
     (_,number,_,_)->let new_cursor_block=typesetting_left typesetting number block_number in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block 0 new_cursor_block))
 cursor_row_min block_number typesetting seq_seq_char (Cursor_double cursor_where cursor_row_start _ _ _ cursor_row_end _ _ _)=if cursor_where
     then case error_lookup_sequence "cursor_row_min: error 2" cursor_row_start seq_seq_char of
-    (_,number,_,_)->let new_cursor_block=typesetting_left typesetting number block_number in Just (cursor_row_start,Just (Cursor_single cursor_row_start new_cursor_block 0 new_cursor_block))
+        (_,number,_,_)->let new_cursor_block=typesetting_left typesetting number block_number in Just (cursor_row_start,Just (Cursor_single cursor_row_start new_cursor_block 0 new_cursor_block))
     else case error_lookup_sequence "cursor_row_min: error 3" cursor_row_end seq_seq_char of
-    (_,number,_,_)->let new_cursor_block=typesetting_left typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block 0 new_cursor_block))
+        (_,number,_,_)->let new_cursor_block=typesetting_left typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block 0 new_cursor_block))
 
 cursor_row_max::Int->Typesetting->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Cursor->Maybe (Int,Maybe Cursor)
 cursor_row_max _ _ _ Cursor_none=Nothing
@@ -132,6 +133,6 @@ cursor_row_max block_number typesetting seq_seq_char (Cursor_single cursor_row _
     (_,number,char_number,_)->if cursor_char==char_number then Just (cursor_row,Nothing) else let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row,Just (Cursor_single cursor_row new_cursor_block char_number new_cursor_block))
 cursor_row_max block_number typesetting seq_seq_char (Cursor_double cursor_where cursor_row_start _ _ _ cursor_row_end _ _ _)=if cursor_where
     then case error_lookup_sequence "cursor_row_max: error 2" cursor_row_start seq_seq_char of
-    (_,number,char_number,_)->let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_start,Just (Cursor_single cursor_row_start new_cursor_block char_number new_cursor_block))
+        (_,number,char_number,_)->let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_start,Just (Cursor_single cursor_row_start new_cursor_block char_number new_cursor_block))
     else case error_lookup_sequence "cursor_row_max: error 3" cursor_row_end seq_seq_char of
-    (_,number,char_number,_)->let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block char_number new_cursor_block))
+        (_,number,char_number,_)->let new_cursor_block=typesetting_right typesetting number block_number in Just (cursor_row_end,Just (Cursor_single cursor_row_end new_cursor_block char_number new_cursor_block))

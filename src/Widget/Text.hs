@@ -9,6 +9,7 @@ import qualified Data.Foldable as DF
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DSeq
 import qualified Data.Set as DSet
+import qualified GHC.Stack as GS
 
 create_text_trigger::Text_binding->(Engine a->Event->Id)->DSeq.Seq Int->DSeq.Seq (DSeq.Seq Int)->Engine a->IO (Engine a)
 create_text_trigger (Text_binding wheel up_press down_press min_press max_press down_click) next_id seq_id seq_seq_id engine=let (combined_id,single_id)=get_widget_id seq_id engine in create_widget combined_id single_id (Leaf_widget_request next_id (Trigger_request (\event (Engine widget window window_map request key main_id start_id count_id time)->let new_widget=DF.foldl' (\this_widget this_seq_id->create_text_trigger_a wheel up_press down_press min_press max_press down_click this_seq_id start_id event this_widget) widget seq_seq_id in Engine new_widget window window_map request key main_id start_id count_id time))) engine
@@ -19,7 +20,7 @@ create_text_trigger_a wheel up_press down_press min_press max_press down_click s
         Nothing->widget
         Just new_combined_widget->DIS.insert combined_id (DIS.insert single_id new_combined_widget intmap_combined_widget) widget
 
-create_text_trigger_b::Bool->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Click,Mouse)->Event->Combined_widget a->Maybe (Combined_widget a)
+create_text_trigger_b::GS.HasCallStack=>Bool->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Press,DSet.Set Key)->DSet.Set (Click,Mouse)->Event->Combined_widget a->Maybe (Combined_widget a)
 create_text_trigger_b wheel up_press down_press min_press max_press down_click event (Leaf_widget next_id (Text window_id row max_row render select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row))=if select
     then case event of
         At this_window_id action->if window_id==this_window_id

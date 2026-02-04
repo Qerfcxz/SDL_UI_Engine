@@ -17,6 +17,7 @@ import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Ptr as FP
+import qualified GHC.Stack as GS
 import qualified SDL.Raw.Basic as SRB
 import qualified SDL.Raw.Enum as SREn
 import qualified SDL.Raw.Event as SREv
@@ -48,7 +49,7 @@ run_engine engine@(Engine _ _ _ _ _ _ _ _ time)=do
             FMA.alloca (\event->loop_engine_time time_event_type event engine)
             remove_timer timer
 
-loop_engine_time::Data a=>DW.Word32->FP.Ptr SRT.Event->Engine a->IO()
+loop_engine_time::Data a=>DW.Word32->FP.Ptr SRT.Event->Engine a->IO ()
 loop_engine_time time_event_type event engine=do
     new_engine@(Engine _ _ new_window_map _ key new_main_id new_start_id _ _)<-run_request engine
     (maybe_key,this_event)<-get_event event new_window_map key (Just time_event_type)
@@ -58,7 +59,7 @@ loop_engine_time time_event_type event engine=do
             Nothing->let calculated_main_id=new_main_id new_engine this_event in loop_engine_time time_event_type event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event new_engine)
             Just new_key->let calculated_main_id=new_main_id new_engine this_event in loop_engine_time time_event_type event (run_event new_start_id calculated_main_id (DSeq.singleton calculated_main_id) this_event (set_engine_key new_key new_engine))
 
-loop_engine::Data a=>FP.Ptr SRT.Event->Engine a->IO()
+loop_engine::Data a=>FP.Ptr SRT.Event->Engine a->IO ()
 loop_engine event engine=do
     new_engine@(Engine _ _ new_window_map _ key new_main_id new_start_id _ _)<-run_request engine
     (maybe_key,this_event)<-get_event event new_window_map key Nothing
@@ -75,12 +76,12 @@ run_request (Engine widget window window_map request key main_id start_id count_
         new_engine<-do_request this_request (Engine widget window window_map other_request key main_id start_id count_id time)
         run_request new_engine
 
-run_event::Data a=>Int->Int->DSeq.Seq Int->Event->Engine a->Engine a
+run_event::GS.HasCallStack=>Data a=>Int->Int->DSeq.Seq Int->Event->Engine a->Engine a
 run_event start_id main_id single_id_history event engine@(Engine widget _ _ _ _ _ _ _ _)=case DIS.lookup start_id widget of
     Nothing->error "run_event: error 1"
     Just intmap_combined_widget->run_event_a start_id main_id single_id_history intmap_combined_widget event engine
 
-run_event_a::Data a=>Int->Int->DSeq.Seq Int->DIS.IntMap (Combined_widget a)->Event->Engine a->Engine a
+run_event_a::GS.HasCallStack=>Data a=>Int->Int->DSeq.Seq Int->DIS.IntMap (Combined_widget a)->Event->Engine a->Engine a
 run_event_a combined_id single_id single_id_history intmap_combined_widget event engine=case error_lookup "run_event_a: error 1" single_id intmap_combined_widget of
     combined_widget->let new_engine@(Engine new_widget _ _ _ _ _ _ _ _)=run_event_b combined_widget event engine in case DIS.lookup combined_id new_widget of
         Nothing->error "run_event_a: error 2"

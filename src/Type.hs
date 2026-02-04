@@ -10,6 +10,7 @@ import qualified Data.Tuple as DTu
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
+import qualified GHC.Stack as GS
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Font as SRF
 
@@ -33,7 +34,7 @@ data Request a=Request (Raw_request a) (DSeq.Seq Instruction)
 
 data Raw_request a=Create_widget (Combined_widget_request a) (DSeq.Seq Int)|Remove_widget Bool Bool (DSeq.Seq Int)|Replace_widget Bool (Combined_widget_request a) (DSeq.Seq Int)|Alter_widget Bool (Combined_widget_request a) (DSeq.Seq Int)|Create_window Int DTe.Text FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Remove_window Int|Present_window Int|Clear_window Int DW.Word8 DW.Word8 DW.Word8 DW.Word8|Resize_window Int FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Io (Engine a->IO (Engine a))|Render_rectangle Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Render_picture Int DTe.Text Flip FCT.CDouble FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Render_rectangle_widget Bool (DSeq.Seq Int)|Render_picture_widget Bool (DSeq.Seq Int)|Render_text_widget Bool (DSeq.Seq Int)|Render_editor_widget Bool (DSeq.Seq Int)|Update_block_font_widget Bool Int FCT.CInt (DSet.Set Char) (DSeq.Seq Int)
 
-data Instruction=Move_widget FCT.CInt FCT.CInt|Move_rectangle FCT.CInt FCT.CInt|Move_picture FCT.CInt FCT.CInt|Move_text FCT.CInt FCT.CInt|Move_editor FCT.CInt FCT.CInt|Resize_widget FCT.CInt FCT.CInt|Resize_rectangle FCT.CInt FCT.CInt|Resize_picture FCT.CInt FCT.CInt
+data Instruction=Move_widget FCT.CInt FCT.CInt|Move_rectangle FCT.CInt FCT.CInt|Move_picture FCT.CInt FCT.CInt|Move_text FCT.CInt FCT.CInt|Move_editor FCT.CInt FCT.CInt|Scale_picture FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Flip_picture Flip|Text_color_editor DW.Word8 DW.Word8 DW.Word8 DW.Word8|Cursor_color_editor DW.Word8 DW.Word8 DW.Word8 DW.Word8|Select_color_editor DW.Word8 DW.Word8 DW.Word8 DW.Word8
 
 data Combined_widget_request a=Leaf_widget_request (Engine a->Event->Id) (Single_widget_request a)|Node_widget_request (Engine a->Event->Id) (Engine a->Event->Int) (Engine a->Event->Maybe Event) (Engine a->Raw_request a->DSeq.Seq Instruction->Maybe (DSeq.Seq Instruction)) (DIS.IntMap (Combined_widget_request a))
 
@@ -88,7 +89,7 @@ label_bool_data _=Bool_label
 write_bool_data::Bool->Combined_widget_request a
 write_bool_data bool=Leaf_widget_request (\_ _->End) (Bool_data_request bool)
 
-read_bool_data::DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->Bool
+read_bool_data::GS.HasCallStack=>DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->Bool
 read_bool_data _ (Leaf_widget _ (Bool_data bool))=bool
 read_bool_data _ _=error "read_bool_data: error 1"
 
@@ -103,7 +104,7 @@ label_int_data _=Int_label
 write_int_data::Int->Combined_widget_request a
 write_int_data int=Leaf_widget_request (\_ _->End) (Int_data_request int)
 
-read_int_data::DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->Int
+read_int_data::GS.HasCallStack=>DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->Int
 read_int_data _ (Leaf_widget _ (Int_data int))=int
 read_int_data _ _=error "read_int_data: error 1"
 
@@ -118,7 +119,7 @@ label_char_data _=Char_label
 write_char_data::Char->Combined_widget_request a
 write_char_data char=Leaf_widget_request (\_ _->End) (Char_data_request char)
 
-read_char_data::DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->Char
+read_char_data::GS.HasCallStack=>DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->Char
 read_char_data _ (Leaf_widget _ (Char_data char))=char
 read_char_data _ _=error "read_char_data: error 1"
 
@@ -133,7 +134,7 @@ label_list_char_data _=List_char_label
 write_list_char_data::List_char->Combined_widget_request a
 write_list_char_data list_char=Leaf_widget_request (\_ _->End) (List_char_data_request list_char)
 
-read_list_char_data::DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->List_char
+read_list_char_data::GS.HasCallStack=>DIS.IntMap (DIS.IntMap (Combined_widget a))->Combined_widget a->List_char
 read_list_char_data _ (Leaf_widget _ (List_char_data list_char))=list_char
 read_list_char_data _ _=error "read_list_char_data: error 1"
 
@@ -148,7 +149,7 @@ label_solo_data (DTu.MkSolo solo)=label_data solo
 write_solo_data::Predefined_data a=>DTu.Solo a->Combined_widget_request b
 write_solo_data (DTu.MkSolo solo)=Node_widget_request (\_ _->End) (\_ _->0) (const Just) (const (const Just)) (DIS.insert 1 (write_data solo) (DIS.singleton 0 (Leaf_widget_request (\_ _->End) (Label_data_request (Solo_label (label_data solo))))))
 
-read_solo_data::Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->Combined_widget b->DTu.Solo a
+read_solo_data::GS.HasCallStack=>Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->Combined_widget b->DTu.Solo a
 read_solo_data widget (Node_widget _ _ _ _ combined_id)=case error_lookup "read_solo_data: error 1" combined_id widget of
     intmap_widget->case error_lookup "read_solo_data: error 2" 1 intmap_widget of
         combined_widget->DTu.MkSolo (read_data widget combined_widget)
@@ -165,7 +166,7 @@ label_tuple_data (first,second)=Tuple_label (label_data first) (label_data secon
 write_tuple_data::(Predefined_data a,Predefined_data b)=>(a,b)->Combined_widget_request c
 write_tuple_data (first,second)=Node_widget_request (\_ _->End) (\_ _->0) (const Just) (const (const Just)) (DIS.insert 2 (write_data second) (DIS.insert 1 (write_data first) (DIS.singleton 0 (Leaf_widget_request (\_ _->End) (Label_data_request (Tuple_label (label_data first) (label_data second)))))))
 
-read_tuple_data::(Predefined_data a,Predefined_data b)=>DIS.IntMap (DIS.IntMap (Combined_widget c))->Combined_widget c->(a,b)
+read_tuple_data::GS.HasCallStack=>(Predefined_data a,Predefined_data b)=>DIS.IntMap (DIS.IntMap (Combined_widget c))->Combined_widget c->(a,b)
 read_tuple_data widget (Node_widget _ _ _ _ combined_id)=case error_lookup "read_tuple_data: error 1" combined_id widget of
     intmap_widget->case error_lookup "read_tuple_data: error 2" 1 intmap_widget of
         first_combined_widget->case error_lookup "read_tuple_data: error 3" 2 intmap_widget of
@@ -188,7 +189,7 @@ write_list_data_a::Predefined_data a=>[a]->Int->DIS.IntMap (Combined_widget_requ
 write_list_data_a [] _ request=request
 write_list_data_a (value:other_value) number request=write_list_data_a other_value (number-1) (DIS.insert number (write_data value) request)
 
-read_list_data::Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->Combined_widget b->[a]
+read_list_data::GS.HasCallStack=>Predefined_data a=>DIS.IntMap (DIS.IntMap (Combined_widget b))->Combined_widget b->[a]
 read_list_data widget (Node_widget _ _ _ _ combined_id)=case error_lookup "read_list_data: error 1" combined_id widget of
     intmap_widget->read_list_data_a widget intmap_widget 1 []
 read_list_data _ _=error "read_list_data: error 2"

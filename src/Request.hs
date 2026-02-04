@@ -27,6 +27,7 @@ import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
+import qualified GHC.Stack as GS
 import qualified SDL.Raw.Enum as SRE
 import qualified SDL.Raw.Image as SRI
 import qualified SDL.Raw.Types as SRT
@@ -35,7 +36,7 @@ import qualified SDL.Raw.Video as SRV
 create_request::Data a=>Request a->Engine a->Engine a
 create_request new_request (Engine widget window window_map request key main_id start_id count_id time)=Engine widget window window_map (request DS.|> new_request) key main_id start_id count_id time
 
-do_request::Data a=>Request a->Engine a->IO (Engine a)
+do_request::GS.HasCallStack=>Data a=>Request a->Engine a->IO (Engine a)
 do_request (Request raw_request instruction) engine=case raw_request of
     Create_widget combined_widget_request seq_id->do
         (new_combined_widget_request,new_seq_id)<-DF.foldlM (\this_combined_widget_request this_instruction->create_widget_instruction this_instruction engine this_combined_widget_request) (combined_widget_request,seq_id) instruction
@@ -158,7 +159,7 @@ do_request (Request raw_request instruction) engine=case raw_request of
             Just new_instruction->update_engine_widget_io (error_update_update_io "do_request: error 33" "do_request: error 34" combined_id single_id (update_block_font new_instruction engine size block_width set_char)) engine
         else update_engine_widget_io (error_update_update_io "do_request: error 35" "do_request: error 36" combined_id single_id (update_block_font instruction engine size block_width set_char)) engine
 
-do_request_render_rectangle_widget::Combined_widget a->Engine a->IO (Engine a)
+do_request_render_rectangle_widget::GS.HasCallStack=>Combined_widget a->Engine a->IO (Engine a)
 do_request_render_rectangle_widget (Leaf_widget _ (Rectangle window_id red green blue alpha _ _ _ _ x y width height)) engine=let renderer=get_renderer window_id engine in do
     catch_error "do_request_render_rectangle_widget: error 1" 0 (SRV.setRenderDrawColor renderer red green blue alpha)
     FMA.alloca $ \rect->do
@@ -167,13 +168,13 @@ do_request_render_rectangle_widget (Leaf_widget _ (Rectangle window_id red green
     return engine
 do_request_render_rectangle_widget _ _=error "do_request_render_rectangle_widget: error 3"
 
-do_request_render_picture_widget::Combined_widget a->Engine a->IO (Engine a)
+do_request_render_picture_widget::GS.HasCallStack=>Combined_widget a->Engine a->IO (Engine a)
 do_request_render_picture_widget (Leaf_widget _ (Picture window_id texture render_flip angle _ _ _ _ _ _ _ _ x y width height)) engine=let renderer=get_renderer window_id engine in do
     catch_error "do_request_render_picture_widget: error 1" 0 (FMU.with (SRT.Rect x y width height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect angle FP.nullPtr (from_flip render_flip)))
     return engine
 do_request_render_picture_widget _ _=error "do_request_render_picture_widget: error 2"
 
-do_request_render_text_widget::DS.Seq Instruction->Combined_widget a->Engine a->IO (Engine a)
+do_request_render_text_widget::GS.HasCallStack=>DS.Seq Instruction->Combined_widget a->Engine a->IO (Engine a)
 do_request_render_text_widget instruction combined_widget engine=do
     new_combined_widget<-DF.foldlM (\mix this_instruction->render_text_widget_instruction this_instruction engine mix) combined_widget instruction
     case new_combined_widget of
@@ -189,7 +190,7 @@ do_request_render_text_widget instruction combined_widget engine=do
                     return engine
         _->error "do_request_render_text_widget: error 1"
 
-do_request_render_editor_widget::DS.Seq Instruction->Combined_widget a->Engine a->IO (Engine a)
+do_request_render_editor_widget::GS.HasCallStack=>DS.Seq Instruction->Combined_widget a->Engine a->IO (Engine a)
 do_request_render_editor_widget instruction combined_widget engine=do
     new_combined_widget<-DF.foldlM (\mix this_instruction->render_editor_widget_instruction this_instruction engine mix) combined_widget instruction
     let widget=get_engine_widget engine in case new_combined_widget of
@@ -198,7 +199,7 @@ do_request_render_editor_widget instruction combined_widget engine=do
             return (set_engine_widget new_widget engine)
         _->error "do_request_render_editor_widget: error 3"
 
-from_render_editor::SRT.Renderer->Int->Int->Int->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Cursor->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Combined_widget a->IO (Combined_widget a)
+from_render_editor::GS.HasCallStack=>SRT.Renderer->Int->Int->Int->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Cursor->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Combined_widget a->IO (Combined_widget a)
 from_render_editor renderer block_number row_number row font_size typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char widget=case widget of
     Leaf_widget next_id (Block_font window_id red green blue alpha font)->case error_lookup "from_render_editor: error 1" font_size font of
         (this_font,height,intmap_texture)->do
