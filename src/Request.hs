@@ -102,6 +102,10 @@ do_request (Request raw_request instruction) engine=case raw_request of
         Window _ sdl_window _ _ _ _ _ _ _->do
             SRV.setWindowMaximumSize sdl_window width height
             return engine
+    Whether_bordered_window window_id whether->case get_window window_id engine of
+        Window _ sdl_window _ _ _ _ _ _ _->do
+            SRV.setWindowBordered sdl_window whether
+            return engine
     Io handle->do
         new_handle<-DF.foldlM (\mix this_instruction->io_instruction this_instruction engine mix) handle instruction
         new_handle engine
