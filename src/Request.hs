@@ -41,11 +41,11 @@ do_request (Request raw_request instruction) engine=case raw_request of
     Create_widget combined_widget_request seq_id->do
         (new_combined_widget_request,new_seq_id)<-DF.foldlM (\this_combined_widget_request this_instruction->create_widget_instruction this_instruction engine this_combined_widget_request) (combined_widget_request,seq_id) instruction
         let (combined_id,single_id)=get_widget_id new_seq_id engine in create_widget combined_id single_id new_combined_widget_request engine
-    Remove_widget transmit only seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
+    Remove_widget transmit simple seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
-            Just new_instruction->let new_transform tuple=DF.foldlM (\mix this_instruction->remove_widget_instruction this_instruction engine mix) tuple new_instruction in remove_widget new_transform only combined_id single_id engine
-        else let new_transform combined_widget=DF.foldlM (\mix this_instruction->remove_widget_instruction this_instruction engine mix) combined_widget instruction in remove_widget new_transform only combined_id single_id engine
+            Just new_instruction->let new_transform tuple=DF.foldlM (\mix this_instruction->remove_widget_instruction this_instruction engine mix) tuple new_instruction in remove_widget new_transform simple combined_id single_id engine
+        else let new_transform combined_widget=DF.foldlM (\mix this_instruction->remove_widget_instruction this_instruction engine mix) combined_widget instruction in remove_widget new_transform simple combined_id single_id engine
     Replace_widget transmit combined_widget_request seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
@@ -94,6 +94,14 @@ do_request (Request raw_request instruction) engine=case raw_request of
                 SRV.setWindowPosition sdl_window new_left new_up
                 SRV.setWindowSize sdl_window width height
                 return (set_engine_window new_window engine)
+    Min_size_window window_id width height->case get_window window_id engine of
+        Window _ sdl_window _ _ _ _ _ _ _->do
+            SRV.setWindowMinimumSize sdl_window width height
+            return engine
+    Max_size_window window_id width height->case get_window window_id engine of
+        Window _ sdl_window _ _ _ _ _ _ _->do
+            SRV.setWindowMaximumSize sdl_window width height
+            return engine
     Io handle->do
         new_handle<-DF.foldlM (\mix this_instruction->io_instruction this_instruction engine mix) handle instruction
         new_handle engine

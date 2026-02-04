@@ -21,6 +21,9 @@ get_engine_widget (Engine widget _ _ _ _ _ _ _ _)=widget
 get_engine_window::Engine a->DIS.IntMap Window
 get_engine_window (Engine _ window _ _ _ _ _ _ _)=window
 
+get_window::Int->Engine a->Window
+get_window window_id (Engine _ window _ _ _ _ _ _ _)=error_lookup "get_window: error 1" window_id window
+
 get_renderer::Int->Engine a->SRT.Renderer
 get_renderer window_id (Engine _ window _ _ _ _ _ _ _)=case error_lookup "get_renderer: error 1" window_id window of
     Window _ _ renderer _ _ _ _ _ _->renderer

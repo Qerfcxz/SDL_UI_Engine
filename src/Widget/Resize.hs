@@ -34,7 +34,7 @@ create_window_trigger next_id seq_id seq_window_id engine=let (combined_id,singl
 
 create_window_trigger_a::DS.Seq Int->Event->Engine a->Engine a
 create_window_trigger_a seq_window_id event engine@(Engine widget window window_map request key main_id start_id count_id time)=case event of
-    Resize window_id width height->case DS.elemIndexL window_id seq_window_id of
+    Change_size window_id width height->case DS.elemIndexL window_id seq_window_id of
         Nothing->engine
         Just _->Engine widget (error_update "create_window_trigger_a: error 1" window_id (\(Window this_window_id this_window renderer design_width design_height _ _ _ _)->let (x,y,design_size,size)=adaptive_window design_width design_height width height in Window this_window_id this_window renderer design_width design_height x y design_size size) window) window_map request key main_id start_id count_id time
     _->engine
@@ -44,7 +44,7 @@ create_widget_trigger next_id seq_id intmap_seq_seq_id engine=let (combined_id,s
 
 create_widget_trigger_a::DIS.IntMap (DS.Seq (DS.Seq Int))->Event->Engine a->IO (Engine a)
 create_widget_trigger_a intmap_seq_seq_id event engine=case event of
-    Resize window_id _ _->case DIS.lookup window_id intmap_seq_seq_id of
+    Change_size window_id _ _->case DIS.lookup window_id intmap_seq_seq_id of
         Nothing->return engine
         Just seq_seq_id->CM.foldM (flip update_widget) engine seq_seq_id
     _->return engine

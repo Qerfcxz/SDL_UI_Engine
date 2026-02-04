@@ -74,11 +74,11 @@ instance Convert (Single_widget a) (Single_widget_record a) where
 instance Convert (Single_widget_record a) (Single_widget a) where
     convert=from_single_widget_record
 
-data Raw_request_record a=Create_widget_record {request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Remove_widget_record {transmit::Bool,only::Bool,seq_id::DSeq.Seq Int}|Replace_widget_record {transmit::Bool,request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Alter_widget_record {transmit::Bool,request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Create_window_record {window_id::Int,text::DT.Text,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Remove_window_record {window_id::Int}|Present_window_record {window_id::Int}|Clear_window_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8}|Resize_window_record {window_id::Int,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Io_record {io::Engine a->IO (Engine a)}|Render_rectangle_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Render_picture_record {window_id::Int,path::DT.Text,render_flip::Flip,angle::FCT.CDouble,x::FCT.CInt,y::FCT.CInt,width_multiply::FCT.CInt,width_divide::FCT.CInt,height_multiply::FCT.CInt,height_divide::FCT.CInt}|Render_rectangle_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_picture_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_text_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_editor_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Update_block_font_widget_record {transmit::Bool,size::Int,block_width::FCT.CInt,set_char::DSet.Set Char,seq_id::DSeq.Seq Int}
+data Raw_request_record a=Create_widget_record {request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Remove_widget_record {transmit::Bool,simple::Bool,seq_id::DSeq.Seq Int}|Replace_widget_record {transmit::Bool,request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Alter_widget_record {transmit::Bool,request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Create_window_record {window_id::Int,text::DT.Text,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Remove_window_record {window_id::Int}|Present_window_record {window_id::Int}|Clear_window_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8}|Resize_window_record {window_id::Int,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Min_size_window_record {window_id::Int,width::FCT.CInt,height::FCT.CInt}|Max_size_window_record {window_id::Int,width::FCT.CInt,height::FCT.CInt}|Io_record {io::Engine a->IO (Engine a)}|Render_rectangle_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Render_picture_record {window_id::Int,path::DT.Text,render_flip::Flip,angle::FCT.CDouble,x::FCT.CInt,y::FCT.CInt,width_multiply::FCT.CInt,width_divide::FCT.CInt,height_multiply::FCT.CInt,height_divide::FCT.CInt}|Render_rectangle_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_picture_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_text_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_editor_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Update_block_font_widget_record {transmit::Bool,size::Int,block_width::FCT.CInt,set_char::DSet.Set Char,seq_id::DSeq.Seq Int}
 
 to_raw_request_record::Raw_request a->Raw_request_record a
 to_raw_request_record (Create_widget request seq_id)=Create_widget_record request seq_id
-to_raw_request_record (Remove_widget transmit only seq_id)=Remove_widget_record transmit only seq_id
+to_raw_request_record (Remove_widget transmit simple seq_id)=Remove_widget_record transmit simple seq_id
 to_raw_request_record (Replace_widget transmit request seq_id)=Replace_widget_record transmit request seq_id
 to_raw_request_record (Alter_widget transmit request seq_id)=Alter_widget_record transmit request seq_id
 to_raw_request_record (Create_window window_id text left right up down)=Create_window_record window_id text left right up down
@@ -86,9 +86,11 @@ to_raw_request_record (Remove_window window_id)=Remove_window_record window_id
 to_raw_request_record (Present_window window_id)=Present_window_record window_id
 to_raw_request_record (Clear_window window_id red green blue alpha)=Clear_window_record window_id red green blue alpha
 to_raw_request_record (Resize_window window_id left right up down)=Resize_window_record window_id left right up down
+to_raw_request_record (Min_size_window window_id width height)=Min_size_window_record window_id width height
+to_raw_request_record (Max_size_window window_id width height)=Max_size_window_record window_id width height
+to_raw_request_record (Io io)=Io_record io
 to_raw_request_record (Render_rectangle window_id red green blue alpha left right up down)=Render_rectangle_record window_id red green blue alpha left right up down
 to_raw_request_record (Render_picture window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide)=Render_picture_record window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide
-to_raw_request_record (Io io)=Io_record io
 to_raw_request_record (Render_rectangle_widget transmit seq_id)=Render_rectangle_widget_record transmit seq_id
 to_raw_request_record (Render_picture_widget transmit seq_id)=Render_picture_widget_record transmit seq_id
 to_raw_request_record (Render_text_widget transmit seq_id)=Render_text_widget_record transmit seq_id
@@ -97,7 +99,7 @@ to_raw_request_record (Update_block_font_widget transmit size block_width set_ch
 
 from_raw_request_record::Raw_request_record a->Raw_request a
 from_raw_request_record (Create_widget_record request seq_id)=Create_widget request seq_id
-from_raw_request_record (Remove_widget_record transmit only seq_id)=Remove_widget transmit only seq_id
+from_raw_request_record (Remove_widget_record transmit simple seq_id)=Remove_widget transmit simple seq_id
 from_raw_request_record (Replace_widget_record transmit request seq_id)=Replace_widget transmit request seq_id
 from_raw_request_record (Alter_widget_record transmit request seq_id)=Alter_widget transmit request seq_id
 from_raw_request_record (Create_window_record window_id text left right up down)=Create_window window_id text left right up down
@@ -105,9 +107,11 @@ from_raw_request_record (Remove_window_record window_id)=Remove_window window_id
 from_raw_request_record (Present_window_record window_id)=Present_window window_id
 from_raw_request_record (Clear_window_record window_id red green blue alpha)=Clear_window window_id red green blue alpha
 from_raw_request_record (Resize_window_record window_id left right up down)=Resize_window window_id left right up down
+from_raw_request_record (Min_size_window_record window_id width height)=Min_size_window window_id width height
+from_raw_request_record (Max_size_window_record window_id width height)=Max_size_window window_id width height
+from_raw_request_record (Io_record io)=Io io
 from_raw_request_record (Render_rectangle_record window_id red green blue alpha left right up down)=Render_rectangle window_id red green blue alpha left right up down
 from_raw_request_record (Render_picture_record window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide)=Render_picture window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide
-from_raw_request_record (Io_record io)=Io io
 from_raw_request_record (Render_rectangle_widget_record transmit seq_id)=Render_rectangle_widget transmit seq_id
 from_raw_request_record (Render_picture_widget_record transmit seq_id)=Render_picture_widget transmit seq_id
 from_raw_request_record (Render_text_widget_record transmit seq_id)=Render_text_widget transmit seq_id

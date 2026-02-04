@@ -2,6 +2,7 @@
 {-# HLINT ignore "Use camelCase" #-}
 module Other.Other where
 import Type
+import qualified Data.Sequence as DS
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified SDL.Raw.Enum as SRE
@@ -22,6 +23,9 @@ from_flip::Flip->SRE.RendererFlip
 from_flip Flip_none=SRE.SDL_FLIP_NONE
 from_flip Flip_horizontal=SRE.SDL_FLIP_HORIZONTAL
 from_flip Flip_vertical=SRE.SDL_FLIP_VERTICAL
+
+simple_request::Raw_request a->Request a
+simple_request request=Request request DS.empty
 
 color::DW.Word8->DW.Word8->DW.Word8->DW.Word8->Color
 color=SRT.Color

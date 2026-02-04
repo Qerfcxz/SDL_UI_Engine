@@ -38,6 +38,10 @@ get_event event window_map key maybe_event_type=do
                 case DIS.lookup (fromIntegral window_id) window_map of
                     Nothing->return (Nothing,Unknown)
                     Just window->return (Nothing,Resize window (fromIntegral data_one) (fromIntegral data_two))
+            SREn.SDL_WINDOWEVENT_SIZE_CHANGED->do
+                case DIS.lookup (fromIntegral window_id) window_map of
+                    Nothing->return (Nothing,Unknown)
+                    Just window->return (Nothing,Change_size window (fromIntegral data_one) (fromIntegral data_two))
             _->return (Nothing,Unknown)
         SRT.TextInputEvent event_type _ window_id text->case event_type of
             SREn.SDL_TEXTINPUT->do
