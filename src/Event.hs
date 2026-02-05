@@ -85,6 +85,11 @@ get_event event window_map key maybe_event_type=do
                         Just window->return (Nothing,At window (Click Click_down Mouse_right (FCT.CInt x) (FCT.CInt y)))
                 _->return (Nothing,Unknown)
             _->return (Nothing,Unknown)
+        SRT.MouseMotionEvent event_type _ window_id _ _ x y delta_x delta_y->case event_type of
+            SREn.SDL_MOUSEMOTION->case DIS.lookup (fromIntegral window_id) window_map of
+                Nothing->return (Nothing,Unknown)
+                Just window->return (Nothing,At window (Move (FCT.CInt x) (FCT.CInt y) (FCT.CInt delta_x) (FCT.CInt delta_y)))
+            _->return (Nothing,Unknown)
         _->return (Nothing,Unknown)
 
 to_key::SREn.Keycode->Key

@@ -22,7 +22,7 @@ data Single_widget a=Label_data Label|Bool_data Bool|Int_data Int|Char_data Char
 
 data Label=Any_label|Bool_label|Int_label|Char_label|List_char_label|Solo_label Label|Tuple_label Label Label|List_label Label Int
 
-data Cursor=Cursor_none|Cursor_single Int Int Int Int|Cursor_double Bool Int Int Int Int Int Int Int Int
+data Cursor=Cursor_none|Cursor_single Bool Int Int Int Int|Cursor_double Bool Bool Int Int Int Int Int Int Int Int
 
 data Flip=Flip_none|Flip_horizontal|Flip_vertical
 
@@ -56,7 +56,7 @@ data Editor_binding=Editor_binding Bool Bool (DSet.Set (Press,DSet.Set Key)) (DS
 
 data Event=Unknown|Quit|Time|At Int Action|Resize Int FCT.CInt FCT.CInt|Change_size Int FCT.CInt FCT.CInt 
 
-data Action=Close|Input DTe.Text|Wheel Int|Press Press Key (DSet.Set Key)|Click Click Mouse FCT.CInt FCT.CInt
+data Action=Close|Input DTe.Text|Wheel Int|Press Press Key (DSet.Set Key)|Click Click Mouse FCT.CInt FCT.CInt|Move FCT.CInt FCT.CInt FCT.CInt FCT.CInt
 
 data Press=Press_up|Press_down deriving (Eq,Ord)
 
