@@ -162,6 +162,12 @@ from_single_widget_request_record (Picture_request_record window_id path render_
 from_single_widget_request_record (Text_request_record window_id find delta_height left right up down seq_paragraph)=Text_request window_id find delta_height left right up down seq_paragraph
 from_single_widget_request_record (Editor_request_record window_id block_number font_size font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height ime_left ime_right ime_up ime_down seq_seq_char)=Editor_request window_id block_number font_size font_path block_find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height ime_left ime_right ime_up ime_down seq_seq_char
 
+instance Convert (Single_widget_request a) (Single_widget_request_record a) where
+    convert=to_single_widget_request_record
+
+instance Convert (Single_widget_request_record a) (Single_widget_request a) where
+    convert=from_single_widget_request_record
+
 data Text_binding_record=Text_binding_record {wheel::Bool,up_press::DSet.Set (Press,DSet.Set Key),down_press::DSet.Set (Press,DSet.Set Key),min_press::DSet.Set (Press,DSet.Set Key),max_press::DSet.Set (Press,DSet.Set Key),down_click::DSet.Set (Click,Mouse)}
 
 to_text_binding_record::Text_binding->Text_binding_record
