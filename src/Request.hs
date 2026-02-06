@@ -206,7 +206,7 @@ do_request_render_editor_widget::GS.HasCallStack=>DS.Seq Instruction->Combined_w
 do_request_render_editor_widget instruction combined_widget engine=do
     new_combined_widget<-DF.foldlM (\mix this_instruction->render_editor_widget_instruction this_instruction engine mix) combined_widget instruction
     let widget=get_engine_widget engine in case new_combined_widget of
-        Leaf_widget _ (Editor window_id block_number row_number row _ font_size _ path _ typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha _ _ _ _ _ _ _ font_height block_width delta_height x y _ _ _ _ cursor seq_seq_char)->let (new_combined_id,new_single_id)=get_widget_id path engine in do
+        Leaf_widget _ (Editor window_id block_number row_number row _ font_size _ path _ typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha _ _ _ _ _ _ _ _ _ _ _ font_height block_width delta_height x y _ _ _ _ _ _ _ _ cursor seq_seq_char)->let (new_combined_id,new_single_id)=get_widget_id path engine in do
             new_widget<-error_update_update_io "do_request_render_editor_widget: error 1" "do_request_render_editor_widget: error 2" new_combined_id new_single_id (from_render_editor (get_renderer window_id engine) block_number row_number row font_size typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char) widget
             return (set_engine_widget new_widget engine)
         _->error "do_request_render_editor_widget: error 3"
