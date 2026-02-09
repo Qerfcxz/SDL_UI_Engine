@@ -1,7 +1,6 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 module Request where
-import Block
 import Editor.Render
 import Other.Error
 import Other.Get
@@ -13,6 +12,7 @@ import Widget.Alter
 import Widget.Create
 import Widget.Remove
 import Widget.Replace
+import Block
 import Instruction
 import Type
 import qualified Control.Monad as CM
@@ -68,114 +68,109 @@ do_request (Request raw_request instruction) engine=case raw_request of
             catch_error "do_request: error 3" 0 (SRV.setRenderDrawBlendMode renderer SRE.SDL_BLENDMODE_BLEND)
             sdl_window_id<-SRV.getWindowID new_window
             let new_sdl_window_id=fromIntegral sdl_window_id in return (update_engine_window_map (error_insert "do_request: error 4" new_sdl_window_id window_id) (update_engine_window (error_insert "do_request: error 5" new_window_id (Window new_sdl_window_id new_window renderer width height 0 0 1 1)) engine))
-    Remove_window window_id->do
-        new_window_id<-DF.foldlM (\mix this_instruction->remove_window_instruction this_instruction engine mix) window_id instruction
-        case DIS.updateLookupWithKey (\_ _->Nothing) new_window_id (get_engine_window engine) of
-            (Nothing,_)->error "do_request: error 6"
-            (Just (Window sdl_window_id this_window renderer _ _ _ _ _ _),new_window)->do
-                SRV.destroyRenderer renderer
-                SRV.destroyWindow this_window
-                return (update_engine_window_map (error_remove_simple "do_request: error 7" sdl_window_id) (set_engine_window (error_remove_simple "do_request: error 8" sdl_window_id new_window) engine))
+    Remove_window window_id->case DIS.updateLookupWithKey (\_ _->Nothing) window_id (get_engine_window engine) of
+        (Nothing,_)->error "do_request: error 6"
+        (Just window,other_window)->do
+            Window sdl_window_id sdl_window renderer _ _ _ _ _ _<-DF.foldlM (\mix this_instruction->remove_window_instruction this_instruction engine mix) window instruction
+            SRV.destroyRenderer renderer
+            SRV.destroyWindow sdl_window
+            return (update_engine_window_map (error_remove_simple "do_request: error 7" sdl_window_id) (set_engine_window (error_remove_simple "do_request: error 8" sdl_window_id other_window) engine))
     Present_window window_id->do
-        new_window_id<-DF.foldlM (\mix this_instruction->present_window_instruction this_instruction engine mix) window_id instruction
-        SRV.renderPresent (get_renderer new_window_id engine)
+        Window _ _ renderer _ _ _ _ _ _<-DF.foldlM (\mix this_instruction->present_window_instruction this_instruction engine mix) (get_window window_id engine) instruction
+        SRV.renderPresent renderer
         return engine
     Clear_window window_id red green blue alpha->do
-        (new_window_id,new_red,new_green,new_blue,new_alpha)<-DF.foldlM (\mix this_instruction->clear_window_instruction this_instruction engine mix) (window_id,red,green,blue,alpha) instruction
-        let renderer=get_renderer new_window_id engine
+        (Window _ _ renderer _ _ _ _ _ _,new_red,new_green,new_blue,new_alpha)<-DF.foldlM (\mix this_instruction->clear_window_instruction this_instruction engine mix) (get_window window_id engine,red,green,blue,alpha) instruction
         catch_error "do_request: error 9" 0 (SRV.setRenderDrawColor renderer new_red new_green new_blue new_alpha)
         catch_error "do_request: error 10" 0 (SRV.renderClear renderer)
         return engine
     Resize_window window_id left right up down->do
-        (new_window_id,new_left,new_right,new_up,new_down)<-DF.foldlM (\mix this_instruction->resize_window_instruction this_instruction engine mix) (window_id,left,right,up,down) instruction
-        let width=new_right-new_left in let height=new_down-new_up in case DIS.updateLookupWithKey (\_ (Window sdl_window_id sdl_window renderer design_width design_height _ _ _ _)->let (x,y,design_size,size)=adaptive_window design_width design_height width height in Just (Window sdl_window_id sdl_window renderer design_width design_height x y design_size size)) new_window_id (get_engine_window engine) of
-            (Nothing,_)->error "do_request: error 11"
-            (Just (Window _ sdl_window _ _ _ _ _ _ _),new_window)->do
-                SRV.setWindowPosition sdl_window new_left new_up
-                SRV.setWindowSize sdl_window width height
-                return (set_engine_window new_window engine)
+        new_window<-DIS.alterF (do_request_resize_window instruction engine left right up down) window_id (get_engine_window engine)
+        return (set_engine_window new_window engine)
     Min_size_window window_id width height->do
-        (new_window_id,new_width,new_height)<-DF.foldlM (\mix this_instruction->min_size_window_instruction this_instruction engine mix) (window_id,width,height) instruction
-        case get_window new_window_id engine of
-            Window _ sdl_window _ _ _ _ _ _ _->do
-                SRV.setWindowMinimumSize sdl_window new_width new_height
-                return engine
+        (Window _ sdl_window _ _ _ _ _ _ _,new_width,new_height)<-DF.foldlM (\mix this_instruction->min_size_window_instruction this_instruction engine mix) (get_window window_id engine,width,height) instruction
+        SRV.setWindowMinimumSize sdl_window new_width new_height
+        return engine
     Max_size_window window_id width height->do
-        (new_window_id,new_width,new_height)<-DF.foldlM (\mix this_instruction->max_size_window_instruction this_instruction engine mix) (window_id,width,height) instruction
-        case get_window new_window_id engine of
-            Window _ sdl_window _ _ _ _ _ _ _->do
-                SRV.setWindowMaximumSize sdl_window new_width new_height
-                return engine
+        (Window _ sdl_window _ _ _ _ _ _ _,new_width,new_height)<-DF.foldlM (\mix this_instruction->max_size_window_instruction this_instruction engine mix) (get_window window_id engine,width,height) instruction
+        SRV.setWindowMaximumSize sdl_window new_width new_height
+        return engine
     Whether_bordered_window window_id whether->do
-        (new_window_id,new_whether)<-DF.foldlM (\mix this_instruction->whether_bordered_window_instruction this_instruction engine mix) (window_id,whether) instruction
-        case get_window new_window_id engine of
-            Window _ sdl_window _ _ _ _ _ _ _->do
-                SRV.setWindowBordered sdl_window new_whether
-                return engine
+        (Window _ sdl_window _ _ _ _ _ _ _,new_whether)<-DF.foldlM (\mix this_instruction->whether_bordered_window_instruction this_instruction engine mix) (get_window window_id engine,whether) instruction
+        SRV.setWindowBordered sdl_window new_whether
+        return engine
     Io handle->do
         new_handle<-DF.foldlM (\mix this_instruction->io_instruction this_instruction engine mix) handle instruction
         new_handle engine
     Render_rectangle window_id red green blue alpha left right up down->do
-        (new_window_id,new_red,new_green,new_blue,new_alpha,new_left,new_right,new_up,new_down)<-DF.foldlM (\mix this_instruction->render_rectangle_instruction this_instruction engine mix) (window_id,red,green,blue,alpha,left,right,up,down) instruction
-        let renderer=get_renderer new_window_id engine
-        catch_error "do_request: error 12" 0 (SRV.setRenderDrawColor renderer new_red new_green new_blue new_alpha)
+        (Window _ _ renderer _ _ _ _ _ _,new_red,new_green,new_blue,new_alpha,new_left,new_right,new_up,new_down)<-DF.foldlM (\mix this_instruction->render_rectangle_instruction this_instruction engine mix) (get_window window_id engine,red,green,blue,alpha,left,right,up,down) instruction
+        catch_error "do_request: error 11" 0 (SRV.setRenderDrawColor renderer new_red new_green new_blue new_alpha)
         FMA.alloca $ \rect->do
             FS.poke rect (SRT.Rect new_left new_up (new_right-new_left) (new_down-new_up))
-            catch_error "do_request: error 13" 0 (SRV.renderFillRect renderer rect)
+            catch_error "do_request: error 12" 0 (SRV.renderFillRect renderer rect)
         return engine
     Render_picture window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide->do
-        (new_window_id,new_path,new_render_flip,new_angle,new_x,new_y,new_width_multiply,new_width_divide,new_height_multiply,new_height_divide)<-DF.foldlM (\mix this_instruction->render_picture_instruction this_instruction engine mix) (window_id,path,render_flip,angle,x,y,width_multiply,width_divide,height_multiply,height_divide) instruction
-        let renderer=get_renderer new_window_id engine
+        (Window _ _ renderer _ _ _ _ _ _,new_path,new_render_flip,new_angle,new_x,new_y,new_width_multiply,new_width_divide,new_height_multiply,new_height_divide)<-DF.foldlM (\mix this_instruction->render_picture_instruction this_instruction engine mix) (get_window window_id engine,path,render_flip,angle,x,y,width_multiply,width_divide,height_multiply,height_divide) instruction
         surface<-DB.useAsCString (DTE.encodeUtf8 new_path) SRI.load
-        CM.when (surface==FP.nullPtr) $ error "do_request: error 14"
+        CM.when (surface==FP.nullPtr) $ error "do_request: error 13"
         SRT.Surface _ width height _ _ _ _<-FS.peek surface
         texture<-SRV.createTextureFromSurface renderer surface
         SRV.freeSurface surface
-        CM.when (texture==FP.nullPtr) $ error "do_request: error 15"
-        let new_width=div (width*new_width_multiply) new_width_divide in let new_height=div (height*new_height_multiply) new_height_divide in catch_error "do_request: error 16" 0 (FMU.with (SRT.Rect (new_x-div new_width 2) (new_y-div new_height 2) new_width new_height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect new_angle FP.nullPtr (from_flip new_render_flip)))
+        CM.when (texture==FP.nullPtr) $ error "do_request: error 14"
+        let new_width=div (width*new_width_multiply) new_width_divide in let new_height=div (height*new_height_multiply) new_height_divide in catch_error "do_request: error 15" 0 (FMU.with (SRT.Rect (new_x-div new_width 2) (new_y-div new_height 2) new_width new_height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect new_angle FP.nullPtr (from_flip new_render_flip)))
         SRV.destroyTexture texture
         return engine
     Render_rectangle_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in let widget=get_engine_widget engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                combined_widget<-DF.foldlM (\mix this_instruction->render_rectangle_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 17" "do_request: error 18" combined_id single_id widget) new_instruction
+                combined_widget<-DF.foldlM (\mix this_instruction->render_rectangle_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 16" "do_request: error 17" combined_id single_id widget) new_instruction
                 do_request_render_rectangle_widget combined_widget engine
         else do
-            combined_widget<-DF.foldlM (\mix this_instruction->render_rectangle_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 19" "do_request: error 20" combined_id single_id widget) instruction
+            combined_widget<-DF.foldlM (\mix this_instruction->render_rectangle_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 18" "do_request: error 19" combined_id single_id widget) instruction
             do_request_render_rectangle_widget combined_widget engine
     Render_picture_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in let widget=get_engine_widget engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                combined_widget<-DF.foldlM (\mix this_instruction->render_picture_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 21" "do_request: error 22" combined_id single_id widget) new_instruction
+                combined_widget<-DF.foldlM (\mix this_instruction->render_picture_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 20" "do_request: error 21" combined_id single_id widget) new_instruction
                 do_request_render_picture_widget combined_widget engine
         else do
-            combined_widget<-DF.foldlM (\mix this_instruction->render_picture_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 23" "do_request: error 24" combined_id single_id widget) instruction
+            combined_widget<-DF.foldlM (\mix this_instruction->render_picture_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 22" "do_request: error 23" combined_id single_id widget) instruction
             do_request_render_picture_widget combined_widget engine
     Render_text_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                let (combined_widget,new_widget)=error_get_update_update "do_request: error 25" "do_request: error 26" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
+                let (combined_widget,new_widget)=error_get_update_update "do_request: error 24" "do_request: error 25" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
                 do_request_render_text_widget new_instruction combined_widget (set_engine_widget new_widget engine)
         else do
-            let (combined_widget,new_widget)=error_get_update_update "do_request: error 27" "do_request: error 28" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
+            let (combined_widget,new_widget)=error_get_update_update "do_request: error 26" "do_request: error 27" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
             do_request_render_text_widget instruction combined_widget (set_engine_widget new_widget engine)
     Render_editor_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                let (combined_widget,new_widget)=error_get_update_update "do_request: error 29" "do_request: error 30" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
+                let (combined_widget,new_widget)=error_get_update_update "do_request: error 28" "do_request: error 29" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
                 do_request_render_editor_widget new_instruction combined_widget (set_engine_widget new_widget engine)
         else do
-            let (combined_widget,new_widget)=error_get_update_update "do_request: error 31" "do_request: error 32" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
+            let (combined_widget,new_widget)=error_get_update_update "do_request: error 30" "do_request: error 31" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
             do_request_render_editor_widget instruction combined_widget (set_engine_widget new_widget engine)
     Update_block_font_widget transmit size block_width set_char seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
-            Just new_instruction->update_engine_widget_io (error_update_update_io "do_request: error 33" "do_request: error 34" combined_id single_id (update_block_font new_instruction engine size block_width set_char)) engine
-        else update_engine_widget_io (error_update_update_io "do_request: error 35" "do_request: error 36" combined_id single_id (update_block_font instruction engine size block_width set_char)) engine
+            Just new_instruction->update_engine_widget_io (error_update_update_io "do_request: error 32" "do_request: error 33" combined_id single_id (update_block_font new_instruction engine size block_width set_char)) engine
+        else update_engine_widget_io (error_update_update_io "do_request: error 34" "do_request: error 35" combined_id single_id (update_block_font instruction engine size block_width set_char)) engine
+
+do_request_resize_window::GS.HasCallStack=>DS.Seq Instruction->Engine a->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Maybe Window->IO (Maybe Window)
+do_request_resize_window _ _ _ _ _ _ Nothing=error "do_request_resize_window: error 1"
+do_request_resize_window instruction engine left right up down (Just window)=do
+    (Window sdl_window_id sdl_window renderer design_width design_height _ _ _ _,new_left,new_right,new_up,new_down)<-DF.foldlM (\mix this_instruction->resize_window_instruction this_instruction engine mix) (window,left,right,up,down) instruction
+    SRV.setWindowPosition sdl_window new_left new_up
+    let width=new_right-new_left
+    let height=new_down-new_up
+    SRV.setWindowSize sdl_window width height
+    let (x,y,design_size,size)=adaptive_window design_width design_height width height in return (Just (Window sdl_window_id sdl_window renderer design_width design_height x y design_size size))
 
 do_request_render_rectangle_widget::GS.HasCallStack=>Combined_widget a->Engine a->IO (Engine a)
 do_request_render_rectangle_widget (Leaf_widget _ (Rectangle window_id red green blue alpha _ _ _ _ x y width height)) engine=let renderer=get_renderer window_id engine in do
