@@ -51,6 +51,20 @@ flip_picture_combined_widget::GS.HasCallStack=>Flip->Combined_widget a->Combined
 flip_picture_combined_widget render_flip (Leaf_widget next_id (Picture window_id texture _ angle design_x design_y width_multiply width_divide height_multiply height_divide original_width original_height x y width height))=Leaf_widget next_id (Picture window_id texture render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide original_width original_height x y width height)
 flip_picture_combined_widget _ _=error "flip_picture_combined_widget: error 1"
 
+bind_text::Text_binding->DS.Seq Int->Engine a->Engine a
+bind_text text_binding seq_id=update_combined_widget seq_id (bind_text_combined_widget text_binding)
+
+bind_text_combined_widget::GS.HasCallStack=>Text_binding->Combined_widget a->Combined_widget a
+bind_text_combined_widget text_binding (Leaf_widget next_id (Text window_id row max_row render_flip select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row _))=Leaf_widget next_id (Text window_id row max_row render_flip select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row text_binding)
+bind_text_combined_widget _ _=error "bind_text_combined_widget: error 1"
+
+bind_editor::Editor_binding->DS.Seq Int->Engine a->Engine a
+bind_editor editor_binding seq_id=update_combined_widget seq_id (bind_editor_combined_widget editor_binding)
+
+bind_editor_combined_widget::GS.HasCallStack=>Editor_binding->Combined_widget a->Combined_widget a
+bind_editor_combined_widget editor_binding (Leaf_widget next_id (Editor window_id block_number row_number row design_font_size font_size render_flip path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height design_ime_left design_ime_right design_ime_up design_ime_down font_height block_width delta_height x y left right up down ime_left ime_right ime_up ime_down cursor seq_seq_char _))=Leaf_widget next_id (Editor window_id block_number row_number row design_font_size font_size render_flip path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height design_block_width design_delta_height design_x design_y design_extra_width design_extra_height design_ime_left design_ime_right design_ime_up design_ime_down font_height block_width delta_height x y left right up down ime_left ime_right ime_up ime_down cursor seq_seq_char editor_binding)
+bind_editor_combined_widget _ _=error "bind_editor_combined_widget: error 1"
+
 text_color_editor::DW.Word8->DW.Word8->DW.Word8->DW.Word8->DS.Seq Int->Engine a->Engine a
 text_color_editor red green blue alpha seq_id=update_combined_widget seq_id (text_color_editor_combined_widget red green blue alpha)
 

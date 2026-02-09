@@ -36,6 +36,15 @@ clear_window_instruction _ _=return
 resize_window_instruction::Instruction->Engine a->(Int,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO (Int,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
 resize_window_instruction _ _=return
 
+min_size_window_instruction::Instruction->Engine a->(Int,FCT.CInt,FCT.CInt)->IO (Int,FCT.CInt,FCT.CInt)
+min_size_window_instruction _ _=return
+
+max_size_window_instruction::Instruction->Engine a->(Int,FCT.CInt,FCT.CInt)->IO (Int,FCT.CInt,FCT.CInt)
+max_size_window_instruction _ _=return
+
+whether_bordered_window_instruction::Instruction->Engine a->(Int,Bool)->IO (Int,Bool)
+whether_bordered_window_instruction _ _=return
+
 io_instruction::Instruction->Engine a->(Engine a->IO (Engine a))->IO (Engine a->IO (Engine a))
 io_instruction _ _=return
 

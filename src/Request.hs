@@ -94,18 +94,24 @@ do_request (Request raw_request instruction) engine=case raw_request of
                 SRV.setWindowPosition sdl_window new_left new_up
                 SRV.setWindowSize sdl_window width height
                 return (set_engine_window new_window engine)
-    Min_size_window window_id width height->case get_window window_id engine of
-        Window _ sdl_window _ _ _ _ _ _ _->do
-            SRV.setWindowMinimumSize sdl_window width height
-            return engine
-    Max_size_window window_id width height->case get_window window_id engine of
-        Window _ sdl_window _ _ _ _ _ _ _->do
-            SRV.setWindowMaximumSize sdl_window width height
-            return engine
-    Whether_bordered_window window_id whether->case get_window window_id engine of
-        Window _ sdl_window _ _ _ _ _ _ _->do
-            SRV.setWindowBordered sdl_window whether
-            return engine
+    Min_size_window window_id width height->do
+        (new_window_id,new_width,new_height)<-DF.foldlM (\mix this_instruction->min_size_window_instruction this_instruction engine mix) (window_id,width,height) instruction
+        case get_window new_window_id engine of
+            Window _ sdl_window _ _ _ _ _ _ _->do
+                SRV.setWindowMinimumSize sdl_window new_width new_height
+                return engine
+    Max_size_window window_id width height->do
+        (new_window_id,new_width,new_height)<-DF.foldlM (\mix this_instruction->max_size_window_instruction this_instruction engine mix) (window_id,width,height) instruction
+        case get_window new_window_id engine of
+            Window _ sdl_window _ _ _ _ _ _ _->do
+                SRV.setWindowMaximumSize sdl_window new_width new_height
+                return engine
+    Whether_bordered_window window_id whether->do
+        (new_window_id,new_whether)<-DF.foldlM (\mix this_instruction->whether_bordered_window_instruction this_instruction engine mix) (window_id,whether) instruction
+        case get_window new_window_id engine of
+            Window _ sdl_window _ _ _ _ _ _ _->do
+                SRV.setWindowBordered sdl_window new_whether
+                return engine
     Io handle->do
         new_handle<-DF.foldlM (\mix this_instruction->io_instruction this_instruction engine mix) handle instruction
         new_handle engine
