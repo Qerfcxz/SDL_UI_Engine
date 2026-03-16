@@ -23,7 +23,7 @@ import qualified SDL.Raw.Event as SRE
 import qualified SDL.Raw.Font as SRF
 import qualified SDL.Raw.Types as SRT
 
-create_editor_trigger::(Engine a->Event->Id)->DSeq.Seq Int->DSeq.Seq (DSeq.Seq Int)->Engine a->IO (Engine a)
+create_editor_trigger::(DSeq.Seq Int->Engine a->Event->Id)->DSeq.Seq Int->DSeq.Seq (DSeq.Seq Int)->Engine a->IO (Engine a)
 create_editor_trigger next_id seq_id seq_seq_id engine=let (combined_id,single_id)=get_widget_id seq_id engine in create_widget combined_id single_id (Leaf_widget_request next_id (Io_trigger_request (create_editor_trigger_a seq_seq_id))) engine
 
 create_editor_trigger_a::DSeq.Seq (DSeq.Seq Int)->Event->Engine a->IO (Engine a)

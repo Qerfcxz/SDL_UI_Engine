@@ -14,6 +14,7 @@ import qualified Control.Monad as CM
 import qualified Data.ByteString as DB
 import qualified Data.IntMap.Strict as DIS
 import qualified Data.Sequence as DS
+import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
@@ -23,6 +24,7 @@ import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 import qualified GHC.Stack as GS
 import qualified SDL.Raw.Font as SRF
+import qualified SDL.Raw.Image as SRI
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Video as SRV
 
@@ -53,7 +55,11 @@ create_single_widget _ window (Picture_request window_id path render_flip angle 
         SRV.freeSurface surface
         CM.when (texture==FP.nullPtr) $ error "create_single_widget: error 4"
         let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id texture render_flip angle x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
-create_single_widget start_id window (Text_request window_id find delta_height left right up down seq_paragraph text_binding) widget=case error_lookup "create_single_widget: error 5" window_id window of
+create_single_widget _ window (Animation_request window_id seq_path render_flip angle x y width_multiply width_divide height_multiply height_divide) _=case error_lookup "create_single_widget: error 5" window_id window of
+    (Window _ _ renderer _ _ window_x window_y design_size size)->do
+        seq_frame<-DS.traverseWithIndex (\_ path->create_frame path renderer window_x window_y design_size size x y width_multiply width_divide height_multiply height_divide) seq_path
+        return (Animation window_id (DS.length seq_frame) 0 seq_frame render_flip angle x y width_multiply width_divide height_multiply height_divide)
+create_single_widget start_id window (Text_request window_id find delta_height left right up down seq_paragraph text_binding) widget=case error_lookup "create_single_widget: error 6" window_id window of
     (Window _ _ renderer _ _ x y design_size size)->let new_delta_height=div (delta_height*size) design_size in do
         seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
         let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max seq_row new_up new_down in return (Text window_id 0 max_row False False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph seq_row text_binding)
@@ -63,6 +69,16 @@ create_single_widget start_id window (Editor_request window_id block_number font
     let half_width=div (fromIntegral block_number*new_block_width) 2
     let half_height=div (div (height*size) design_size) 2
     return (Editor window_id block_number (fromIntegral (div (div ((height+delta_height)*size) design_size) (font_height+new_delta_height))) 0 font_size new_font_size False path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height block_width delta_height x y extra_width extra_height ime_left ime_right ime_up ime_down font_height new_block_width new_delta_height (window_x+div (x*size) design_size-div (fromIntegral block_number*new_block_width) 2) (window_y+div (y*size) design_size-half_height) (window_x+div ((x-extra_width)*size) design_size-half_width) (window_x+div ((x+extra_width)*size) design_size+half_width) (window_y+div ((y-extra_height)*size) design_size-half_height) (window_y+div ((y+extra_height)*size) design_size+half_height) (window_x+div ((x+ime_left)*size) design_size) (window_x+div ((x+ime_right)*size) design_size) (window_y+div ((y+ime_up)*size) design_size) (window_y+div ((y+ime_down)*size) design_size) Cursor_none (from_seq_seq_char intmap_texture block_number new_block_width seq_seq_char DS.empty) editor_binding)
+
+create_frame::GS.HasCallStack=>DT.Text->SRT.Renderer->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->IO Frame
+create_frame path renderer window_x window_y design_size size x y width_multiply width_divide height_multiply height_divide=do
+    surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load
+    CM.when (surface==FP.nullPtr) $ error "create_frame: error 1"
+    (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
+    texture<-SRV.createTextureFromSurface renderer surface
+    SRV.freeSurface surface
+    CM.when (texture==FP.nullPtr) $ error "create_frame: error 2"
+    let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Frame texture width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
 
 create_font::GS.HasCallStack=>FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font))
 create_font _ DS.Empty=return DIS.empty

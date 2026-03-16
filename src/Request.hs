@@ -138,29 +138,38 @@ do_request (Request raw_request instruction) engine=case raw_request of
         else do
             combined_widget<-DF.foldlM (\mix this_instruction->render_picture_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 22" "do_request: error 23" combined_id single_id widget) instruction
             do_request_render_picture_widget combined_widget engine
+    Render_animation_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in let widget=get_engine_widget engine in if transmit
+        then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
+            Nothing->return engine
+            Just new_instruction->do
+                combined_widget<-DF.foldlM (\mix this_instruction->render_animation_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 24" "do_request: error 25" combined_id single_id widget) new_instruction
+                do_request_render_animation_widget combined_widget engine
+        else do
+            combined_widget<-DF.foldlM (\mix this_instruction->render_animation_widget_instruction this_instruction engine mix) (error_lookup_lookup "do_request: error 26" "do_request: error 27" combined_id single_id widget) instruction
+            do_request_render_animation_widget combined_widget engine
     Render_text_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                let (combined_widget,new_widget)=error_get_update_update "do_request: error 24" "do_request: error 25" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
+                let (combined_widget,new_widget)=error_get_update_update "do_request: error 28" "do_request: error 29" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
                 do_request_render_text_widget new_instruction combined_widget (set_engine_widget new_widget engine)
         else do
-            let (combined_widget,new_widget)=error_get_update_update "do_request: error 26" "do_request: error 27" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
+            let (combined_widget,new_widget)=error_get_update_update "do_request: error 30" "do_request: error 31" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
             do_request_render_text_widget instruction combined_widget (set_engine_widget new_widget engine)
     Render_editor_widget transmit seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                let (combined_widget,new_widget)=error_get_update_update "do_request: error 28" "do_request: error 29" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
+                let (combined_widget,new_widget)=error_get_update_update "do_request: error 32" "do_request: error 33" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
                 do_request_render_editor_widget new_instruction combined_widget (set_engine_widget new_widget engine)
         else do
-            let (combined_widget,new_widget)=error_get_update_update "do_request: error 30" "do_request: error 31" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
+            let (combined_widget,new_widget)=error_get_update_update "do_request: error 34" "do_request: error 35" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
             do_request_render_editor_widget instruction combined_widget (set_engine_widget new_widget engine)
     Update_block_font_widget transmit size block_width set_char seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
-            Just new_instruction->update_engine_widget_io (error_update_update_io "do_request: error 32" "do_request: error 33" combined_id single_id (update_block_font new_instruction engine size block_width set_char)) engine
-        else update_engine_widget_io (error_update_update_io "do_request: error 34" "do_request: error 35" combined_id single_id (update_block_font instruction engine size block_width set_char)) engine
+            Just new_instruction->update_engine_widget_io (error_update_update_io "do_request: error 36" "do_request: error 37" combined_id single_id (update_block_font new_instruction engine size block_width set_char)) engine
+        else update_engine_widget_io (error_update_update_io "do_request: error 38" "do_request: error 39" combined_id single_id (update_block_font instruction engine size block_width set_char)) engine
 
 do_request_resize_window::GS.HasCallStack=>DS.Seq Instruction->Engine a->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Maybe Window->IO (Maybe Window)
 do_request_resize_window _ _ _ _ _ _ Nothing=error "do_request_resize_window: error 1"
@@ -186,6 +195,14 @@ do_request_render_picture_widget (Leaf_widget _ (Picture window_id texture rende
     catch_error "do_request_render_picture_widget: error 1" 0 (FMU.with (SRT.Rect x y width height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect angle FP.nullPtr (from_flip render_flip)))
     return engine
 do_request_render_picture_widget _ _=error "do_request_render_picture_widget: error 2"
+
+do_request_render_animation_widget::GS.HasCallStack=>Combined_widget a->Engine a->IO (Engine a)
+do_request_render_animation_widget (Leaf_widget _ (Animation window_id _ index seq_frame render_flip angle _ _ _ _ _ _)) engine=case DS.lookup index seq_frame of
+    Just (Frame texture _ _ x y width height)->let renderer=get_renderer window_id engine in do
+        catch_error "do_request_render_animation_widget: error 1" 0 (FMU.with (SRT.Rect x y width height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect angle FP.nullPtr (from_flip render_flip)))
+        return engine
+    Nothing->error "do_request_render_animation_widget: error 2"
+do_request_render_animation_widget _ _=error "do_request_render_animation_widget: error 3"
 
 do_request_render_text_widget::GS.HasCallStack=>DS.Seq Instruction->Combined_widget a->Engine a->IO (Engine a)
 do_request_render_text_widget instruction combined_widget engine=do

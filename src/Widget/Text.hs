@@ -11,7 +11,7 @@ import qualified Data.Sequence as DSeq
 import qualified Data.Set as DSet
 import qualified GHC.Stack as GS
 
-create_text_trigger::(Engine a->Event->Id)->DSeq.Seq Int->DSeq.Seq (DSeq.Seq Int)->Engine a->IO (Engine a)
+create_text_trigger::(DSeq.Seq Int->Engine a->Event->Id)->DSeq.Seq Int->DSeq.Seq (DSeq.Seq Int)->Engine a->IO (Engine a)
 create_text_trigger next_id seq_id seq_seq_id engine=let (combined_id,single_id)=get_widget_id seq_id engine in create_widget combined_id single_id (Leaf_widget_request next_id (Trigger_request (\event (Engine widget window window_map request key main_id start_id count_id time)->let new_widget=DF.foldl' (\this_widget this_seq_id->create_text_trigger_a this_seq_id start_id event this_widget) widget seq_seq_id in Engine new_widget window window_map request key main_id start_id count_id time))) engine
 
 create_text_trigger_a::DSeq.Seq Int->Int->Event->DIS.IntMap (DIS.IntMap (Combined_widget a))->DIS.IntMap (DIS.IntMap (Combined_widget a))

@@ -100,14 +100,21 @@ alter_widget_b _ window _ (Picture_request window_id path render_flip angle x y 
             CM.when (new_texture==FP.nullPtr) $ error "alter_widget_b: error 16"
             let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id new_texture render_flip angle x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
     _->error "alter_widget_b: error 17"
+alter_widget_b _ window _ (Animation_request window_id seq_path render_flip angle x y width_multiply width_divide height_multiply height_divide) this_widget=case this_widget of
+    Animation _ _ _ seq_frame _ _ _ _ _ _ _ _->case error_lookup "alter_widget_b: error 18" window_id window of
+        (Window _ _ renderer _ _ window_x window_y design_size size)->do
+            DF.mapM_ (\(Frame texture _ _ _ _ _ _)->SRV.destroyTexture texture) seq_frame
+            new_seq_frame<-DS.traverseWithIndex (\_ path->create_frame path renderer window_x window_y design_size size x y width_multiply width_divide height_multiply height_divide) seq_path
+            return (Animation window_id (DS.length seq_frame) 0 new_seq_frame render_flip angle x y width_multiply width_divide height_multiply height_divide)
+    _->error "alter_widget_b: error 19"
 alter_widget_b start_id window widget (Text_request window_id find delta_height left right up down seq_paragraph text_binding) this_widget=case this_widget of
-    Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row _->case error_lookup "alter_widget_b: error 18" window_id window of
+    Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row _->case error_lookup "alter_widget_b: error 20" window_id window of
         (Window _ _ renderer _ _ x y design_size size)->do
             DF.mapM_ clean_row seq_row
             let new_delta_height=div (delta_height*size) design_size
             new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
             let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max new_seq_row new_up new_down in return (Text window_id 0 max_row False False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row text_binding)
-    _->error "alter_widget_b: error 19"
+    _->error "alter_widget_b: error 21"
 alter_widget_b start_id window widget (Editor_request window_id block_number font_size path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height ime_left ime_right ime_up ime_down seq_seq_char editor_binding) this_widget=case this_widget of
     Editor {}->let (window_x,window_y,design_size,size)=get_adaptive_window window_id window in let new_block_width=div (block_width*size) design_size in let (_,_,_,new_font_size,_,_,_,_,_,_,_,font_height,intmap_texture)=find_block_font find widget block_width new_block_width design_size size path start_id font_size in FMA.alloca $ \text_color->do
         FS.poke text_color (color text_red text_green text_blue text_alpha)
@@ -115,4 +122,4 @@ alter_widget_b start_id window widget (Editor_request window_id block_number fon
         let half_width=div (fromIntegral block_number*new_block_width) 2
         let half_height=div (div (height*size) design_size) 2
         return (Editor window_id block_number (fromIntegral (div (div ((height+delta_height)*size) design_size) (font_height+new_delta_height))) 0 font_size new_font_size False path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height block_width delta_height x y extra_width extra_height ime_left ime_right ime_up ime_down font_height new_block_width new_delta_height (window_x+div (x*size) design_size-div (fromIntegral block_number*new_block_width) 2) (window_y+div (y*size) design_size-half_height) (window_x+div ((x-extra_width)*size) design_size-half_width) (window_x+div ((x+extra_width)*size) design_size+half_width) (window_y+div ((y-extra_height)*size) design_size-half_height) (window_y+div ((y+extra_height)*size) design_size+half_height) (window_x+div ((x+ime_left)*size) design_size) (window_x+div ((x+ime_right)*size) design_size) (window_y+div ((y+ime_up)*size) design_size) (window_y+div ((y+ime_down)*size) design_size) Cursor_none (from_seq_seq_char intmap_texture block_number new_block_width seq_seq_char DS.empty) editor_binding)
-    _->error "alter_widget_b: error 20"
+    _->error "alter_widget_b: error 22"

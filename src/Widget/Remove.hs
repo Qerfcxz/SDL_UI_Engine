@@ -30,6 +30,7 @@ remove_single_widget (Block_font _ _ _ _ _ font)=do
     return ()
 remove_single_widget (Rectangle {})=return ()
 remove_single_widget (Picture _ texture _ _ _ _ _ _ _ _ _ _ _ _ _ _)=SRV.destroyTexture texture
+remove_single_widget (Animation _ _ _ seq_frame _ _ _ _ _ _ _ _)=DF.mapM_ (\(Frame texture _ _ _ _ _ _)->SRV.destroyTexture texture) seq_frame
 remove_single_widget (Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row _)=DF.mapM_ clean_row seq_row
 remove_single_widget (Editor {})=return ()
 

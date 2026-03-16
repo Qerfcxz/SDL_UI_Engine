@@ -62,9 +62,17 @@ render_rectangle_widget_instruction _ _=return
 render_picture_widget_instruction::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
 render_picture_widget_instruction (Move_widget move_x move_y) engine=return.move_picture_combined_widget move_x move_y engine
 render_picture_widget_instruction (Move_picture move_x move_y) engine=return.move_picture_combined_widget move_x move_y engine
-render_picture_widget_instruction (Scale_picture width_multiply width_divide height_multiply height_divide) _=return.scale_picture_combined_widget width_multiply width_divide height_multiply height_divide
+render_picture_widget_instruction (Scale_picture width_multiply width_divide height_multiply height_divide) engine=return.scale_picture_combined_widget width_multiply width_divide height_multiply height_divide engine
 render_picture_widget_instruction (Flip_picture render_flip) _=return.flip_picture_combined_widget render_flip
 render_picture_widget_instruction _ _=return
+
+render_animation_widget_instruction::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
+render_animation_widget_instruction (Move_widget move_x move_y) engine=return.move_animation_combined_widget move_x move_y engine
+render_animation_widget_instruction (Move_animation move_x move_y) engine=return.move_animation_combined_widget move_x move_y engine
+render_animation_widget_instruction (Scale_animation width_multiply width_divide height_multiply height_divide) engine=return.scale_animation_combined_widget width_multiply width_divide height_multiply height_divide engine
+render_animation_widget_instruction (Flip_animation render_flip) _=return.flip_animation_combined_widget render_flip
+render_animation_widget_instruction (Goto_animation goto) _=return.goto_animation_combined_widget goto
+render_animation_widget_instruction _ _=return
 
 render_text_widget_instruction::Instruction->Engine a->(Combined_widget a->IO (Combined_widget a))
 render_text_widget_instruction (Move_widget move_x move_y) engine=return.move_text_combined_widget move_x move_y engine

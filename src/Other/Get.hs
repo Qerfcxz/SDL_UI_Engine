@@ -44,7 +44,7 @@ get_renderer_with_adaptive_window::Int->DIS.IntMap Window->(SRT.Renderer,FCT.CIn
 get_renderer_with_adaptive_window window_id window=case error_lookup "get_renderer_with_adaptive_window: error 1" window_id window of
     (Window _ _ renderer _ _ x y design_size size)->(renderer,x,y,design_size,size)
 
-get_next_id_combined_widget::Combined_widget a->(Engine a->Event->Id)
+get_next_id_combined_widget::Combined_widget a->(DS.Seq Int->Engine a->Event->Id)
 get_next_id_combined_widget (Leaf_widget next_single_id _)=next_single_id
 get_next_id_combined_widget (Node_widget next_single_id _ _ _ _)=next_single_id
 
