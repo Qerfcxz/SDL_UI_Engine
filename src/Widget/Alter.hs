@@ -23,6 +23,7 @@ import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 import qualified GHC.Stack as GS
 import qualified SDL.Raw.Font as SRF
+import qualified SDL.Raw.Image as SRI
 import qualified SDL.Raw.Types as SRT
 import qualified SDL.Raw.Video as SRV
 
@@ -92,7 +93,7 @@ alter_widget_b _ window _ (Picture_request window_id path render_flip angle x y 
     Picture _ texture _ _ _ _ _ _ _ _ _ _ _ _ _ _->case error_lookup "alter_widget_b: error 14" window_id window of
         (Window _ _ renderer _ _ window_x window_y design_size size)->do
             SRV.destroyTexture texture
-            surface<-DB.useAsCString (DTE.encodeUtf8 path) SRV.loadBMP
+            surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load
             CM.when (surface==FP.nullPtr) $ error "alter_widget_b: error 15"
             (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
             new_texture<-SRV.createTextureFromSurface renderer surface

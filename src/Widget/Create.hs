@@ -48,7 +48,7 @@ create_single_widget _ window (Rectangle_request window_id red green blue alpha 
     (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
 create_single_widget _ window (Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide) _=case error_lookup "create_single_widget: error 2" window_id window of
     (Window _ _ renderer _ _ window_x window_y design_size size)->do
-        surface<-DB.useAsCString (DTE.encodeUtf8 path) SRV.loadBMP
+        surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load
         CM.when (surface==FP.nullPtr) $ error "create_single_widget: error 3"
         (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
         texture<-SRV.createTextureFromSurface renderer surface
