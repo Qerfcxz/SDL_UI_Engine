@@ -44,6 +44,7 @@ create_single_widget _ _ (Font_request path size) _=do
 create_single_widget _ _ (Block_font_request window_id red green blue alpha path size) _=do
     font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_block_font` size)
     return (Block_font window_id red green blue alpha font)
+create_single_widget _ _ (Canvas_request window_id allow) _=return (Canvas window_id allow DIS.empty)
 create_single_widget _ window (Rectangle_request window_id red green blue alpha left right up down) _=case error_lookup "create_single_widget: error 1" window_id window of
     (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
 create_single_widget _ window (Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide) _=case error_lookup "create_single_widget: error 2" window_id window of

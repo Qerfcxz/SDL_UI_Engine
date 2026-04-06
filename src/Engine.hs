@@ -109,6 +109,7 @@ run_widget event (Io_trigger handle) engine=create_request (Request (Io (handle 
 run_widget _ (Collector _) engine=engine
 run_widget _ (Font _) engine=engine
 run_widget _ (Block_font {}) engine=engine
+run_widget _ (Canvas {}) engine=engine
 run_widget _ (Rectangle {}) engine=engine
 run_widget _ (Picture {}) engine=engine
 run_widget _ (Animation {}) engine=engine

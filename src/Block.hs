@@ -48,7 +48,7 @@ update_block_font_b renderer font_color red green blue alpha font block_width ch
         let width_mod=mod width block_width
         let block=if width_mod==0 then div width block_width else div width block_width+1
         return (DIS.insert char_ord (texture,DIS.singleton (fromIntegral block_width) (fromIntegral block,if width_mod==0 then 0 else div (block_width-width_mod) 2),width,red,green,blue,alpha) intmap_texture)
-    Just (texture,intmap_int,width,this_red,this_green,this_blue,this_alpha)->let this_block_width=fromIntegral block_width in if DIS.member this_block_width intmap_int then update_block_font_b renderer font_color red green blue alpha font block_width char intmap_texture else do
+    Just (texture,intmap_int,width,this_red,this_green,this_blue,this_alpha)->let this_block_width=fromIntegral block_width in if DIS.member this_block_width intmap_int then return intmap_texture else do
         let width_mod=mod width block_width
         let block=if width_mod==0 then div width block_width else div width block_width+1
         return (DIS.insert char_ord (texture,DIS.insert this_block_width (fromIntegral block,if width_mod==0 then 0 else div (block_width-width_mod) 2) intmap_int,width,this_red,this_green,this_blue,this_alpha) intmap_texture)
