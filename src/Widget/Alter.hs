@@ -66,7 +66,7 @@ alter_widget_b _ _ _ (Data_request content) this_widget=case this_widget of
     _->error "alter_widget_b: error 6"
 alter_widget_b _ _ _ Canvas_request this_widget=case this_widget of
     Canvas canvas->do
-        DF.mapM_ (\(_,_,_,texture)->SRV.destroyTexture texture) canvas
+        DF.mapM_ (\(_,_,_,_,_,texture)->SRV.destroyTexture texture) canvas
         return (Canvas DIS.empty)
     _->error "alter_widget_b: error 7"
 alter_widget_b _ _ _ (Trigger_request handle) this_widget=case this_widget of
