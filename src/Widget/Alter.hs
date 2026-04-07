@@ -64,31 +64,31 @@ alter_widget_b _ _ _ (Data_request content) this_widget=case this_widget of
         clean_data this_content
         return (Data content)
     _->error "alter_widget_b: error 6"
+alter_widget_b _ _ _ Canvas_request this_widget=case this_widget of
+    Canvas canvas->do
+        DF.mapM_ (\(_,_,_,texture)->SRV.destroyTexture texture) canvas
+        return (Canvas DIS.empty)
+    _->error "alter_widget_b: error 7"
 alter_widget_b _ _ _ (Trigger_request handle) this_widget=case this_widget of
     Trigger {}->return (Trigger handle)
-    _->error "alter_widget_b: error 7"
+    _->error "alter_widget_b: error 8"
 alter_widget_b _ _ _ (Io_trigger_request handle) this_widget=case this_widget of
     Io_trigger {}->return (Io_trigger handle)
-    _->error "alter_widget_b: error 8"
+    _->error "alter_widget_b: error 9"
 alter_widget_b _ _ _ (Collector_request request) this_widget=case this_widget of
     Collector {}->return (Collector request)
-    _->error "alter_widget_b: error 9"
+    _->error "alter_widget_b: error 10"
 alter_widget_b _ _ _ (Font_request path size) this_widget=case this_widget of
     Font intmap_font->do
         _<-DIS.traverseWithKey (\_ font->SRF.closeFont font) intmap_font
         font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_font` size)
         return (Font font)
-    _->error "alter_widget_b: error 10"
+    _->error "alter_widget_b: error 11"
 alter_widget_b _ _ _ (Block_font_request window_id red green blue alpha path size) this_widget=case this_widget of
     Block_font _ _ _ _ _ font->do
         _<-DIS.traverseWithKey (\_ this_font->clean_block_font this_font) font
         new_font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_block_font` size)
         return (Block_font window_id red green blue alpha new_font)
-    _->error "alter_widget_b: error 11"
-alter_widget_b _ _ _ (Canvas_request window_id allow) this_widget=case this_widget of
-    Canvas _ _ intmap_texture->do
-        DF.mapM_ (\(_,_,texture)->SRV.destroyTexture texture) intmap_texture
-        return (Canvas window_id allow DIS.empty)
     _->error "alter_widget_b: error 12"
 alter_widget_b _ window _ (Rectangle_request window_id red green blue alpha left right up down) this_widget=case this_widget of
     Rectangle {}->case error_lookup "alter_widget_b: error 13" window_id window of

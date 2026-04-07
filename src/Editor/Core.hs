@@ -10,6 +10,7 @@ import qualified Data.ByteString as DB
 import qualified Data.Char as DC
 import qualified Data.Foldable as DF
 import qualified Data.IntMap.Strict as DIS
+import qualified Data.Maybe as DM
 import qualified Data.Sequence as DS
 import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
@@ -182,9 +183,9 @@ to_seq_seq_char_a change renderer row number_block number_char block_number text
         Just (block,delta_x)->let new_number_block=number_block+block in if block_number<new_number_block then if block_number<block then error "to_seq_seq_char_a: error 3" else to_seq_seq_char_a change renderer (row+1) block 1 block_number text_color text_red text_green text_blue text_alpha font block_width this_seq_char this_seq_seq_char (DS.singleton (char,block,delta_x)) (seq_seq_char DS.|> (seq_char,number_block,number_char,False)) intmap_texture else to_seq_seq_char_a change renderer row new_number_block (number_char+1) block_number text_color text_red text_green text_blue text_alpha font block_width this_seq_char this_seq_seq_char (seq_char DS.|> (char,block,delta_x)) seq_seq_char intmap_texture
 
 to_seq_seq_char_b::Bool->Maybe Int->Int->Int->Int->DS.Seq (Char,Int,FCT.CInt)->DS.Seq (Char,Int,FCT.CInt)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->(Int,DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool))
-to_seq_seq_char_b end number number_block number_char block_number this_seq_char DS.Empty this_seq_seq_char seq_seq_char=if end then (maybe_get number number_block,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True)) DS.>< seq_seq_char) else case seq_seq_char of
-    DS.Empty->(maybe_get number number_block,this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True))
+to_seq_seq_char_b end number number_block number_char block_number this_seq_char DS.Empty this_seq_seq_char seq_seq_char=if end then (DM.fromMaybe number_block number,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True)) DS.>< seq_seq_char) else case seq_seq_char of
+    DS.Empty->(DM.fromMaybe number_block number,this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True))
     ((seq_char,_,_,new_end) DS.:<| other_seq_seq_char)->case seq_char of
-        DS.Empty->(maybe_get number number_block,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True)) DS.>< other_seq_seq_char)
-        (char,block,delta_x) DS.:<| other_seq_char->let new_number_block=number_block+block in if block_number<new_number_block then (maybe_get number number_block,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,False)) DS.>< seq_seq_char) else to_seq_seq_char_b new_end number new_number_block (number_char+1) block_number (this_seq_char DS.|> (char,block,delta_x)) other_seq_char this_seq_seq_char other_seq_seq_char
+        DS.Empty->(DM.fromMaybe number_block number,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,True)) DS.>< other_seq_seq_char)
+        (char,block,delta_x) DS.:<| other_seq_char->let new_number_block=number_block+block in if block_number<new_number_block then (DM.fromMaybe number_block number,(this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,False)) DS.>< seq_seq_char) else to_seq_seq_char_b new_end number new_number_block (number_char+1) block_number (this_seq_char DS.|> (char,block,delta_x)) other_seq_char this_seq_seq_char other_seq_seq_char
 to_seq_seq_char_b end number number_block number_char block_number this_seq_char ((char,block,delta_x) DS.:<| seq_char) this_seq_seq_char seq_seq_char=let new_number_block=number_block+block in if block_number<new_number_block then to_seq_seq_char_b end (maybe_set number_block number) block 1 block_number (DS.singleton (char,block,delta_x)) seq_char (this_seq_seq_char DS.|> (this_seq_char,number_block,number_char,False)) seq_seq_char else to_seq_seq_char_b end number new_number_block (number_char+1) block_number (this_seq_char DS.|> (char,block,delta_x)) seq_char this_seq_seq_char seq_seq_char

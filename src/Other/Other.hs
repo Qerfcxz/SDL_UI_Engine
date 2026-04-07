@@ -8,10 +8,6 @@ import qualified Foreign.C.Types as FCT
 import qualified SDL.Raw.Enum as SRE
 import qualified SDL.Raw.Types as SRT
 
-maybe_get::Maybe a->a->a
-maybe_get Nothing value=value
-maybe_get (Just value) _=value
-
 maybe_set::a->Maybe a->Maybe a
 maybe_set value Nothing=Just value
 maybe_set _ (Just value)=Just value
