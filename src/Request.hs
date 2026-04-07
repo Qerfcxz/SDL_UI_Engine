@@ -184,15 +184,15 @@ do_request (Request raw_request instruction) engine=case raw_request of
         else do
             let (combined_widget,new_widget)=error_get_update_update "do_request: error 46" "do_request: error 47" combined_id single_id (set_render_combined_widget False) (get_engine_widget engine)
             do_request_render_editor_widget instruction combined_widget (set_engine_widget new_widget engine)
-    Render_canvas_widget transmit left right up down index seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in let combined_widget=error_lookup_lookup "do_request: error 48" "do_request: error 49" combined_id single_id (get_engine_widget engine) in if transmit
+    Render_canvas_widget transmit similarity left right up down index seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in let combined_widget=error_lookup_lookup "do_request: error 48" "do_request: error 49" combined_id single_id (get_engine_widget engine) in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
             Just new_instruction->do
-                (new_left,new_right,new_up,new_down,new_index,new_combined_widget)<-DF.foldlM (\mix this_instruction->render_canvas_widget_instruction this_instruction engine mix) (left,right,up,down,index,combined_widget) new_instruction
-                do_request_render_canvas_widget new_left new_right new_up new_down new_index new_combined_widget engine
+                (new_similarity,new_left,new_right,new_up,new_down,new_index,new_combined_widget)<-DF.foldlM (\mix this_instruction->render_canvas_widget_instruction this_instruction engine mix) (similarity,left,right,up,down,index,combined_widget) new_instruction
+                do_request_render_canvas_widget new_similarity new_left new_right new_up new_down new_index new_combined_widget engine
         else do
-            (new_left,new_right,new_up,new_down,new_index,new_combined_widget)<-DF.foldlM (\mix this_instruction->render_canvas_widget_instruction this_instruction engine mix) (left,right,up,down,index,combined_widget) instruction
-            do_request_render_canvas_widget new_left new_right new_up new_down new_index new_combined_widget engine
+            (new_similarity,new_left,new_right,new_up,new_down,new_index,new_combined_widget)<-DF.foldlM (\mix this_instruction->render_canvas_widget_instruction this_instruction engine mix) (similarity,left,right,up,down,index,combined_widget) instruction
+            do_request_render_canvas_widget new_similarity new_left new_right new_up new_down new_index new_combined_widget engine
     Update_block_font_widget transmit size block_width set_char seq_id->let (combined_id,single_id,transform)=get_widget_id_with_transform seq_id engine in if transmit
         then case DF.foldlM (\this_instruction this_transform->this_transform engine raw_request this_instruction) instruction transform of
             Nothing->return engine
@@ -244,13 +244,13 @@ do_request_render_rectangle_widget (Leaf_widget _ (Rectangle window_id red green
 do_request_render_rectangle_widget _ _=error "do_request_render_rectangle_widget: error 3"
 
 do_request_render_picture_widget::GS.HasCallStack=>Combined_widget a->Engine a->IO (Engine a)
-do_request_render_picture_widget (Leaf_widget _ (Picture window_id texture render_flip angle _ _ _ _ _ _ _ _ x y width height)) engine=let renderer=get_renderer window_id engine in do
+do_request_render_picture_widget (Leaf_widget _ (Picture window_id texture (Similarity render_flip angle _ _ _ _ _ _) _ _ x y width height)) engine=let renderer=get_renderer window_id engine in do
     catch_error "do_request_render_picture_widget: error 1" 0 (FMU.with (SRT.Rect x y width height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect angle FP.nullPtr (from_flip render_flip)))
     return engine
 do_request_render_picture_widget _ _=error "do_request_render_picture_widget: error 2"
 
 do_request_render_animation_widget::GS.HasCallStack=>Combined_widget a->Engine a->IO (Engine a)
-do_request_render_animation_widget (Leaf_widget _ (Animation window_id _ index seq_frame render_flip angle _ _ _ _ _ _)) engine=case DS.lookup index seq_frame of
+do_request_render_animation_widget (Leaf_widget _ (Animation window_id _ index seq_frame (Similarity render_flip angle _ _ _ _ _ _))) engine=case DS.lookup index seq_frame of
     Just (Frame texture _ _ x y width height)->let renderer=get_renderer window_id engine in do
         catch_error "do_request_render_animation_widget: error 1" 0 (FMU.with (SRT.Rect x y width height) (\rect->SRV.renderCopyEx renderer texture FP.nullPtr rect angle FP.nullPtr (from_flip render_flip)))
         return engine
@@ -282,17 +282,17 @@ do_request_render_editor_widget instruction combined_widget engine=do
             return (set_engine_widget new_widget engine)
         _->error "do_request_render_editor_widget: error 3"
 
-do_request_render_canvas_widget::GS.HasCallStack=>FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Int->Combined_widget a->Engine a->IO (Engine a)
-do_request_render_canvas_widget left right up down index (Leaf_widget _ (Canvas canvas)) engine=case DIS.lookup index canvas of
+do_request_render_canvas_widget::GS.HasCallStack=>Similarity->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Int->Combined_widget a->Engine a->IO (Engine a)
+do_request_render_canvas_widget (Similarity render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide) left right up down index (Leaf_widget _ (Canvas canvas)) engine=case DIS.lookup index canvas of
     Nothing->error "do_request_render_canvas_widget: error 1"
     Just (window_id,old_x,old_y,old_design_size,old_size,texture)->let window=get_window window_id engine in case window of
         Window _ _ renderer _ _ x y design_size size->do
-            FMA.alloca $ \first_rect->FMA.alloca $ \second_rect->do
-                FS.poke first_rect (SRT.Rect (old_x+div (left*old_size) old_design_size) (old_y+div (up*old_size) old_design_size) (div ((right-left)*old_size) old_design_size) (div ((down-up)*old_size) old_design_size))
-                FS.poke second_rect (SRT.Rect (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
-                catch_error "do_request_render_canvas_widget: error 2" 0 (SRV.renderCopy renderer texture first_rect second_rect)
+            FMA.alloca $ \first_rect->FMA.alloca $ \second_rect->let width=right-left in let height=down-up in do
+                FS.poke first_rect (SRT.Rect (old_x+div (left*old_size) old_design_size) (old_y+div (up*old_size) old_design_size) (div (width*old_size) old_design_size) (div (height*old_size) old_design_size))
+                let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in FS.poke second_rect (SRT.Rect (x+div ((2*design_x-new_width)*size) (2*design_size)) (y+div ((2*design_y-new_height)*size) (2*design_size)) (div (new_width*size) design_size) (div (new_height*size) design_size))
+                catch_error "do_request_render_canvas_widget: error 2" 0 (SRV.renderCopyEx renderer texture first_rect second_rect angle FP.nullPtr (from_flip render_flip))
             return engine
-do_request_render_canvas_widget _ _ _ _ _ _ _=error "do_request_render_canvas_widget: error 3"
+do_request_render_canvas_widget _ _ _ _ _ _ _ _=error "do_request_render_canvas_widget: error 3"
 
 from_render_editor::GS.HasCallStack=>SRT.Renderer->Int->Int->Int->Int->Typesetting->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->Cursor->DS.Seq (DS.Seq (Char,Int,FCT.CInt),Int,Int,Bool)->Combined_widget a->IO (Combined_widget a)
 from_render_editor renderer block_number row_number row font_size typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha font_height block_width delta_height x y cursor seq_seq_char widget=case widget of

@@ -96,7 +96,7 @@ render_editor_widget_instruction (Cursor_color_editor red green blue alpha) _=re
 render_editor_widget_instruction (Select_color_editor red green blue alpha) _=return.select_color_editor_combined_widget red green blue alpha
 render_editor_widget_instruction _ _=return
 
-render_canvas_widget_instruction::Instruction->Engine a->(FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,Int,Combined_widget a)->IO (FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,Int,Combined_widget a)
+render_canvas_widget_instruction::Instruction->Engine a->(Similarity,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,Int,Combined_widget a)->IO (Similarity,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,Int,Combined_widget a)
 render_canvas_widget_instruction _ _=return
 
 update_block_font_instruction::Instruction->Engine a->(Int,FCT.CInt,DSet.Set Char,Combined_widget a)->IO (Int,FCT.CInt,DSet.Set Char,Combined_widget a)

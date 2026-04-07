@@ -94,8 +94,8 @@ alter_widget_b _ window _ (Rectangle_request window_id red green blue alpha left
     Rectangle {}->case error_lookup "alter_widget_b: error 13" window_id window of
         (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
     _->error "alter_widget_b: error 14"
-alter_widget_b _ window _ (Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide) this_widget=case this_widget of
-    Picture _ texture _ _ _ _ _ _ _ _ _ _ _ _ _ _->case error_lookup "alter_widget_b: error 15" window_id window of
+alter_widget_b _ window _ (Picture_request window_id path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) this_widget=case this_widget of
+    Picture _ texture _ _ _ _ _ _ _->case error_lookup "alter_widget_b: error 15" window_id window of
         (Window _ _ renderer _ _ window_x window_y design_size size)->do
             SRV.destroyTexture texture
             surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load
@@ -104,14 +104,14 @@ alter_widget_b _ window _ (Picture_request window_id path render_flip angle x y 
             new_texture<-SRV.createTextureFromSurface renderer surface
             SRV.freeSurface surface
             CM.when (new_texture==FP.nullPtr) $ error "alter_widget_b: error 17"
-            let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id new_texture render_flip angle x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
+            let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id new_texture (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide) width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
     _->error "alter_widget_b: error 18"
-alter_widget_b _ window _ (Animation_request window_id seq_path render_flip angle x y width_multiply width_divide height_multiply height_divide) this_widget=case this_widget of
-    Animation _ _ _ seq_frame _ _ _ _ _ _ _ _->case error_lookup "alter_widget_b: error 19" window_id window of
+alter_widget_b _ window _ (Animation_request window_id seq_path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) this_widget=case this_widget of
+    Animation _ _ _ seq_frame _->case error_lookup "alter_widget_b: error 19" window_id window of
         (Window _ _ renderer _ _ window_x window_y design_size size)->do
             DF.mapM_ (\(Frame texture _ _ _ _ _ _)->SRV.destroyTexture texture) seq_frame
             new_seq_frame<-DS.traverseWithIndex (\_ path->create_frame path renderer window_x window_y design_size size x y width_multiply width_divide height_multiply height_divide) seq_path
-            return (Animation window_id (DS.length seq_frame) 0 new_seq_frame render_flip angle x y width_multiply width_divide height_multiply height_divide)
+            return (Animation window_id (DS.length seq_frame) 0 new_seq_frame (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide))
     _->error "alter_widget_b: error 20"
 alter_widget_b start_id window widget (Text_request window_id find delta_height left right up down seq_paragraph text_binding) this_widget=case this_widget of
     Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row _->case error_lookup "alter_widget_b: error 21" window_id window of

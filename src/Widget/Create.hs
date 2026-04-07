@@ -47,7 +47,7 @@ create_single_widget _ _ (Block_font_request window_id red green blue alpha path
     return (Block_font window_id red green blue alpha font)
 create_single_widget _ window (Rectangle_request window_id red green blue alpha left right up down) _=case error_lookup "create_single_widget: error 1" window_id window of
     (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
-create_single_widget _ window (Picture_request window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide) _=case error_lookup "create_single_widget: error 2" window_id window of
+create_single_widget _ window (Picture_request window_id path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) _=case error_lookup "create_single_widget: error 2" window_id window of
     (Window _ _ renderer _ _ window_x window_y design_size size)->do
         surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load
         CM.when (surface==FP.nullPtr) $ error "create_single_widget: error 3"
@@ -55,11 +55,11 @@ create_single_widget _ window (Picture_request window_id path render_flip angle 
         texture<-SRV.createTextureFromSurface renderer surface
         SRV.freeSurface surface
         CM.when (texture==FP.nullPtr) $ error "create_single_widget: error 4"
-        let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id texture render_flip angle x y width_multiply width_divide height_multiply height_divide width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
-create_single_widget _ window (Animation_request window_id seq_path render_flip angle x y width_multiply width_divide height_multiply height_divide) _=case error_lookup "create_single_widget: error 5" window_id window of
+        let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id texture (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide) width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
+create_single_widget _ window (Animation_request window_id seq_path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) _=case error_lookup "create_single_widget: error 5" window_id window of
     (Window _ _ renderer _ _ window_x window_y design_size size)->do
         seq_frame<-DS.traverseWithIndex (\_ path->create_frame path renderer window_x window_y design_size size x y width_multiply width_divide height_multiply height_divide) seq_path
-        return (Animation window_id (DS.length seq_frame) 0 seq_frame render_flip angle x y width_multiply width_divide height_multiply height_divide)
+        return (Animation window_id (DS.length seq_frame) 0 seq_frame (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide))
 create_single_widget start_id window (Text_request window_id find delta_height left right up down seq_paragraph text_binding) widget=case error_lookup "create_single_widget: error 6" window_id window of
     (Window _ _ renderer _ _ x y design_size size)->let new_delta_height=div (delta_height*size) design_size in do
         seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
