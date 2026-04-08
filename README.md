@@ -1,127 +1,109 @@
 # Hsue - A Haskell UI Engine for Text-Based Roguelikes
 
-> **Note:** This is a work-in-progress engine developed in one month by a senior undergraduate student. It is built from scratch using Haskell and SDL2 Raw Bindings, aiming to power a future text-based turn-based Roguelike game.
+> **Note:** The main content of this engine was completed within one month by a senior undergraduate student. It is built entirely from scratch using Haskell and SDL2 Raw Bindings, designed specifically to power a future text-heavy, turn-based Roguelike game.
 
 ## 📖 Introduction
 
-**Hsue** is an experimental yet hardcore UI engine written in **Haskell**. Unlike mainstream UI frameworks that rely on callbacks or MVVM, this engine adopts a unique **State-Machine Event Flow** and a **Pull-based** architecture.
+**Hsue** is an experimental yet hardcore UI engine written in **Haskell**. Diverging from mainstream UI frameworks that rely on callbacks, DOM trees, or MVVM, Hsue adopts a unique **State-Machine Event Flow**, **Sequence-Based Path Addressing**, and a **Pull/Request-Driven** architecture.
 
-It was born out of dissatisfaction with existing engines handling complex text rendering and state management in Roguelike games. It prioritizes control, precision, and text clarity over ease of use, making it a specialized tool for specific needs.
+It was born out of dissatisfaction with existing engines when handling complex text rendering, deep menu navigation, and pure state management. It prioritizes absolute control, performance optimization (especially for text), and logical decoupling over immediate ease of use.
 
 ## ✨ Key Features
 
 ### 1. Finite State Machine Event Flow
-The engine treats UI navigation as a state machine. It provides explicit instructions like `Goto` (jump to a widget ID) and `Back` (return to previous state) to control the event flow.
-- **Why?** This is a game-changer for turn-based games with deep nested menus (e.g., Inventory -> Item -> Details -> Back), eliminating the need for manual stack management.
+The engine treats UI navigation as a state machine. Event handlers return explicit control IDs like `Goto` (jump to a specific widget flow) and `Back` (return to the previous state).
+- **Why?** This perfectly handles deep, nested turn-based menus (e.g., Main Menu -> Inventory -> Item Details -> Back), eliminating manual state stack management.
 
-### 2. True Adaptive Rendering (No Scaling Artifacts)
-Unlike engines that simply scale textures when the window resizes (causing blurriness), this engine recalculates layout and **re-rasterizes fonts** at the target resolution.
-- **Result:** Text remains crisp and pixel-perfect at any window size or DPI, which is crucial for text-heavy games.
+### 2. Sequence-Based Path Addressing (`DS.Seq Int`)
+Widgets are not directly nested in recursive data types. Instead, they are flattened into `IntMap`s and accessed via a strict path sequence (`Data.Sequence Int`). 
+- **Result:** Infinite nesting depth without the typical performance penalties of functional tree updates. It enables O(log N) lookup and highly decoupled parent-child relationships.
 
-### 3. Functional Instruction System
-Communication between parent and child widgets is handled via **Instructions**, **Event Transforms**, and **Request Transforms**.
-- Parents can intercept and modify events before they reach children.
-- Children send abstract requests that parents can transform (e.g., for implementing scroll views or coordinate mapping).
+### 3. Pure Functional UI Coroutines
+Built-in support for a pure `Coroutine` widget (`Wait`, `Loop`, `Then`, `Fork`, `Emit`). 
+- **Result:** You can program complex UI animations, sequenced events, or timed delays asynchronously without touching Haskell's `IO` or dealing with thread synchronization.
 
-### 4. Dynamic Focus Strategy
-There is no static "Main Widget". The engine determines which widget receives input (focus) via a pure function evaluated every frame based on the current engine state. This allows for highly dynamic and programmable focus logic.
+### 4. Instruction & Request-Driven Architecture
+State mutation is entirely deferred. Widgets emit `Request`s (e.g., Create, Alter, Replace) combined with `Instruction`s (spatial transforms like `Move`, `Scale`, `Angle`, `Flip`).
+- Parents can intercept, transform, or block requests and events from children. This makes features like Scroll Views or dynamic scaling completely math-driven and side-effect free.
 
-### 5. Production-Grade Editor Widget
-A built-in, fully featured text editor component that supports:
-- **50+ Keyboard Shortcuts** (Navigation, Selection, Modification).
-- **Clipboard Integration** (System Copy/Paste via SDL2).
-- **Advanced Selection** (Dual-cursor range selection, paragraph selection).
-- **Block-based Rendering** for high performance.
+### 5. Production-Grade Text & Editor Engine
+The engine houses an incredibly complex and optimized text system:
+- **Block-Based Font Caching:** Uses `IntMap` to cache SDL Textures at the character/block level, recalculating and re-rasterizing dynamically based on the window's adaptive scale.
+- **Advanced Editor:** Supports 50+ programmable keybindings (`Editor_binding`), dual-cursor text selection, paragraph navigation, and native OS Clipboard integration (Copy/Paste).
+- **Typesetting:** Native support for Left, Center, and Right text alignment with precise font-metric calculations (Ascent/Descent).
 
-### 6. Decoupled Data & State
-The **Data Widget Family** (`Bool_data`, `Int_data`, `List_char_data`, etc.) allows local state to be stored within the engine's global map but accessed via IDs. This effectively decouples game data from UI presentation, facilitating Save/Load functionality.
+### 6. True Adaptive Rendering & Canvas (Off-screen)
+- **Adaptive Window:** Automatically calculates the Greatest Common Divisor (GCD) to map design resolutions to actual window sizes. No blurry upscaling; fonts and shapes re-render precisely.
+- **Canvas System:** Supports switching SDL Render Targets (`SDL_TEXTUREACCESS_TARGET`) via the `Canvas` widget, allowing complex off-screen compositing before presenting to the main window.
 
-### 7. Deferred Rendering via Collectors
-The `Collector` widget enables hierarchical rendering control. It collects render requests and allows the engine to sort or batch them (Z-ordering) before execution, solving complex layering issues.
-
-### 8. "Pull" over "Push" Philosophy
-Instead of the engine pushing context down to every widget, components are designed to **fetch (pull)** resources (renderers, data, configs) using IDs when needed. This reduces parameter passing overhead and decouples dependencies.
-
-### 9. Infinite Nesting
-Widgets are referenced by IDs stored in `IntMap`s, not by direct recursive data types. This allows for virtually infinite nesting depths without the typical performance penalties or type complexities found in some functional UI definitions.
+### 7. Decoupled Data Widgets
+The **Data Widget Family** (`Bool_data`, `Int_data`, `List_char_data`, custom `Data a`) stores localized game state directly inside the UI map. Game logic can "pull" this data via IDs, perfectly decoupling the data layer from the presentation layer (ideal for Save/Load mechanics).
 
 ## 🛠 Technical Stack
 
 - **Language:** Haskell (GHC)
-- **Backend:** SDL2 (via `SDL.Raw` bindings for maximum control)
-- **Data Structures:** Heavily utilizes `Data.Sequence` (Finger Trees) for efficient text/event handling and `IntMap` for component storage.
+- **Backend:** SDL2 (via `SDL.Raw` bindings for low-level pointer and memory control)
+- **Data Structures:** Heavily utilizes `Data.Sequence` (Finger Trees) for paths/text and `Data.IntMap.Strict` for high-performance widget storage.
 
 ## 🚀 Future Roadmap
 
-- [ ] Implement a Layout Engine (Flexbox/Grid-like) to replace absolute positioning.
+- [ ] Implement a Layout Engine (Flexbox/Grid-like) to replace absolute coordinate positioning.
 - [ ] Add a Markdown/XML parser for rich text styling in the `Text` widget.
 - [ ] Integrate `binary` or `cereal` for full UI state serialization (Save/Load system).
-- [ ] Develop the actual Roguelike game using this engine.
+- [ ] Develop the actual Roguelike game utilizing this engine.
 
-## 📝 Disclaimer
-
-This project is currently in the **Alpha / Prototype** stage. The API is subject to radical changes. It serves as a proof-of-concept for building high-performance, low-level UI systems in Haskell without relying on high-level FRP libraries.
+---
 
 # Hsue - 专为文字类 Roguelike 打造的 Haskell UI 引擎
 
-> **说明:** 这是一个由大四学生在单月内独立开发的原型引擎。它基于 Haskell 和 SDL2 Raw Bindings 从零构建，旨在支撑未来一款文字类回合制 Roguelike 游戏的开发。
+> **说明:** 本引擎的主要内容由一名大四学生在一个月内独立开发完成。它基于 Haskell 和 SDL2 Raw Bindings 从零构建，旨在支撑未来一款文字量巨大、逻辑复杂的回合制 Roguelike 游戏的开发。
 
 ## 📖 简介
 
-**Hsue** 是一个实验性但硬核的纯 Haskell UI 引擎。与依赖回调或 MVVM 的主流框架不同，本引擎采用独特的 **状态机式事件流** 和 **“自取式”（Pull-based）** 架构。
+**Hsue** 是一个实验性但硬核的纯 Haskell UI 引擎。与依赖回调、DOM树或 MVVM 的主流框架不同，Hsue 采用了独特的 **状态机式事件流**、**基于序列的路径寻址** 以及 **请求驱动 (Request-Driven)** 架构。
 
-该引擎的诞生源于对现有引擎处理复杂文本渲染和回合制状态管理的不满。相比易用性，它更优先考虑**控制力、渲染精度和逻辑解耦**，是为特定游戏类型量身定制的利器。
+该引擎的诞生源于对现有引擎在处理复杂文本光栅化、深层菜单路由和纯函数状态管理时的局限性的不满。相比开箱即用，它更追求对底层的绝对控制力、极限的文本渲染性能以及业务逻辑的彻底解耦。
 
 ## ✨ 核心特性
 
-### 1. 状态机式事件流转机制
-引擎将 UI 导航视为状态机。提供了 `Goto`（跳转到控件ID）和 `Back`（回溯历史状态）等显式指令来控制事件流。
-- **优势**: 完美契合回合制游戏中深层嵌套的菜单逻辑（如：主界面 -> 物品栏 -> 选中物品 -> 详情 -> 返回），无需开发者手动维护状态栈。
+### 1. 状态机式事件流转
+引擎将 UI 导航视为状态机。事件处理函数会返回显式的控制 ID，如 `Goto`（跳转到指定控件流）和 `Back`（回溯历史状态）。
+- **优势**: 完美契合回合制游戏中深层嵌套的菜单逻辑（如：主界面 -> 物品栏 -> 选中物品 -> 详情 -> 返回），彻底免去开发者手动维护状态栈的痛苦。
 
-### 2. 真·自适应渲染（拒绝模糊）
-当窗口大小改变时，引擎不仅仅是拉伸纹理，而是根据设计分辨率与实际分辨率的比例，重新计算布局并**重新光栅化字体**。
-- **效果**: 无论窗口如何缩放，文字始终保持像素级清晰（Pixel-perfect），这对文字量巨大的游戏至关重要。
+### 2. 基于序列的路径寻址 (`DS.Seq Int`)
+控件并非通过传统的递归数据类型直接嵌套。相反，它们被扁平化存储在 `IntMap` 中，并通过严格的路径序列 (`Data.Sequence Int`) 进行精确定位。
+- **优势**: 允许几乎无限的 UI 嵌套深度，且避免了函数式树状结构在深层更新时的性能损耗。父子控件完全解耦，支持 O(log N) 级别的高效寻址。
 
-### 3. 函数式指令系统
-父子控件之间通过 **Instruction（指令）**、**Event Transform** 和 **Request Transform** 进行通信。
-- 父控件可在事件到达子控件前进行拦截或坐标变换。
-- 子控件发出抽象请求，父控件可对其进行转换（例如实现滚动视图或相对坐标映射）。
+### 3. 纯函数式 UI 协程 (Coroutine)
+引擎原生提供了一个纯函数式的 `Coroutine` 控件（支持 `Wait`, `Loop`, `Then`, `Fork`, `Emit`）。
+- **优势**: 开发者可以异步编写复杂的 UI 动画、序列事件或延时逻辑，而完全不需要触碰 Haskell 的 `IO` 机制，也无需处理多线程同步问题。
 
-### 4. 动态主控件逻辑
-没有静态的“焦点控件”。引擎每帧通过一个基于当前状态的纯函数来动态决定哪个控件 ID 接收输入。这使得焦点切换逻辑高度可编程。
+### 4. 指令与请求驱动架构
+所有状态变更都被延迟执行。控件发出 `Request`（如创建、修改、替换控件），并可附带 `Instruction`（空间变换指令，如 `Move`, `Scale`, `Angle`, `Flip`）。
+- 父控件可以在子控件的请求和事件向上传递时进行拦截和矩阵变换。诸如“滚动视图 (ScrollView)”或“动态缩放”等功能完全由纯数学变换实现，无副作用。
 
-### 5. 生产级文本编辑器 (Editor)
-内置功能完备的文本编辑组件，支持：
-- **50+ 快捷键**（涵盖光标移动、选择、编辑）。
-- **剪贴板集成**（通过 SDL2 原生支持复制/粘贴）。
-- **高级选择功能**（双光标范围选择、段落选择）。
-- **基于 Block 的渲染**，确保高性能。
+### 5. 生产级文本与编辑器引擎
+引擎内部实现了一套极其复杂且高度优化的文本系统：
+- **Block 级字体缓存**: 使用 `IntMap` 对 SDL 纹理进行字符/块级别的缓存 (`Block_font`)。配合自适应缩放机制，在窗口尺寸改变时动态重新光栅化。
+- **高级编辑器**: 内置 `Editor` 控件，支持 50+ 可编程快捷键 (`Editor_binding`)、双光标高亮选区、段落级跳转，以及系统原生的剪贴板集成 (复制/粘贴)。
+- **精准排版**: 原生支持左、中、右对齐排版，基于字体度量学 (Ascent/Descent) 进行极其精准的行高计算。
 
-### 6. 数据与状态解耦
-通过 **Data 控件家族**（`Bool_data`, `Int_data` 等），组件的局部状态被存储在引擎的全局 Map 中，但通过 ID 进行访问。这有效地将游戏数据与 UI 表现分离，天然支持存读档（Save/Load）。
+### 6. 真·自适应渲染与离屏画布 (Canvas)
+- **自适应窗口**: 引擎通过计算最大公约数 (GCD)，自动将设计分辨率完美映射到物理窗口分辨率。拒绝模糊拉伸，所有的形状和字体都会在目标分辨率下重新精准绘制。
+- **Canvas 系统**: 支持通过 `Canvas` 控件切换 SDL 渲染目标 (`SDL_TEXTUREACCESS_TARGET`)，允许在最终呈现到屏幕前进行复杂的离屏渲染和图像合成。
 
-### 7. 基于 Collector 的层级渲染
-`Collector` 控件支持延迟和分批处理渲染请求。它允许引擎对请求进行排序或批处理（Z-order），从而轻松解决复杂的 UI 遮挡和层级问题。
-
-### 8. “自取” (Pull) 设计哲学
-引擎不负责将所有上下文“推”给每个控件，而是让控件在需要时通过 ID 向引擎 **“索取” (Fetch/Pull)** 资源（如渲染器、数据、配置）。这种设计极大减少了函数参数传递的负担，降低了耦合度。
-
-### 9. 无限嵌套能力
-控件通过 `IntMap` 中的 ID 相互引用，而非直接的递归数据类型。这使得 UI 树可以几乎无限嵌套，且避免了某些函数式数据结构更新时的性能陷阱。
+### 7. 数据与状态解耦
+通过 **Data 控件家族**（`Bool_data`, `Int_data`, 自定义 `Data a` 等），组件的局部状态被直接保存在引擎的全局 Map 中。业务逻辑通过 ID "拉取 (Pull)" 这些数据，将数据层与渲染层完美剥离，天然支持游戏存读档 (Save/Load)。
 
 ## 🛠 技术栈
 
 - **语言:** Haskell (GHC)
-- **后端:** SDL2 (使用 `SDL.Raw` 绑定以获得最大控制权)
-- **核心数据结构:** 大量使用 `Data.Sequence` (Finger Trees) 处理文本序列，使用 `IntMap` 管理组件索引。
+- **底层:** SDL2 (直接调用 `SDL.Raw` 绑定，进行底层的指针与内存操作，如 `alloca`, `poke`, `peek`)
+- **核心数据结构:** 大量使用 `Data.Sequence` (Finger Trees) 处理文本/路径，使用 `Data.IntMap.Strict` 构建极速的组件存储树。
 
-## 🚀以此为基础的计划
+## 🚀 以此为基础的计划
 
 - [ ] 实现简易布局引擎 (类似 Flexbox/Grid)，替代绝对坐标定位。
-- [ ] 为 `Text` 控件添加 Markdown/XML 解析器以支持富文本。
+- [ ] 为 `Text` 控件添加 Markdown/XML 解析器以支持富文本排版。
 - [ ] 引入 `binary` 或 `cereal` 库实现全 UI 状态序列化 (存读档系统)。
-- [ ] 正式开发基于此引擎的 Roguelike 游戏。
-
-## 📝 免责声明
-
-本项目目前处于 **Alpha / 原型** 阶段。API 可能会发生剧烈变化。它更多是作为一个概念验证（Proof-of-Concept），展示如何在不依赖高级 FRP 库的情况下，用 Haskell 构建高性能、底层的 UI 系统。
+- [ ] 正式开发基于此引擎的回合制 Roguelike 游戏。
