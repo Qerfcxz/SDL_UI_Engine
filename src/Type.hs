@@ -76,6 +76,18 @@ type Color=SRT.Color
 
 newtype List_char=List_char [Char]
 
+newtype Do_coroutine a b=Do_coroutine ((b->Coroutine a)->Coroutine a)
+
+instance Functor (Do_coroutine a) where
+    fmap a (Do_coroutine b)=Do_coroutine (\c->b (c.a))
+
+instance Applicative (Do_coroutine a) where
+    pure a=Do_coroutine (\b->b a)
+    Do_coroutine a<*>Do_coroutine b=Do_coroutine (\c->a (\d->b (c.d)))
+
+instance Monad (Do_coroutine a) where
+    (Do_coroutine a)>>=b=Do_coroutine (\c->a (\d->(\(Do_coroutine e)->e) (b d) c))
+
 class Data a where
     clean_data::a->IO ()
 
