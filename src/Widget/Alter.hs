@@ -75,52 +75,55 @@ alter_widget_b _ _ _ (Trigger_request handle) this_widget=case this_widget of
 alter_widget_b _ _ _ (Io_trigger_request handle) this_widget=case this_widget of
     Io_trigger {}->return (Io_trigger handle)
     _->error "alter_widget_b: error 9"
+alter_widget_b _ _ _ (Coroutine_request coroutine) this_widget=case this_widget of
+    Coroutine {}->return (Coroutine coroutine)
+    _->error "alter_widget_b: error 10"
 alter_widget_b _ _ _ (Collector_request request) this_widget=case this_widget of
     Collector {}->return (Collector request)
-    _->error "alter_widget_b: error 10"
+    _->error "alter_widget_b: error 11"
 alter_widget_b _ _ _ (Font_request path size) this_widget=case this_widget of
     Font intmap_font->do
         _<-DIS.traverseWithKey (\_ font->SRF.closeFont font) intmap_font
         font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_font` size)
         return (Font font)
-    _->error "alter_widget_b: error 11"
+    _->error "alter_widget_b: error 12"
 alter_widget_b _ _ _ (Block_font_request window_id red green blue alpha path size) this_widget=case this_widget of
     Block_font _ _ _ _ _ font->do
         _<-DIS.traverseWithKey (\_ this_font->clean_block_font this_font) font
         new_font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_block_font` size)
         return (Block_font window_id red green blue alpha new_font)
-    _->error "alter_widget_b: error 12"
+    _->error "alter_widget_b: error 13"
 alter_widget_b _ window _ (Rectangle_request window_id red green blue alpha left right up down) this_widget=case this_widget of
-    Rectangle {}->case error_lookup "alter_widget_b: error 13" window_id window of
+    Rectangle {}->case error_lookup "alter_widget_b: error 14" window_id window of
         (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
-    _->error "alter_widget_b: error 14"
+    _->error "alter_widget_b: error 15"
 alter_widget_b _ window _ (Picture_request window_id path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) this_widget=case this_widget of
-    Picture _ texture _ _ _ _ _ _ _->case error_lookup "alter_widget_b: error 15" window_id window of
+    Picture _ texture _ _ _ _ _ _ _->case error_lookup "alter_widget_b: error 16" window_id window of
         (Window _ _ renderer _ _ window_x window_y design_size size)->do
             SRV.destroyTexture texture
             surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load
-            CM.when (surface==FP.nullPtr) $ error "alter_widget_b: error 16"
+            CM.when (surface==FP.nullPtr) $ error "alter_widget_b: error 17"
             (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
             new_texture<-SRV.createTextureFromSurface renderer surface
             SRV.freeSurface surface
-            CM.when (new_texture==FP.nullPtr) $ error "alter_widget_b: error 17"
+            CM.when (new_texture==FP.nullPtr) $ error "alter_widget_b: error 18"
             let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id new_texture (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide) width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
-    _->error "alter_widget_b: error 18"
+    _->error "alter_widget_b: error 19"
 alter_widget_b _ window _ (Animation_request window_id seq_path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) this_widget=case this_widget of
-    Animation _ _ _ seq_frame _->case error_lookup "alter_widget_b: error 19" window_id window of
+    Animation _ _ _ seq_frame _->case error_lookup "alter_widget_b: error 20" window_id window of
         (Window _ _ renderer _ _ window_x window_y design_size size)->do
             DF.mapM_ (\(Frame texture _ _ _ _ _ _)->SRV.destroyTexture texture) seq_frame
             new_seq_frame<-DS.traverseWithIndex (\_ path->create_frame path renderer window_x window_y design_size size x y width_multiply width_divide height_multiply height_divide) seq_path
             return (Animation window_id (DS.length seq_frame) 0 new_seq_frame (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide))
-    _->error "alter_widget_b: error 20"
+    _->error "alter_widget_b: error 21"
 alter_widget_b start_id window widget (Text_request window_id find delta_height left right up down seq_paragraph text_binding) this_widget=case this_widget of
-    Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row _->case error_lookup "alter_widget_b: error 21" window_id window of
+    Text _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ seq_row _->case error_lookup "alter_widget_b: error 22" window_id window of
         (Window _ _ renderer _ _ x y design_size size)->do
             DF.mapM_ clean_row seq_row
             let new_delta_height=div (delta_height*size) design_size
             new_seq_row<-from_paragraph widget renderer (find_font find) window_id start_id design_size size 0 (div ((right-left)*size) design_size) new_delta_height seq_paragraph DS.empty
             let new_up=y+div (up*size) design_size in let new_down=y+div (down*size) design_size in let max_row=find_max new_seq_row new_up new_down in return (Text window_id 0 max_row False False find delta_height left right up down new_delta_height (x+div (left*size) design_size) (x+div (right*size) design_size) new_up new_down seq_paragraph new_seq_row text_binding)
-    _->error "alter_widget_b: error 22"
+    _->error "alter_widget_b: error 23"
 alter_widget_b start_id window widget (Editor_request window_id block_number font_size path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha block_width height delta_height x y extra_width extra_height ime_left ime_right ime_up ime_down seq_seq_char editor_binding) this_widget=case this_widget of
     Editor {}->let (window_x,window_y,design_size,size)=get_adaptive_window window_id window in let new_block_width=div (block_width*size) design_size in let (_,_,_,new_font_size,_,_,_,_,_,_,_,font_height,intmap_texture)=find_block_font find widget block_width new_block_width design_size size path start_id font_size in FMA.alloca $ \text_color->do
         FS.poke text_color (color text_red text_green text_blue text_alpha)
@@ -128,4 +131,4 @@ alter_widget_b start_id window widget (Editor_request window_id block_number fon
         let half_width=div (fromIntegral block_number*new_block_width) 2
         let half_height=div (div (height*size) design_size) 2
         return (Editor window_id block_number (fromIntegral (div (div ((height+delta_height)*size) design_size) (font_height+new_delta_height))) 0 font_size new_font_size False path find typesetting text_red text_green text_blue text_alpha cursor_red cursor_green cursor_blue cursor_alpha select_red select_green select_blue select_alpha height block_width delta_height x y extra_width extra_height ime_left ime_right ime_up ime_down font_height new_block_width new_delta_height (window_x+div (x*size) design_size-div (fromIntegral block_number*new_block_width) 2) (window_y+div (y*size) design_size-half_height) (window_x+div ((x-extra_width)*size) design_size-half_width) (window_x+div ((x+extra_width)*size) design_size+half_width) (window_y+div ((y-extra_height)*size) design_size-half_height) (window_y+div ((y+extra_height)*size) design_size+half_height) (window_x+div ((x+ime_left)*size) design_size) (window_x+div ((x+ime_right)*size) design_size) (window_y+div ((y+ime_up)*size) design_size) (window_y+div ((y+ime_down)*size) design_size) Cursor_none (from_seq_seq_char intmap_texture block_number new_block_width seq_seq_char DS.empty) editor_binding)
-    _->error "alter_widget_b: error 23"
+    _->error "alter_widget_b: error 24"

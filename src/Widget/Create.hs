@@ -38,6 +38,7 @@ create_single_widget _ _ (Data_request content) _=return (Data content)
 create_single_widget _ _ Canvas_request _=return (Canvas DIS.empty)
 create_single_widget _ _ (Trigger_request handle) _=return (Trigger handle)
 create_single_widget _ _ (Io_trigger_request handle) _=return (Io_trigger handle)
+create_single_widget _ _ (Coroutine_request coroutine) _=return (Coroutine coroutine)
 create_single_widget _ _ (Collector_request request) _=return (Collector request)
 create_single_widget _ _ (Font_request path size) _=do
     font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_font` size)

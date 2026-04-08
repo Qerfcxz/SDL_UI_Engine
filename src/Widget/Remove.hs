@@ -22,6 +22,7 @@ remove_single_widget (Data content)=clean_data content
 remove_single_widget (Canvas canvas)=DF.mapM_ (\(_,_,_,_,_,texture)->SRV.destroyTexture texture) canvas
 remove_single_widget (Trigger {})=return ()
 remove_single_widget (Io_trigger {})=return ()
+remove_single_widget (Coroutine {})=return ()
 remove_single_widget (Collector {})=return ()
 remove_single_widget (Font intmap_font)=do
     _<-DIS.traverseWithKey (\_ font->SRF.closeFont font) intmap_font

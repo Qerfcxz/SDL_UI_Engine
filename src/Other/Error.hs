@@ -81,7 +81,7 @@ error_update_a _ update (Just value)=Just (update value)
 error_get_update_update::[Char]->[Char]->Int->Int->(a->a)->DIS.IntMap (DIS.IntMap a)->(a,DIS.IntMap (DIS.IntMap a))
 error_get_update_update first_error_message second_error_message first_key second_key update=DIS.alterF (error_get_update_update_a first_error_message second_error_message second_key update) first_key
 
-error_get_update_update_a::GS.HasCallStack=>[Char]->[Char]->DIS.Key->(a->a)->Maybe (DIS.IntMap a)->(a,Maybe (DIS.IntMap a))
+error_get_update_update_a::GS.HasCallStack=>[Char]->[Char]->Int->(a->a)->Maybe (DIS.IntMap a)->(a,Maybe (DIS.IntMap a))
 error_get_update_update_a first_error_message _ _ _ Nothing=error first_error_message
 error_get_update_update_a _ second_error_message key update (Just intmap)=let (value,new_intmap)=DIS.alterF (error_get_update_update_b second_error_message update) key intmap in (value,Just new_intmap)
 
@@ -89,10 +89,17 @@ error_get_update_update_b::GS.HasCallStack=>[Char]->(a->a)->Maybe a->(a,Maybe a)
 error_get_update_update_b error_message _ Nothing=error error_message
 error_get_update_update_b _ update (Just value)=(value,Just (update value))
 
+error_get_get_update_update::[Char]->[Char]->Int->Int->(a->a)->DIS.IntMap (DIS.IntMap a)->(a,DIS.IntMap a,DIS.IntMap (DIS.IntMap a))
+error_get_get_update_update first_error_message second_error_message first_key second_key update intmap_intmap=let (value,new_intmap,new_intmap_intmap)=DIS.alterF (error_get_get_update_update_a first_error_message second_error_message second_key update) first_key intmap_intmap in (value,new_intmap,new_intmap_intmap)
+
+error_get_get_update_update_a::GS.HasCallStack=>[Char]->[Char]->Int->(a->a)->Maybe (DIS.IntMap a)->(a,DIS.IntMap a,Maybe (DIS.IntMap a))
+error_get_get_update_update_a first_error_message _ _ _ Nothing=error first_error_message
+error_get_get_update_update_a _ second_error_message key update (Just intmap)=let (value,new_intmap)=DIS.alterF (error_get_update_update_b second_error_message update) key intmap in (value,new_intmap,Just new_intmap)
+
 error_update_update::[Char]->[Char]->Int->Int->(a->a)->DIS.IntMap (DIS.IntMap a)->DIS.IntMap (DIS.IntMap a)
 error_update_update first_error_message second_error_message first_key second_key update=DIS.alter (error_update_update_a first_error_message second_error_message second_key update) first_key
 
-error_update_update_a::GS.HasCallStack=>[Char]->[Char]->DIS.Key->(a->a)->Maybe (DIS.IntMap a)->Maybe (DIS.IntMap a)
+error_update_update_a::GS.HasCallStack=>[Char]->[Char]->Int->(a->a)->Maybe (DIS.IntMap a)->Maybe (DIS.IntMap a)
 error_update_update_a first_error_message _ _ _ Nothing=error first_error_message
 error_update_update_a _ second_error_message key update (Just intmap)=Just (DIS.alter (error_update_update_b second_error_message update) key intmap)
 
@@ -103,7 +110,7 @@ error_update_update_b _ update (Just value)=Just (update value)
 error_update_update_io::[Char]->[Char]->Int->Int->(a->IO a)->DIS.IntMap (DIS.IntMap a)->IO (DIS.IntMap (DIS.IntMap a))
 error_update_update_io first_error_message second_error_message first_key second_key update=DIS.alterF (error_update_update_io_a first_error_message second_error_message second_key update) first_key
 
-error_update_update_io_a::GS.HasCallStack=>[Char]->[Char]->DIS.Key->(a->IO a)->Maybe (DIS.IntMap a)->IO (Maybe (DIS.IntMap a))
+error_update_update_io_a::GS.HasCallStack=>[Char]->[Char]->Int->(a->IO a)->Maybe (DIS.IntMap a)->IO (Maybe (DIS.IntMap a))
 error_update_update_io_a first_error_message _ _ _ Nothing=error first_error_message
 error_update_update_io_a _ second_error_message key update (Just intmap)=Just <$> DIS.alterF (error_update_update_io_b second_error_message update) key intmap
 
