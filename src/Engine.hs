@@ -128,6 +128,10 @@ run_coroutine_widget (Loop number coroutine) engine=if number>0
         Done->run_coroutine_widget (Loop (number-1) coroutine) new_engine
         _->(Then new_coroutine (Loop (number-1) coroutine),new_engine)
     else (Done,engine)
+run_coroutine_widget (Forever coroutine) engine=let (new_coroutine,new_engine)=run_coroutine_widget coroutine engine in case new_coroutine of
+    Done->run_coroutine_widget (Forever coroutine) new_engine
+    _->(Then new_coroutine (Forever coroutine),new_engine)
+run_coroutine_widget (If condition first_coroutine second_coroutine) engine=if condition engine then run_coroutine_widget first_coroutine engine else run_coroutine_widget second_coroutine engine
 run_coroutine_widget (Then first_coroutine second_coroutine) engine=let (new_coroutine,new_engine)=run_coroutine_widget first_coroutine engine in case new_coroutine of
     Done->run_coroutine_widget second_coroutine new_engine
     _->(Then new_coroutine second_coroutine,new_engine)
