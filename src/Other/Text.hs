@@ -35,19 +35,19 @@ cut_text_a left right last_width width font text=if left==right then let (left_t
 to_texture::GS.HasCallStack=>SRT.Renderer->FP.Ptr Color->FP.Ptr SRF.Font->FCS.CString->IO SRT.Texture
 to_texture renderer text_color font text=do
     surface<-SRF.renderUTF8_Blended font text text_color
-    CM.when (surface==FP.nullPtr) $ error "to_texture: error 1"
+    CM.when (surface==FP.nullPtr) (error "to_texture: error 1")
     texture<-SRV.createTextureFromSurface renderer surface
     SRV.freeSurface surface
-    CM.when (texture==FP.nullPtr) $ error "to_texture: error 2"
+    CM.when (texture==FP.nullPtr) (error "to_texture: error 2")
     return texture
 
 to_texture_with_width::GS.HasCallStack=>SRT.Renderer->FP.Ptr Color->FP.Ptr SRF.Font->FCS.CString->IO (SRT.Texture,FCT.CInt)
 to_texture_with_width renderer text_color font text=do
     surface<-SRF.renderUTF8_Blended font text text_color
-    CM.when (surface==FP.nullPtr) $ error "to_texture_with_width: error 1"
+    CM.when (surface==FP.nullPtr) (error "to_texture_with_width: error 1")
     this_surface<-FS.peek surface
     let width=SRT.surfaceW this_surface
     texture<-SRV.createTextureFromSurface renderer surface
     SRV.freeSurface surface
-    CM.when (texture==FP.nullPtr) $ error "to_texture_with_width: error 2"
+    CM.when (texture==FP.nullPtr) (error "to_texture_with_width: error 2")
     return (texture,width)

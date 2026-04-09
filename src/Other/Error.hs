@@ -112,7 +112,7 @@ error_update_update_io first_error_message second_error_message first_key second
 
 error_update_update_io_a::GS.HasCallStack=>[Char]->[Char]->Int->(a->IO a)->Maybe (DIS.IntMap a)->IO (Maybe (DIS.IntMap a))
 error_update_update_io_a first_error_message _ _ _ Nothing=error first_error_message
-error_update_update_io_a _ second_error_message key update (Just intmap)=Just <$> DIS.alterF (error_update_update_io_b second_error_message update) key intmap
+error_update_update_io_a _ second_error_message key update (Just intmap)=fmap Just (DIS.alterF (error_update_update_io_b second_error_message update) key intmap)
 
 error_update_update_io_b::GS.HasCallStack=>[Char]->(a->IO a)->Maybe a->IO (Maybe a)
 error_update_update_io_b error_message _ Nothing=error error_message

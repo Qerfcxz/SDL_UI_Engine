@@ -9,16 +9,18 @@ import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified GHC.Stack as GS
 
-move_rectangle::FCT.CInt->FCT.CInt->DS.Seq Int->Engine a->Engine a
-move_rectangle move_x move_y seq_id engine=update_combined_widget seq_id (move_rectangle_combined_widget move_x move_y engine) engine
+move_geometry::FCT.CInt->FCT.CInt->DS.Seq Int->Engine a->Engine a
+move_geometry move_x move_y seq_id engine=update_combined_widget seq_id (move_geometry_combined_widget move_x move_y engine) engine
 
-move_rectangle_combined_widget::GS.HasCallStack=>FCT.CInt->FCT.CInt->Engine a->Combined_widget a->Combined_widget a
-move_rectangle_combined_widget move_x move_y engine (Leaf_widget next_id (Rectangle window_id red green blue alpha design_left design_right design_up design_down _ _ width height))=let (window_x,window_y,design_size,size)=get_adaptive window_id engine in let new_left=design_left+move_x in let new_right=design_right+move_x in let new_up=design_up+move_y in let new_down=design_down+move_y in Leaf_widget next_id (Rectangle window_id red green blue alpha new_left new_right new_up new_down (window_x+div (new_left*size) design_size) (window_y+div (new_up*size) design_size) width height)
-move_rectangle_combined_widget _ _ _ _=error "move_rectangle_combined_widget: error 1"
+move_geometry_combined_widget::GS.HasCallStack=>FCT.CInt->FCT.CInt->Engine a->Combined_widget a->Combined_widget a
+move_geometry_combined_widget move_x move_y engine (Leaf_widget next_id (Geometry window_id red green blue alpha geometry))=let (window_x,window_y,design_size,size)=get_adaptive window_id engine in case geometry of
+    Rectangle design_left design_right design_up design_down _ _ width height->let new_left=design_left+move_x in let new_right=design_right+move_x in let new_up=design_up+move_y in let new_down=design_down+move_y in Leaf_widget next_id (Geometry window_id red green blue alpha (Rectangle new_left new_right new_up new_down (window_x+div (new_left*size) design_size) (window_y+div (new_up*size) design_size) width height))
+    Ellipse design_x design_y design_radius_x design_radius_y _ _ radius_x radius_y->let new_x=design_x+move_x in let new_y=design_y+move_y in Leaf_widget next_id (Geometry window_id red green blue alpha (Ellipse new_x new_y design_radius_x design_radius_y (window_x+div (new_x*size) design_size) (window_y+div (new_y*size) design_size) radius_x radius_y))
+move_geometry_combined_widget _ _ _ _=error "move_geometry_combined_widget: error 1"
 
-color_rectangle_combined_widget::GS.HasCallStack=>DW.Word8->DW.Word8->DW.Word8->DW.Word8->Combined_widget a->Combined_widget a
-color_rectangle_combined_widget red green blue alpha (Leaf_widget next_id (Rectangle window_id _ _ _ _ design_left design_right design_up design_down x y width height))=Leaf_widget next_id (Rectangle window_id red green blue alpha design_left design_right design_up design_down x y width height)
-color_rectangle_combined_widget _ _ _ _ _=error "color_rectangle_combined_widget: error 1"
+color_geometry_combined_widget::GS.HasCallStack=>DW.Word8->DW.Word8->DW.Word8->DW.Word8->Combined_widget a->Combined_widget a
+color_geometry_combined_widget red green blue alpha (Leaf_widget next_id (Geometry window_id _ _ _ _ geometry))=Leaf_widget next_id (Geometry window_id red green blue alpha geometry)
+color_geometry_combined_widget _ _ _ _ _=error "color_geometry_combined_widget: error 1"
 
 move_picture::FCT.CInt->FCT.CInt->DS.Seq Int->Engine a->Engine a
 move_picture move_x move_y seq_id engine=update_combined_widget seq_id (move_picture_combined_widget move_x move_y engine) engine

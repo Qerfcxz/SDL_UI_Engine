@@ -93,20 +93,22 @@ alter_widget_b _ _ _ (Block_font_request window_id red green blue alpha path siz
         new_font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_block_font` size)
         return (Block_font window_id red green blue alpha new_font)
     _->error "alter_widget_b: error 13"
-alter_widget_b _ window _ (Rectangle_request window_id red green blue alpha left right up down) this_widget=case this_widget of
-    Rectangle {}->case error_lookup "alter_widget_b: error 14" window_id window of
-        (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
+alter_widget_b _ window _ (Geometry_request window_id red green blue alpha geometry_request) this_widget=case this_widget of
+    Geometry {}->case error_lookup "alter_widget_b: error 14" window_id window of
+        (Window _ _ _ _ _ window_x window_y design_size size)->case geometry_request of
+            Rectangle_request left right up down->return (Geometry window_id red green blue alpha (Rectangle left right up down (window_x+div (left*size) design_size) (window_y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size)))
+            Ellipse_request x y radius_x radius_y->return (Geometry window_id red green blue alpha (Ellipse x y radius_x radius_y (window_x+div (x*size) design_size) (window_y+div (y*size) design_size) (div (radius_x*size) design_size) (div (radius_y*size) design_size)))
     _->error "alter_widget_b: error 15"
 alter_widget_b _ window _ (Picture_request window_id path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) this_widget=case this_widget of
     Picture _ texture _ _ _ _ _ _ _->case error_lookup "alter_widget_b: error 16" window_id window of
         (Window _ _ renderer _ _ window_x window_y design_size size)->do
             SRV.destroyTexture texture
             surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load
-            CM.when (surface==FP.nullPtr) $ error "alter_widget_b: error 17"
+            CM.when (surface==FP.nullPtr) (error "alter_widget_b: error 17")
             (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
             new_texture<-SRV.createTextureFromSurface renderer surface
             SRV.freeSurface surface
-            CM.when (new_texture==FP.nullPtr) $ error "alter_widget_b: error 18"
+            CM.when (new_texture==FP.nullPtr) (error "alter_widget_b: error 18")
             let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id new_texture (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide) width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
     _->error "alter_widget_b: error 19"
 alter_widget_b _ window _ (Animation_request window_id seq_path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) this_widget=case this_widget of

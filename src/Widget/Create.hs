@@ -46,16 +46,18 @@ create_single_widget _ _ (Font_request path size) _=do
 create_single_widget _ _ (Block_font_request window_id red green blue alpha path size) _=do
     font<-DB.useAsCString (DTE.encodeUtf8 path) (`create_block_font` size)
     return (Block_font window_id red green blue alpha font)
-create_single_widget _ window (Rectangle_request window_id red green blue alpha left right up down) _=case error_lookup "create_single_widget: error 1" window_id window of
-    (Window _ _ _ _ _ x y design_size size)->return (Rectangle window_id red green blue alpha left right up down (x+div (left*size) design_size) (y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size))
+create_single_widget _ window (Geometry_request window_id red green blue alpha geometry_request) _=case error_lookup "create_single_widget: error 1" window_id window of
+    (Window _ _ _ _ _ window_x window_y design_size size)->case geometry_request of
+        Rectangle_request left right up down->return (Geometry window_id red green blue alpha (Rectangle left right up down (window_x+div (left*size) design_size) (window_y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size)))
+        Ellipse_request x y radius_x radius_y->return (Geometry window_id red green blue alpha (Ellipse x y radius_x radius_y (window_x+div (x*size) design_size) (window_y+div (y*size) design_size) (div (radius_x*size) design_size) (div (radius_y*size) design_size)))
 create_single_widget _ window (Picture_request window_id path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) _=case error_lookup "create_single_widget: error 2" window_id window of
     (Window _ _ renderer _ _ window_x window_y design_size size)->do
         surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load
-        CM.when (surface==FP.nullPtr) $ error "create_single_widget: error 3"
+        CM.when (surface==FP.nullPtr) (error "create_single_widget: error 3")
         (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
         texture<-SRV.createTextureFromSurface renderer surface
         SRV.freeSurface surface
-        CM.when (texture==FP.nullPtr) $ error "create_single_widget: error 4"
+        CM.when (texture==FP.nullPtr) (error "create_single_widget: error 4")
         let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Picture window_id texture (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide) width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
 create_single_widget _ window (Animation_request window_id seq_path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) _=case error_lookup "create_single_widget: error 5" window_id window of
     (Window _ _ renderer _ _ window_x window_y design_size size)->do
@@ -75,11 +77,11 @@ create_single_widget start_id window (Editor_request window_id block_number font
 create_frame::GS.HasCallStack=>DT.Text->SRT.Renderer->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->IO Frame
 create_frame path renderer window_x window_y design_size size x y width_multiply width_divide height_multiply height_divide=do
     surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load
-    CM.when (surface==FP.nullPtr) $ error "create_frame: error 1"
+    CM.when (surface==FP.nullPtr) (error "create_frame: error 1")
     (SRT.Surface _ width height _ _ _ _)<-FS.peek surface
     texture<-SRV.createTextureFromSurface renderer surface
     SRV.freeSurface surface
-    CM.when (texture==FP.nullPtr) $ error "create_frame: error 2"
+    CM.when (texture==FP.nullPtr) (error "create_frame: error 2")
     let new_width=div (width*width_multiply) width_divide in let new_height=div (height*height_multiply) height_divide in return (Frame texture width height (window_x+div ((x-div new_width 2)*size) design_size) (window_y+div ((y-div new_height 2)*size) design_size) (div (new_width*size) design_size) (div (new_height*size) design_size))
 
 create_font::GS.HasCallStack=>FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font))
@@ -87,7 +89,7 @@ create_font _ DS.Empty=return DIS.empty
 create_font path (size DS.:<| other_size)=do
     font<-create_font path other_size
     new_font<-SRF.openFont path (fromIntegral size)
-    CM.when (new_font==FP.nullPtr) $ error "create_font: error 1"
+    CM.when (new_font==FP.nullPtr) (error "create_font: error 1")
     return (DIS.insert size new_font font)
 
 create_block_font::GS.HasCallStack=>FCS.CString->DS.Seq Int->IO (DIS.IntMap (FP.Ptr SRF.Font,FCT.CInt,DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)))
@@ -95,7 +97,7 @@ create_block_font _ DS.Empty=return DIS.empty
 create_block_font path (size DS.:<| other_size)=do
     font<-create_block_font path other_size
     new_font<-SRF.openFont path (fromIntegral size)
-    CM.when (new_font==FP.nullPtr) $ error "create_block_font: error 1"
+    CM.when (new_font==FP.nullPtr) (error "create_block_font: error 1")
     ascent<-SRF.fontAscent new_font
     descent<-SRF.fontDescent new_font
     return (DIS.insert size (new_font,ascent-descent,DIS.empty) font)

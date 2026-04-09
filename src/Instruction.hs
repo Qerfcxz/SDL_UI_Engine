@@ -54,17 +54,17 @@ remove_canvas_instruction _ _=return
 io_instruction::Instruction->Engine a->(Engine a->IO (Engine a))->IO (Engine a->IO (Engine a))
 io_instruction _ _=return
 
-render_rectangle_instruction::Instruction->Engine a->(Window,DW.Word8,DW.Word8,DW.Word8,DW.Word8,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO (Window,DW.Word8,DW.Word8,DW.Word8,DW.Word8,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
-render_rectangle_instruction _ _=return
+render_geometry_instruction::Instruction->Engine a->(Window,DW.Word8,DW.Word8,DW.Word8,DW.Word8,Geometry_request)->IO (Window,DW.Word8,DW.Word8,DW.Word8,DW.Word8,Geometry_request)
+render_geometry_instruction _ _=return
 
 render_picture_instruction::Instruction->Engine a->(Window,DT.Text,Flip,FCT.CDouble,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO (Window,DT.Text,Flip,FCT.CDouble,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
 render_picture_instruction _ _=return
 
-render_rectangle_widget_instruction::Instruction->Engine a->Combined_widget a->IO (Combined_widget a)
-render_rectangle_widget_instruction (Move_widget move_x move_y) engine=return.move_rectangle_combined_widget move_x move_y engine
-render_rectangle_widget_instruction (Move_rectangle move_x move_y) engine=return.move_rectangle_combined_widget move_x move_y engine
-render_rectangle_widget_instruction (Color_rectangle red green blue alpha) _=return.color_rectangle_combined_widget red green blue alpha
-render_rectangle_widget_instruction _ _=return
+render_geometry_widget_instruction::Instruction->Engine a->Combined_widget a->IO (Combined_widget a)
+render_geometry_widget_instruction (Move_widget move_x move_y) engine=return.move_geometry_combined_widget move_x move_y engine
+render_geometry_widget_instruction (Move_geometry move_x move_y) engine=return.move_geometry_combined_widget move_x move_y engine
+render_geometry_widget_instruction (Color_geometry red green blue alpha) _=return.color_geometry_combined_widget red green blue alpha
+render_geometry_widget_instruction _ _=return
 
 render_picture_widget_instruction::Instruction->Engine a->Combined_widget a->IO (Combined_widget a)
 render_picture_widget_instruction (Move_widget move_x move_y) engine=return.move_picture_combined_widget move_x move_y engine

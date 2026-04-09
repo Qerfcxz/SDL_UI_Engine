@@ -13,7 +13,7 @@ collect seq_id index intmap_request (Engine widget window window_map request key
 
 collect_a::GS.HasCallStack=>Int->Request a->Combined_widget a->Combined_widget a
 collect_a index intmap_request (Leaf_widget next_id (Collector request))=Leaf_widget next_id (Collector (error_insert "collect_a: error 1" index intmap_request request))
-collect_a _ _ _=error "collect_a: error 1"
+collect_a _ _ _=error "collect_a: error 2"
 
 deliver::DS.Seq Int->(Int->Request a->Bool)->Engine a->Engine a
 deliver seq_id judge (Engine widget window window_map request key main_id start_id count_id time)=let (combined_id,single_id)=get_widget_id_widget seq_id start_id widget in let (seq_request,new_widget)=DIS.alterF (deliver_a single_id judge) combined_id widget in Engine new_widget window window_map (request DS.>< seq_request) key main_id start_id count_id time
