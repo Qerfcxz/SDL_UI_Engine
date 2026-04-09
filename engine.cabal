@@ -54,7 +54,6 @@ library
         Timer
         Type
         Underlying
-        Window
     -- other-modules:
     -- other-extensions:
     build-depends:
