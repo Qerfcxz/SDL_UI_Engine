@@ -131,8 +131,8 @@ do_request (Request raw_request instruction) engine=case raw_request of
                     FS.poke rect (SRT.Rect left up (right-left) (down-up))
                     catch_error "do_request: error 24" 0 (SRV.renderFillRect renderer rect)
                 return engine
-            Ellipse_request x y radius_x radius_y->do
-                catch_error "do_request: error 25" 0 (SRP.filledEllipse renderer (fromIntegral x) (fromIntegral y) (fromIntegral radius_x) (fromIntegral radius_y) new_red new_green new_blue new_alpha)
+            Ellipse_request left right up down->do
+                catch_error "do_request: error 25" 0 (SRP.filledEllipse renderer (fromIntegral (div (left+right) 2)) (fromIntegral (div (up+down) 2)) (fromIntegral (div (right-left) 2)) (fromIntegral (div (down-up) 2)) new_red new_green new_blue new_alpha)
                 return engine
     Render_picture window_id path render_flip angle x y width_multiply width_divide height_multiply height_divide->do
         (Window _ _ renderer _ _ _ _ _ _,new_path,new_render_flip,new_angle,new_x,new_y,new_width_multiply,new_width_divide,new_height_multiply,new_height_divide)<-DF.foldlM (\mix this_instruction->render_picture_instruction this_instruction engine mix) (get_window window_id engine,path,render_flip,angle,x,y,width_multiply,width_divide,height_multiply,height_divide) instruction
