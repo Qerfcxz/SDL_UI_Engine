@@ -91,7 +91,7 @@ render_seq_seq_char renderer rect block_number typesetting text_red text_green t
     render_seq_seq_char renderer rect block_number typesetting text_red text_green text_blue text_alpha block_width x (y+height) font_height height seq_seq_char new_intmap_texture
 
 render_seq_seq_char_a::SRT.Renderer->FP.Ptr SRT.Rect->DW.Word8->DW.Word8->DW.Word8->DW.Word8->FCT.CInt->FCT.CInt->FCT.CInt->FCT.CInt->DS.Seq (Char,Int,FCT.CInt)->DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (DIS.IntMap (SRT.Texture,DIS.IntMap (Int,FCT.CInt),FCT.CInt,DW.Word8,DW.Word8,DW.Word8,DW.Word8))
-render_seq_seq_char_a _ _ _ _ _ _ _ _ _ _ DS.Empty intmap_texture=return intmap_texture 
+render_seq_seq_char_a _ _ _ _ _ _ _ _ _ _ DS.Empty intmap_texture=return intmap_texture
 render_seq_seq_char_a renderer rect text_red text_green text_blue text_alpha block_width x y font_height ((char,block,delta_x) DS.:<| seq_char) intmap_texture=let char_ord=DC.ord char in case error_lookup "render_seq_seq_char_a: error 1" char_ord intmap_texture of
     (texture,intmap_int,width,red,green,blue,alpha)->do
         let first_check=text_red/=red||text_green/=green||text_blue/=blue

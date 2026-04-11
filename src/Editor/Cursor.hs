@@ -37,7 +37,7 @@ cursor_right max_row block_number typesetting seq_seq_char (Cursor_single cursor
     Nothing->error "cursor_right: error 1"
     Just (seq_char,number,char_number,_)->if cursor_char==char_number
         then if cursor_row==max_row then Just (max_row,Nothing) else let new_cursor_row=cursor_row+1 in let new_cursor_block=typesetting_left typesetting number block_number in Just (new_cursor_row,Just (Cursor_single cursor_press new_cursor_row new_cursor_block 0 new_cursor_block))
-        else case error_lookup_sequence "cursor_right: error 2" cursor_char seq_char of 
+        else case error_lookup_sequence "cursor_right: error 2" cursor_char seq_char of
             (_,block,_)->let new_cursor_block=cursor_block+block in Just (cursor_row,Just (Cursor_single cursor_press cursor_row new_cursor_block (cursor_char+1) new_cursor_block))
 cursor_right _ _ _ _ (Cursor_double cursor_press _ _ _ _ _ cursor_row_end cursor_block_end cursor_char_end cursor_click_end)=Just (cursor_row_end,Just (Cursor_single cursor_press cursor_row_end cursor_block_end cursor_char_end cursor_click_end))
 

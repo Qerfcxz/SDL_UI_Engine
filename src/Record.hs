@@ -3,7 +3,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NoFieldSelectors #-}
-{-# LANGUAGE InstanceSigs #-}
 module Record where
 import Type
 import qualified Data.IntMap.Strict as DIS
@@ -79,7 +78,6 @@ instance Convert (Single_widget a) (Single_widget_record a) where
     convert=to_single_widget_record
 
 instance Convert (Single_widget_record a) (Single_widget a) where
-    convert :: Single_widget_record a -> Single_widget a
     convert=from_single_widget_record
 
 data Raw_request_record a=Create_widget_record {request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Remove_widget_record {transmit::Bool,simple::Bool,seq_id::DSeq.Seq Int}|Replace_widget_record {transmit::Bool,request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Alter_widget_record {transmit::Bool,request::Combined_widget_request a,seq_id::DSeq.Seq Int}|Create_window_record {window_id::Int,text::DT.Text,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Remove_window_record {window_id::Int}|Present_window_record {window_id::Int}|Clear_window_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8}|Resize_window_record {window_id::Int,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt}|Min_size_window_record {window_id::Int,width::FCT.CInt,height::FCT.CInt}|Max_size_window_record {window_id::Int,width::FCT.CInt,height::FCT.CInt}|Whether_bordered_window_record {window_id::Int,whether::Bool}|Switch_render_target_record {window_id::Int,index::Int,seq_id::DSeq.Seq Int}|Reset_render_target_record {window_id::Int}|Create_canvas_record {transmit::Bool,window_id::Int,index::Int,seq_id::DSeq.Seq Int}|Remove_canvas_record {transmit::Bool,index::Int,seq_id::DSeq.Seq Int}|Io_record {io::Engine a->IO (Engine a)}|Render_geometry_record {window_id::Int,red::DW.Word8,green::DW.Word8,blue::DW.Word8,alpha::DW.Word8,geometry_request::Geometry_request}|Render_picture_record {window_id::Int,path::DT.Text,render_flip::Flip,angle::FCT.CDouble,x::FCT.CInt,y::FCT.CInt,width_multiply::FCT.CInt,width_divide::FCT.CInt,height_multiply::FCT.CInt,height_divide::FCT.CInt}|Render_geometry_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_picture_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_animation_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_text_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_editor_widget_record {transmit::Bool,seq_id::DSeq.Seq Int}|Render_canvas_widget_record {transmit::Bool,similarity::Similarity,left::FCT.CInt,right::FCT.CInt,up::FCT.CInt,down::FCT.CInt,index::Int,seq_id::DSeq.Seq Int}|Update_block_font_widget_record {transmit::Bool,size::Int,block_width::FCT.CInt,set_char::DSet.Set Char,seq_id::DSeq.Seq Int}
