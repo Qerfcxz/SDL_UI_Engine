@@ -29,14 +29,14 @@ create_text_trigger_b event (Leaf_widget next_id (Text window_id row max_row ren
                 then case action of
                     Wheel delta_y->if wheel then let new_row=max 0 (min max_row (row-delta_y)) in if row==new_row then Nothing else Just (Leaf_widget next_id (Text window_id new_row max_row True select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row text_binding)) else Nothing
                     Press press _ key->if DSet.member (press,key) up_press then if 0<row then Just (Leaf_widget next_id (Text window_id (row-1) max_row True select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row text_binding)) else Nothing else if DSet.member (press,key) down_press then if row<max_row then Just (Leaf_widget next_id (Text window_id (row+1) max_row True select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row text_binding)) else Nothing else if DSet.member (press,key) min_press then if row==0 then Nothing else Just (Leaf_widget next_id (Text window_id 0 max_row True select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row text_binding)) else if DSet.member (press,key) max_press then if row==max_row then Nothing else Just (Leaf_widget next_id (Text window_id max_row max_row True select find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row text_binding)) else Nothing
-                    Click click mouse x y->if DSet.member (click,mouse) down_click&&(x<left||right<x||y<up||down<y) then Just (Leaf_widget next_id (Text window_id row max_row render False find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row text_binding)) else Nothing
+                    Click click mouse x y->if DSet.member (click,mouse) down_click&&(x<left||right<=x||y<up||down<=y) then Just (Leaf_widget next_id (Text window_id row max_row render False find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row text_binding)) else Nothing
                     _->Nothing
                 else Nothing
             _->Nothing
         else case event of
             At this_window_id action->if window_id==this_window_id
                 then case action of
-                    Click click mouse x y->if DSet.member (click,mouse) down_click&&left<=x&&x<=right&&up<=y&&y<=down then Just (Leaf_widget next_id (Text window_id row max_row render True find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row text_binding)) else Nothing
+                    Click click mouse x y->if DSet.member (click,mouse) down_click&&left<=x&&x<right&&up<=y&&y<down then Just (Leaf_widget next_id (Text window_id row max_row render True find design_delta_height design_left design_right design_up design_down delta_height left right up down seq_paragraph seq_row text_binding)) else Nothing
                     _->Nothing
                 else Nothing
             _->Nothing

@@ -48,8 +48,8 @@ create_single_widget _ _ (Block_font_request window_id red green blue alpha path
     return (Block_font window_id red green blue alpha font)
 create_single_widget _ window (Geometry_request window_id red green blue alpha geometry_request) _=case error_lookup "create_single_widget: error 1" window_id window of
     (Window _ _ _ _ _ window_x window_y design_size size)->case geometry_request of
-        Rectangle_request left right up down->return (Geometry window_id red green blue alpha (Rectangle left right up down (window_x+div (left*size) design_size) (window_y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size)))
-        Ellipse_request left right up down->return (Geometry window_id red green blue alpha (Ellipse left right up down (window_x+div ((left+right)*size) (2*design_size)) (window_y+div ((up+down)*size) (2*design_size)) (div ((right-left)*size) (2*design_size)) (div ((down-up)*size) (2*design_size))))
+        Rectangle_request kind left right up down->return (Geometry window_id red green blue alpha (Rectangle kind left right up down (window_x+div (left*size) design_size) (window_y+div (up*size) design_size) (div ((right-left)*size) design_size) (div ((down-up)*size) design_size)))
+        Ellipse_request kind left right up down->return (Geometry window_id red green blue alpha (Ellipse kind left right up down (window_x+div ((left+right)*size) (2*design_size)) (window_y+div ((up+down)*size) (2*design_size)) (div ((right-left)*size) (2*design_size)) (div ((down-up)*size) (2*design_size))))
 create_single_widget _ window (Picture_request window_id path (Similarity render_flip angle x y width_multiply width_divide height_multiply height_divide)) _=case error_lookup "create_single_widget: error 2" window_id window of
     (Window _ _ renderer _ _ window_x window_y design_size size)->do
         surface<-DB.useAsCString (DTE.encodeUtf8 path) SRI.load

@@ -26,7 +26,7 @@ data Frame=Frame SRT.Texture FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CI
 
 data Label=Any_label|Bool_label|Int_label|Char_label|List_char_label|Solo_label Label|Tuple_label Label Label|List_label Label Int
 
-data Geometry=Rectangle FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Ellipse FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt
+data Geometry=Rectangle Bool FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Ellipse (Either Bool Bool) FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt
 
 data Cursor=Cursor_none|Cursor_single Bool Int Int Int Int|Cursor_double Bool Bool Int Int Int Int Int Int Int Int
 
@@ -46,7 +46,7 @@ data Combined_widget_request a=Leaf_widget_request (DSeq.Seq Int->Engine a->Even
 
 data Single_widget_request a=Label_data_request Label|Bool_data_request Bool|Int_data_request Int|Char_data_request Char|List_char_data_request List_char|Data_request a|Canvas_request|Trigger_request (Event->Engine a->Engine a)|Io_trigger_request (Event->Engine a->IO (Engine a))|Coroutine_request (Coroutine a)|Collector_request (DIS.IntMap (Request a))|Font_request DTe.Text (DSeq.Seq Int)|Block_font_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 DTe.Text (DSeq.Seq Int)|Geometry_request Int DW.Word8 DW.Word8 DW.Word8 DW.Word8 Geometry_request|Picture_request Int DTe.Text Similarity|Animation_request Int (DSeq.Seq DTe.Text) Similarity|Text_request Int Find FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DSeq.Seq Paragraph) Text_binding|Editor_request Int Int Int (DSeq.Seq Int) Block_find Typesetting DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 DW.Word8 FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt (DSeq.Seq (DSeq.Seq Char)) Editor_binding
 
-data Geometry_request=Rectangle_request FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Ellipse_request FCT.CInt FCT.CInt FCT.CInt FCT.CInt
+data Geometry_request=Rectangle_request Bool FCT.CInt FCT.CInt FCT.CInt FCT.CInt|Ellipse_request (Either Bool Bool) FCT.CInt FCT.CInt FCT.CInt FCT.CInt
 
 data Similarity=Similarity Flip FCT.CDouble FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt FCT.CInt
 
