@@ -1,0 +1,117 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use camelCase" #-}
+module Instruction where
+import Type
+import Underlying
+import qualified Data.Sequence as DSeq
+import qualified Data.Set as DSet
+import qualified Data.Text as DT
+import qualified Data.Word as DW
+import qualified Foreign.C.Types as FCT
+
+create_widget_instruction::Instruction->Engine a->(Combined_widget_request a,DSeq.Seq Int)->IO (Combined_widget_request a,DSeq.Seq Int)
+create_widget_instruction _ _=return
+
+remove_widget_instruction::Instruction->Engine a->(Bool,Combined_widget a)->IO (Bool,Combined_widget a)
+remove_widget_instruction _ _=return
+
+replace_widget_instruction::Instruction->Engine a->(Combined_widget_request a,Combined_widget a)->IO (Combined_widget_request a,Combined_widget a)
+replace_widget_instruction _ _=return
+
+alter_widget_instruction::Instruction->Engine a->(Combined_widget_request a,Combined_widget a)->IO (Combined_widget_request a,Combined_widget a)
+alter_widget_instruction _ _=return
+
+create_window_instruction::Instruction->Engine a->(Int,DT.Text,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO (Int,DT.Text,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+create_window_instruction _ _=return
+
+remove_window_instruction::Instruction->Engine a->Window->IO Window
+remove_window_instruction _ _=return
+
+present_window_instruction::Instruction->Engine a->Window->IO Window
+present_window_instruction _ _=return
+
+clear_window_instruction::Instruction->Engine a->(Window,DW.Word8,DW.Word8,DW.Word8,DW.Word8)->IO (Window,DW.Word8,DW.Word8,DW.Word8,DW.Word8)
+clear_window_instruction _ _=return
+
+resize_window_instruction::Instruction->Engine a->(Window,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO (Window,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+resize_window_instruction _ _=return
+
+min_size_window_instruction::Instruction->Engine a->(Window,FCT.CInt,FCT.CInt)->IO (Window,FCT.CInt,FCT.CInt)
+min_size_window_instruction _ _=return
+
+max_size_window_instruction::Instruction->Engine a->(Window,FCT.CInt,FCT.CInt)->IO (Window,FCT.CInt,FCT.CInt)
+max_size_window_instruction _ _=return
+
+whether_bordered_window_instruction::Instruction->Engine a->(Window,Bool)->IO (Window,Bool)
+whether_bordered_window_instruction _ _=return
+
+create_canvas_instruction::Instruction->Engine a->(Window,Int,Combined_widget a)->IO (Window,Int,Combined_widget a)
+create_canvas_instruction _ _=return
+
+remove_canvas_instruction::Instruction->Engine a->(Int,Combined_widget a)->IO (Int,Combined_widget a)
+remove_canvas_instruction _ _=return
+
+io_instruction::Instruction->Engine a->(Engine a->IO (Engine a))->IO (Engine a->IO (Engine a))
+io_instruction _ _=return
+
+render_geometry_instruction::Instruction->Engine a->(Window,DW.Word8,DW.Word8,DW.Word8,DW.Word8,Geometry_request)->IO (Window,DW.Word8,DW.Word8,DW.Word8,DW.Word8,Geometry_request)
+render_geometry_instruction _ _=return
+
+render_picture_instruction::Instruction->Engine a->(Window,DT.Text,Flip,FCT.CDouble,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)->IO (Window,DT.Text,Flip,FCT.CDouble,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt)
+render_picture_instruction _ _=return
+
+render_geometry_widget_instruction::Instruction->Engine a->Combined_widget a->IO (Combined_widget a)
+render_geometry_widget_instruction (Move_widget move_x move_y) engine=return.move_geometry_combined_widget move_x move_y engine
+render_geometry_widget_instruction (Move_geometry move_x move_y) engine=return.move_geometry_combined_widget move_x move_y engine
+render_geometry_widget_instruction (Color_geometry red green blue alpha) _=return.color_geometry_combined_widget red green blue alpha
+render_geometry_widget_instruction _ _=return
+
+render_picture_widget_instruction::Instruction->Engine a->Combined_widget a->IO (Combined_widget a)
+render_picture_widget_instruction (Move_widget move_x move_y) engine=return.move_picture_combined_widget move_x move_y engine
+render_picture_widget_instruction (Move_picture move_x move_y) engine=return.move_picture_combined_widget move_x move_y engine
+render_picture_widget_instruction (Scale_widget width_multiply width_divide height_multiply height_divide) engine=return.scale_picture_combined_widget width_multiply width_divide height_multiply height_divide engine
+render_picture_widget_instruction (Scale_picture width_multiply width_divide height_multiply height_divide) engine=return.scale_picture_combined_widget width_multiply width_divide height_multiply height_divide engine
+render_picture_widget_instruction (Angle_widget angle) _=return.angle_picture_combined_widget angle
+render_picture_widget_instruction (Angle_picture angle) _=return.angle_picture_combined_widget angle
+render_picture_widget_instruction (Flip_widget render_flip) _=return.flip_picture_combined_widget render_flip
+render_picture_widget_instruction (Flip_picture render_flip) _=return.flip_picture_combined_widget render_flip
+render_picture_widget_instruction _ _=return
+
+render_animation_widget_instruction::Instruction->Engine a->Combined_widget a->IO (Combined_widget a)
+render_animation_widget_instruction (Move_widget move_x move_y) engine=return.move_animation_combined_widget move_x move_y engine
+render_animation_widget_instruction (Move_animation move_x move_y) engine=return.move_animation_combined_widget move_x move_y engine
+render_animation_widget_instruction (Scale_widget width_multiply width_divide height_multiply height_divide) engine=return.scale_animation_combined_widget width_multiply width_divide height_multiply height_divide engine
+render_animation_widget_instruction (Scale_animation width_multiply width_divide height_multiply height_divide) engine=return.scale_animation_combined_widget width_multiply width_divide height_multiply height_divide engine
+render_animation_widget_instruction (Angle_widget angle) _=return.angle_animation_combined_widget angle
+render_animation_widget_instruction (Angle_animation angle) _=return.angle_animation_combined_widget angle
+render_animation_widget_instruction (Flip_widget render_flip) _=return.flip_animation_combined_widget render_flip
+render_animation_widget_instruction (Flip_animation render_flip) _=return.flip_animation_combined_widget render_flip
+render_animation_widget_instruction (Goto_animation goto) _=return.goto_animation_combined_widget goto
+render_animation_widget_instruction _ _=return
+
+render_text_widget_instruction::Instruction->Engine a->Combined_widget a->IO (Combined_widget a)
+render_text_widget_instruction (Move_widget move_x move_y) engine=return.move_text_combined_widget move_x move_y engine
+render_text_widget_instruction (Move_text move_x move_y) engine=return.move_text_combined_widget move_x move_y engine
+render_text_widget_instruction _ _=return
+
+render_editor_widget_instruction::Instruction->Engine a->Combined_widget a->IO (Combined_widget a)
+render_editor_widget_instruction (Move_widget move_x move_y) engine=return.move_editor_combined_widget move_x move_y engine
+render_editor_widget_instruction (Move_editor move_x move_y) engine=return.move_editor_combined_widget move_x move_y engine
+render_editor_widget_instruction (Text_color_editor red green blue alpha) _=return.text_color_editor_combined_widget red green blue alpha
+render_editor_widget_instruction (Cursor_color_editor red green blue alpha) _=return.cursor_color_editor_combined_widget red green blue alpha
+render_editor_widget_instruction (Select_color_editor red green blue alpha) _=return.select_color_editor_combined_widget red green blue alpha
+render_editor_widget_instruction _ _=return
+
+render_canvas_widget_instruction::Instruction->Engine a->(Similarity,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,Int,Combined_widget a)->IO (Similarity,FCT.CInt,FCT.CInt,FCT.CInt,FCT.CInt,Int,Combined_widget a)
+render_canvas_widget_instruction (Move_widget move_x move_y) _ (Similarity render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)=return (Similarity render_flip angle (design_x+move_x) (design_y+move_y) width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)
+render_canvas_widget_instruction (Move_canvas move_x move_y) _ (Similarity render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)=return (Similarity render_flip angle (design_x+move_x) (design_y+move_y) width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)
+render_canvas_widget_instruction (Scale_widget width_multiply width_divide height_multiply height_divide) _ (Similarity render_flip angle design_x design_y _ _ _ _,left,right,up,down,index,combined_widget)=return (Similarity render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)
+render_canvas_widget_instruction (Scale_canvas width_multiply width_divide height_multiply height_divide) _ (Similarity render_flip angle design_x design_y _ _ _ _,left,right,up,down,index,combined_widget)=return (Similarity render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)
+render_canvas_widget_instruction (Angle_widget angle) _ (Similarity render_flip _ design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)=return (Similarity render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)
+render_canvas_widget_instruction (Angle_canvas angle) _ (Similarity render_flip _ design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)=return (Similarity render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)
+render_canvas_widget_instruction (Flip_widget render_flip) _ (Similarity _ angle design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)=return (Similarity render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)
+render_canvas_widget_instruction (Flip_canvas render_flip) _ (Similarity _ angle design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)=return (Similarity render_flip angle design_x design_y width_multiply width_divide height_multiply height_divide,left,right,up,down,index,combined_widget)
+render_canvas_widget_instruction _ _ mix=return mix
+
+update_block_font_instruction::Instruction->Engine a->(Int,FCT.CInt,DSet.Set Char,Combined_widget a)->IO (Int,FCT.CInt,DSet.Set Char,Combined_widget a)
+update_block_font_instruction _ _=return
