@@ -1,5 +1,7 @@
 # Hsue - A Haskell UI Engine for Text-Based Roguelikes
 
+> 🚨 **Notice:** This repository has been refactored! The updated and active version of the project is now available at **[github.com/Qerfcxz/Hsue](https://github.com/Qerfcxz/Hsue)**. Please visit the new repository for the latest code and updates.
+>
 > **Note:** The main content of this engine was completed within one month by a senior undergraduate student. It is built entirely from scratch using Haskell and SDL2 Raw Bindings, designed specifically to power a future text-heavy, turn-based Roguelike game.
 
 ## 📖 Introduction
@@ -56,6 +58,8 @@ The **Data Widget Family** (`Bool_data`, `Int_data`, `List_char_data`, custom `D
 
 # Hsue - 专为文字类 Roguelike 打造的 Haskell UI 引擎
 
+> 🚨 **重构公告：** 本项目已进行全面重构！全新的重构版本请移步至新项目仓库：**[github.com/Qerfcxz/Hsue](https://github.com/Qerfcxz/Hsue)**。建议前往新仓库查看最新的开发进度与代码。
+>
 > **说明:** 本引擎的主要内容由一名大四学生在一个月内独立开发完成。它基于 Haskell 和 SDL2 Raw Bindings 从零构建，旨在支撑未来一款文字量巨大、逻辑复杂的回合制 Roguelike 游戏的开发。
 
 ## 📖 简介
